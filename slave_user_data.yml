@@ -1,0 +1,146 @@
+#cloud-config
+
+write_files:
+  - path: /etc/ssh/sshd_config
+    permissions: 0600
+    owner: root:root
+    content: |
+      UsePrivilegeSeparation sandbox
+      Subsystem sftp internal-sftp
+
+      PermitRootLogin no
+      AllowUsers core
+      PasswordAuthentication no
+      ChallengeResponseAuthentication no
+  - path: /etc/mesosphere/setup-flags/repository-url
+    permissions: 0644
+    owner: root
+    content: |
+      ${bootstrap_repo_root}
+  - path: /etc/mesosphere/roles/slave
+  - path: /etc/mesosphere/setup-packages/dcos-config--setup/pkginfo.json
+    content: '{}'
+  - path: /etc/mesosphere/setup-packages/dcos-config--setup/etc/mesos-dns.json
+    content: |
+      {
+        "zk": "zk://127.0.0.1:2181/mesos",
+        "refreshSeconds": 30,
+        "ttl": 60,
+        "domain": "mesos",
+        "port": 53,
+        "resolvers": ["${fallback_dns}"],
+        "timeout": 5,
+        "listener": "0.0.0.0",
+        "email": "root.mesos-dns.mesos"
+      }
+  - path: /etc/mesosphere/setup-packages/dcos-config--setup/etc/mesos-master
+    content: |
+      MESOS_LOG_DIR=/var/log/mesos
+      MESOS_WORK_DIR=/var/lib/mesos/master
+      MESOS_ZK=zk://127.0.0.1:2181/mesos
+      MESOS_QUORUM=${mesos_quorum}
+      MESOS_CLUSTER=${stack_name}
+      MESOS_ROLES=slave_public
+  - path: /etc/mesosphere/setup-packages/dcos-config--setup/etc/mesos-slave
+    content: |
+      MESOS_MASTER=zk://leader.mesos:2181/mesos
+      MESOS_CONTAINERIZERS=docker,mesos
+      MESOS_LOG_DIR=/var/log/mesos
+      MESOS_EXECUTOR_REGISTRATION_TIMEOUT=5mins
+      MESOS_ISOLATION=cgroups/cpu,cgroups/mem
+      MESOS_WORK_DIR=/var/lib/mesos/slave
+      MESOS_RESOURCES=ports:[1025-2180,2182-3887,3889-5049,5052-8079,8082-8180,8182-65535]
+      MESOS_SLAVE_SUBSYSTEMS=cpu,memory
+  - path: /etc/mesosphere/setup-packages/dcos-config--setup/etc/mesos-slave-public
+    content: |
+      MESOS_MASTER=zk://leader.mesos:2181/mesos
+      MESOS_CONTAINERIZERS=docker,mesos
+      MESOS_LOG_DIR=/var/log/mesos
+      MESOS_EXECUTOR_REGISTRATION_TIMEOUT=5mins
+      MESOS_ISOLATION=cgroups/cpu,cgroups/mem
+      MESOS_WORK_DIR=/var/lib/mesos/slave
+      MESOS_RESOURCES=ports:[1-21,23-5050,5052-65535]
+      MESOS_SLAVE_SUBSYSTEMS=cpu,memory
+      MESOS_DEFAULT_ROLE=slave_public
+      MESOS_ATTRIBUTES=public_ip:true
+  - path: /etc/mesosphere/setup-packages/dcos-config--setup/etc/cloudenv
+    content: |
+      AWS_REGION=${aws_region}
+      AWS_STACK_ID=
+      AWS_STACK_NAME=${stack_name}
+      AWS_ACCESS_KEY_ID=${aws_access_key_id}
+      AWS_SECRET_ACCESS_KEY=${aws_secret_access_key}
+      ZOOKEEPER_CLUSTER_SIZE=${master_instance_count}
+      MASTER_ELB=${internal_master_lb_dns_name}
+      EXTERNAL_ELB=${dcos_lb_dns_name}
+
+      # Must set FALLBACK_DNS to an AWS region-specific DNS server which returns
+      # the internal IP when doing lookups on AWS public hostnames.
+      FALLBACK_DNS=${fallback_dns}
+  - path: /etc/mesosphere/setup-packages/dcos-config--setup/etc/exhibitor
+    content: |
+      AWS_S3_BUCKET=${exhibitor_s3_bucket}
+      AWS_S3_PREFIX=${stack_name}
+      EXHIBITOR_WEB_UI_PORT=8181
+
+coreos:
+  update:
+    reboot-strategy: off
+  units:
+    - name: etcd.service
+      mask: true
+      command: stop
+    - name: update-engine.service
+      mask: true
+      command: stop
+    - name: locksmithd.service
+      mask: true
+      command: stop
+    - name: systemd-resolved.service
+      command: stop
+    - name: config-writer.service
+      command: start
+      content: |
+        [Unit]
+        Description=Write out dynamic config values
+        [Service]
+        Type=oneshot
+        ExecStart=/usr/bin/bash -c "echo EXHIBITOR_HOSTNAME=$(curl -s http://169.254.169.254/latest/meta-data/hostname) >> /etc/mesosphere/setup-packages/dcos-config--setup/etc/cloudenv"
+        ExecStart=/usr/bin/bash -c "echo MARATHON_HOSTNAME=$(curl -s http://169.254.169.254/latest/meta-data/hostname) >> /etc/mesosphere/setup-packages/dcos-config--setup/etc/cloudenv"
+        ExecStart=/usr/bin/bash -c "echo MESOS_HOSTNAME=$(curl -s http://169.254.169.254/latest/meta-data/hostname) >> /etc/mesosphere/setup-packages/dcos-config--setup/etc/mesos-master"
+        ExecStart=/usr/bin/bash -c "echo MESOS_HOSTNAME=$(curl -s http://169.254.169.254/latest/meta-data/hostname) >> /etc/mesosphere/setup-packages/dcos-config--setup/etc/mesos-slave"
+    - name: link-env.service
+      command: start
+      content: |
+        [Unit]
+        Before=dcos.target
+        [Service]
+        Type=oneshot
+        ExecStartPre=/usr/bin/mkdir -p /etc/profile.d
+        ExecStart=/usr/bin/ln -sf /opt/mesosphere/environment.export /etc/profile.d/dcos.sh
+    - name: dcos-download.service
+      content: |
+        [Unit]
+        Description=Download the DCOS
+        After=network-online.target
+        Wants=network-online.target
+        ConditionPathExists=!/opt/mesosphere/
+        [Service]
+        Type=oneshot
+        ExecStartPre=/usr/bin/bash -c 'until wget --progress=dot -e dotbytes=10M --continue ${bootstrap_repo_root}/bootstrap.tar.xz -O /tmp/bootstrap.tar.xz; do echo "failed to download"; sleep 5; done'
+        ExecStartPre=/usr/bin/mkdir -p /opt/mesosphere
+        ExecStart=/usr/bin/tar -axf /tmp/bootstrap.tar.xz -C /opt/mesosphere
+    - name: dcos-setup.service
+      command: start
+      enable: true
+      content: |
+        [Unit]
+        Description=Prep the Pkgpanda working directories for this host.
+        Requires=dcos-download.service
+        After=dcos-download.service
+        [Service]
+        Type=oneshot
+        EnvironmentFile=/opt/mesosphere/environment
+        ExecStart=/opt/mesosphere/bin/pkgpanda setup --no-block-systemd
+        [Install]
+        WantedBy=multi-user.target
