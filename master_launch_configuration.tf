@@ -22,7 +22,7 @@ resource "aws_launch_configuration" "master" {
 }
 
 resource "template_file" "master_user_data" {
-  filename = "master_user_data.yml"
+  filename = "${path.module}/master_user_data.yml"
 
   vars {
     stack_name                  = "${var.stack_name}"

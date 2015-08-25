@@ -18,7 +18,7 @@ resource "aws_launch_configuration" "public_slave" {
 }
 
 resource "template_file" "public_slave_user_data" {
-  filename = "public_slave_user_data.yml"
+  filename = "${path.module}/public_slave_user_data.yml"
 
   vars {
     stack_name                  = "${var.stack_name}"
