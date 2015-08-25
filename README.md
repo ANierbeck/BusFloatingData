@@ -14,7 +14,7 @@ See [`variables.tf`](variables.tf) for a list of configurable parameters.
 
 To include this module in your Terraform code-base, use the following snippet:
 
-```terraform
+```hcl
 module "dcos" {
   source = "github.com/jeanmertz/terraform-dcos"
 
@@ -36,8 +36,12 @@ instructions:
 
 * clone the repository
 * create a `terraform.tfvars` file with all the (required) variables
-* *optionslly* run `terraform plan -out terraform.plan`
+* *optionally* run `terraform plan -out terraform.plan`
 * run `terraform apply [terraform.plan]`
+
+## Dependency Graph
+
+[![graph](https://rawgit.com/JeanMertz/terraform-dcos/master/graph.svg)](graph.svg)
 
 ## Origin
 

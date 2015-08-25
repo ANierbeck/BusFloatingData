@@ -7,6 +7,7 @@ major: NEXT_VERSION = $(shell echo $(LAST_TAG) | awk -F'[v.]' '{$$2++; print $$2
 
 patch minor major: graph
 	@if [ -z "${COMMITS}" ]; then echo "No new commits found after ${LAST_TAG}, aborting."; fi
+	@if [ -n "$(git ls-files -om graph.svg)" ]; then echo "Uncommited graph.svg detected, aborting."; fi
 	@if [ -n "${COMMITS}" ]; then git tag -s "v${NEXT_VERSION}" -m "Version ${NEXT_VERSION}"; fi
 
 release: check
@@ -17,4 +18,7 @@ release: check
 check:
 	@if ! which hub terraform dot > /dev/null; then echo "Missing dependency. Required: hub, terraform, dot." && exit 1; fi;
 
-.PHONY: patch minor major release check
+graph:
+	@terraform graph -module-depth=100 -draw-cycles | dot -Gsplines=ortho -Gconcentrate=true -Grankdir=RL -Tsvg > graph.svg
+
+.PHONY: patch minor major release check graph
