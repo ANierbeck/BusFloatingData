@@ -1,5 +1,5 @@
 resource "aws_instance" "nat" {
-  ami = "${var.nat_ami}"
+  ami = "${lookup(var.nat_amis, var.aws_region)}"
   instance_type = "m3.medium"
   subnet_id = "${aws_subnet.public.id}"
   source_dest_check = false

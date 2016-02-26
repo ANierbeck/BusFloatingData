@@ -36,19 +36,13 @@ instructions:
 
 * clone the repository
 * create a `terraform.tfvars` file with all the (required) variables
+```vim
+aws_access_key="*****"
+aws_secret_key="*****"
+aws_region="eu-west-1"
+ssh_public_key="ssh-rsa ***** bernd.zuther@codecentric.de"
+```
 * *optionally* run `terraform plan -out terraform.plan`
 * run `terraform apply [terraform.plan]`
 
 ## Dependency Graph
-
-[![graph](https://rawgit.com/JeanMertz/terraform-dcos/master/graph.svg)](graph.svg)
-
-## Origin
-
-This module is an implementation of the official "Single Master"
-[AWS Cloud Formation template][].
-
-The [CF JSON file](origin.json) is included in this repository, to more easily
-track updates and implement those in the Terraform implementation.
-
-[AWS Cloud Formation template]: https://s3.amazonaws.com/downloads.mesosphere.io/dcos/stable/single-master.cloudformation.json

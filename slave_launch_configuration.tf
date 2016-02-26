@@ -1,16 +1,10 @@
 resource "aws_launch_configuration" "slave" {
   security_groups = ["${aws_security_group.slave.id}"]
-  image_id = "${var.instance_ami}"
+  image_id = "${lookup(var.instance_amis, var.aws_region)}"
   instance_type = "${var.slave_instance_type}"
   key_name = "${aws_key_pair.dcos.key_name}"
   user_data = "${template_file.slave_user_data.rendered}"
   associate_public_ip_address = false
-
-  root_block_device {
-    volume_type = "gp2"
-    volume_size = "64"
-    delete_on_termination = true
-  }
 
   lifecycle {
     create_before_destroy = false
@@ -18,7 +12,7 @@ resource "aws_launch_configuration" "slave" {
 }
 
 resource "template_file" "slave_user_data" {
-  filename = "${path.module}/slave_user_data.yml"
+  template = "${path.module}/slave_user_data.yml"
 
   vars {
     stack_name                  = "${var.stack_name}"
@@ -29,8 +23,5 @@ resource "template_file" "slave_user_data" {
     internal_master_lb_dns_name = "${aws_elb.internal_master.dns_name}"
     dcos_lb_dns_name            = "${aws_elb.dcos.dns_name}"
     exhibitor_s3_bucket         = "${aws_s3_bucket.exhibitor.id}"
-    bootstrap_repo_root         = "${var.bootstrap_repo_root}"
-    mesos_quorum                = "${var.master_quorum_count}"
-    master_instance_count       = "${var.master_instance_count}"
   }
 }

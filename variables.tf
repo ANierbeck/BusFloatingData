@@ -47,29 +47,19 @@ variable "aws_availability_zone" {
   default = "eu-central-1b"
 }
 
-variable "nat_ami" {
-  description = "AMI for Amazon NAT machine"
-  default = "ami-204c7a3d"
-}
-
-variable "instance_ami" {
-  description = "AMI for CoreOS machine"
-  default = "ami-bececaa3"
-}
-
 variable "master_instance_type" {
   description = "Default instance type for masters"
-  default = "m4.large"
+  default = "m3.large"
 }
 
 variable "slave_instance_type" {
   description = "Default instance type for slaves"
-  default = "m4.large"
+  default = "m3.xlarge"
 }
 
 variable "public_slave_instance_type" {
   description = "Default instance type for public slaves"
-  default = "m4.large"
+  default = "m3.xlarge"
 }
 
 variable "vpc_subnet_range" {
@@ -105,4 +95,36 @@ variable "public_subnet_range" {
 variable "fallback_dns" {
   description = "Fallback DNS IP"
   default = "10.0.0.2"
+}
+
+variable "instance_amis" {
+  description = "AMI for CoreOS machine"
+  default = {
+    us-west-1       = "ami-27553a47"
+    ap-northeast-1  = "ami-84e0c7ea"
+    us-gov-west-1   = "ami-05bc0164"
+    us-west-2       = "ami-00ebfc61"
+    us-east-1       = "ami-37bdc15d"
+    sa-east-1       = "ami-154af179"
+    ap-southeast-2  = "ami-f35b0590"
+    eu-west-1       = "ami-55d20b26"
+    eu-central-1    = "ami-fdd4c791"
+    ap-southeast-1  = "ami-da67a0b9"
+  }
+}
+
+variable "nat_amis" {
+  description = "AMI for Amazon NAT machine"
+  default = {
+    us-west-1       = "ami-2b2b296e"
+    ap-northeast-1  = "ami-55c29e54"
+    us-gov-west-1   = "ami-bb69128b"
+    us-west-2       = "ami-00ebfc61"
+    us-east-1       = "ami-4c9e4b24"
+    sa-east-1       = "ami-b972dba4"
+    ap-southeast-2  = "ami-996402a3"
+    eu-west-1       = "ami-3760b040"
+    eu-central-1    = "ami-204c7a3d"
+    ap-southeast-1  = "ami-b082dae2"
+  }
 }

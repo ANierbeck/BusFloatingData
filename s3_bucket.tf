@@ -1,5 +1,5 @@
 resource "aws_s3_bucket" "exhibitor" {
-  bucket = "dcos-exhibitor"
+  bucket = "netflix-exhibitor"
   force_destroy = true
 
   lifecycle {
