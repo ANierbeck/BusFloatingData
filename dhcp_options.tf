@@ -1,5 +1,5 @@
 resource "aws_vpc_dhcp_options" "dcos" {
-  domain_name = "${aws_region}.compute.internal"
+  domain_name = "${var.aws_region}.${lookup(var.dns_domainnames, var.aws_region)}"
   domain_name_servers = ["AmazonProvidedDNS"]
 }
 

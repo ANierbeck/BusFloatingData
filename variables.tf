@@ -25,7 +25,7 @@ variable "stack_name" {
 
 variable "slave_instance_count" {
   description = "Number of slave nodes to launch"
-  default = 2
+  default = 5
 }
 
 variable "public_slave_instance_count" {
@@ -67,18 +67,8 @@ variable "vpc_subnet_range" {
   default = "10.0.0.0/16"
 }
 
-variable "bootstrap_repo_root" {
-  descpiption = "Root address of the bootstrap script"
-  default = "https://downloads.mesosphere.io/dcos/stable"
-}
-
 variable "master_instance_count" {
   description = "Amount of requested Masters"
-  default = 1
-}
-
-variable "master_quorum_count" {
-  description = "Quorum count"
   default = 1
 }
 
@@ -126,5 +116,21 @@ variable "nat_amis" {
     eu-west-1       = "ami-3760b040"
     eu-central-1    = "ami-204c7a3d"
     ap-southeast-1  = "ami-b082dae2"
+  }
+}
+
+variable "dns_domainnames" {
+  description = "DNS Names for regions"
+  default = {
+    us-west-1       = "compute.internal"
+    ap-northeast-1  = "compute.internal"
+    us-gov-west-1   = "compute.internal"
+    us-west-2       = "compute.internal"
+    us-east-1       = "ec2.internal"
+    sa-east-1       = "compute.internal"
+    ap-southeast-2  = "compute.internal"
+    eu-west-1       = "compute.internal"
+    eu-central-1    = "compute.internal"
+    ap-southeast-1  = "compute.internal"
   }
 }
