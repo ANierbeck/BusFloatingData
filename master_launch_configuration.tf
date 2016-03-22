@@ -8,7 +8,7 @@ resource "aws_launch_configuration" "master" {
   instance_type = "${var.master_instance_type}"
   key_name = "${aws_key_pair.dcos.key_name}"
   user_data = "${template_file.master_user_data.rendered}"
-  associate_public_ip_address = true
+  associate_public_ip_address = false
 
   lifecycle {
     create_before_destroy = false

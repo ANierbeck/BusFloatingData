@@ -14,6 +14,15 @@ variable "ssh_public_key" {
   description = "SSH public key to give SSH access"
 }
 
+variable "openvpn_admin_user" {
+  description = "Username of the open VPN Admin User"
+}
+
+variable "openvpn_admin_pw" {
+  description = "Password of the open VPN Admin User"
+}
+
+
 ###############################
 ### CONFIGURABLE PARAMETERS ###
 ###############################
@@ -45,6 +54,11 @@ variable "admin_location" {
 variable "aws_availability_zone" {
   description = "AWS Secret Key"
   default = "eu-central-1b"
+}
+
+variable "vpn_instance_type" {
+  description = "Default instance type for masters"
+  default = "m3.medium"
 }
 
 variable "master_instance_type" {
@@ -132,5 +146,20 @@ variable "dns_domainnames" {
     eu-west-1       = "compute.internal"
     eu-central-1    = "compute.internal"
     ap-southeast-1  = "compute.internal"
+  }
+}
+
+variable "vpn_amis" {
+  description = "DNS Names for regions"
+  default = {
+    us-west-1       = "ami-21166541"
+    ap-northeast-1  = "ami-9b414ef5"
+    us-west-2       = "ami-4e57bb2e"
+    us-east-1       = "ami-db5269b1"
+    sa-east-1       = "ami-6138ba0d"
+    ap-southeast-2  = "ami-f32c0d90"
+    eu-west-1       = "ami-75833a06"
+    eu-central-1    = "ami-33896d5c"
+    ap-southeast-1  = "ami-240bc347"
   }
 }
