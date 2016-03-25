@@ -150,7 +150,7 @@ variable "dns_domainnames" {
 }
 
 variable "vpn_amis" {
-  description = "DNS Names for regions"
+  description = "VPN AMIs for regions"
   default = {
     us-west-1       = "ami-21166541"
     ap-northeast-1  = "ami-9b414ef5"

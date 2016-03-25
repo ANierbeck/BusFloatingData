@@ -79,7 +79,7 @@
       Type=oneshot
       StandardOutput=journal+console
       StandardError=journal+console
-      ExecStartPre=/usr/bin/curl --fail --retry 20 --continue-at - --location --silent --show-error --verbose --output /tmp/bootstrap.tar.xz https://downloads.mesosphere.com/dcos/stable/bootstrap/de1aa673de0d01623623b327d3d405da3bf7fa10.bootstrap.tar.xz
+      ExecStartPre=/usr/bin/curl --fail --retry 20 --continue-at - --location --silent --show-error --verbose --output /tmp/bootstrap.tar.xz https://downloads.mesosphere.com/dcos/stable/bootstrap/$${BOOTSTRAP_ID}.bootstrap.tar.xz
       ExecStartPre=/usr/bin/mkdir -p /opt/mesosphere
       ExecStart=/usr/bin/tar -axf /tmp/bootstrap.tar.xz -C /opt/mesosphere
       ExecStartPost=-/usr/bin/rm -f /tmp/bootstrap.tar.xz
@@ -117,7 +117,7 @@
   "permissions": |-
     0644
 - "content": |
-    BOOTSTRAP_ID=de1aa673de0d01623623b327d3d405da3bf7fa10
+    BOOTSTRAP_ID=18d094b1648521b017622180e3a8e05788a81e80
   "owner": |-
     root
   "path": |-
@@ -125,7 +125,10 @@
   "permissions": |-
     0644
 - "content": |
-    ["dcos-config--setup_8e9ec1cd82a70aadda369c67ba1c91dd76de1542", "dcos-detect-ip--setup_8e9ec1cd82a70aadda369c67ba1c91dd76de1542", "dcos-metadata--setup_8e9ec1cd82a70aadda369c67ba1c91dd76de1542"]
+    [
+      "dcos-config--setup_4597f57ee78b805648fda7ebc52e57aa209351c9",
+      "dcos-metadata--setup_4597f57ee78b805648fda7ebc52e57aa209351c9"
+    ]
   "owner": |-
     root
   "path": |-
