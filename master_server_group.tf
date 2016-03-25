@@ -7,8 +7,8 @@ resource "aws_autoscaling_group" "master_server_group" {
 
   load_balancers = ["${aws_elb.internal_master.id}"]
 
-  availability_zones = ["${aws_subnet.public.availability_zone}"]
-  vpc_zone_identifier = ["${aws_subnet.public.id}"]
+  availability_zones = ["${aws_subnet.master.availability_zone}"]
+  vpc_zone_identifier = ["${aws_subnet.master.id}"]
   launch_configuration = "${aws_launch_configuration.master.id}"
 
   tag {

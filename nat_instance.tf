@@ -9,6 +9,7 @@ resource "aws_instance" "nat" {
   vpc_security_group_ids = [
     "${aws_security_group.slave.id}",
     "${aws_security_group.master.id}",
+    "${aws_security_group.vpn.id}",
     "${aws_security_group.admin.id}"
   ]
 }

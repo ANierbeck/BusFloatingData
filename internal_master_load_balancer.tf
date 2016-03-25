@@ -1,7 +1,7 @@
 resource "aws_elb" "internal_master" {
   name = "master-load-balancer"
   internal = true
-  subnets = ["${aws_subnet.public.id}"]
+  subnets = ["${aws_subnet.master.id}"]
 
   security_groups = [
     "${aws_security_group.master_lb.id}",

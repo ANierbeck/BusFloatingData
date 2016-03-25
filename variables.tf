@@ -29,7 +29,7 @@ variable "openvpn_admin_pw" {
 
 variable "stack_name" {
   description = "DCOS stack name"
-  default = "dcos"
+  default = "DCOS"
 }
 
 variable "slave_instance_count" {
@@ -93,7 +93,12 @@ variable "private_subnet_range" {
 
 variable "public_subnet_range" {
   description = "Public Subnet IP range"
-  default = "10.0.4.0/22"
+  default = "10.0.4.0/24"
+}
+
+variable "master_subnet_range" {
+  description = "Master Subnet IP range"
+  default = "10.0.5.0/24"
 }
 
 variable "fallback_dns" {
