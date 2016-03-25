@@ -1,5 +1,5 @@
-output "master" {
-  value = "${aws_elb.vpn.dns_name}"
+output "vpn" {
+  value = "https://${aws_elb.vpn.dns_name}"
 }
 
 output "public_slave" {

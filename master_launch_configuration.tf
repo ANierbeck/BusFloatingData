@@ -4,7 +4,7 @@ resource "aws_launch_configuration" "master" {
     "${aws_security_group.master.id}",
     "${aws_security_group.admin.id}"
   ]
-  image_id = "${lookup(var.instance_amis, var.aws_region)}"
+  image_id = "${lookup(var.coreos_amis, var.aws_region)}"
   instance_type = "${var.master_instance_type}"
   key_name = "${aws_key_pair.dcos.key_name}"
   user_data = "${template_file.master_user_data.rendered}"

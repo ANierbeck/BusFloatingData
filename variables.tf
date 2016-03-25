@@ -22,7 +22,6 @@ variable "openvpn_admin_pw" {
   description = "Password of the open VPN Admin User"
 }
 
-
 ###############################
 ### CONFIGURABLE PARAMETERS ###
 ###############################
@@ -106,7 +105,7 @@ variable "fallback_dns" {
   default = "10.0.0.2"
 }
 
-variable "instance_amis" {
+variable "coreos_amis" {
   description = "AMI for CoreOS machine"
   default = {
     us-west-1       = "ami-27553a47"
@@ -166,5 +165,20 @@ variable "vpn_amis" {
     eu-west-1       = "ami-75833a06"
     eu-central-1    = "ami-33896d5c"
     ap-southeast-1  = "ami-240bc347"
+  }
+}
+
+variable "ubuntu_amis" {
+  description = "Ubuntu AMIs for regions"
+  default = {
+    us-west-1       = "ami-972959f7"
+    ap-northeast-1  = "ami-80696aee"
+    us-west-2       = "ami-6b2cce0b"
+    us-east-1       = "ami-d55b69bf"
+    sa-east-1       = "ami-ffe46693"
+    ap-southeast-2  = "ami-6831170b"
+    eu-west-1       = "ami-36c97545"
+    eu-central-1    = "ami-2ae1fb46"
+    ap-southeast-1  = "ami-7902cb1a"
   }
 }
