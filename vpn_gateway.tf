@@ -23,7 +23,7 @@ resource "aws_instance" "vpn" {
 }
 
 resource "template_file" "vpn_user_data" {
-  template = "${path.module}/vpn_user_data.yml"
+  template = "${file("${path.module}/vpn_user_data.yml")}"
 
   vars {
     admin_user  = "${var.openvpn_admin_user}"
