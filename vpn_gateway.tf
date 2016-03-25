@@ -4,12 +4,12 @@ resource "aws_instance" "vpn" {
     "${aws_security_group.admin.id}"
   ]
 
-  subnet_id = "${aws_subnet.private.id}"
+  subnet_id = "${aws_subnet.public.id}"
 
   ami = "${lookup(var.vpn_amis, var.aws_region)}"
   instance_type = "${var.vpn_instance_type}"
   key_name = "${aws_key_pair.dcos.key_name}"
-  user_data = "${template_file.master_user_data.rendered}"
+  user_data = "${template_file.vpn_user_data.rendered}"
   associate_public_ip_address = true
 
   tags {

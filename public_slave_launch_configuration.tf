@@ -21,7 +21,6 @@ resource "template_file" "public_slave_user_data" {
     aws_secret_access_key       = "${aws_iam_access_key.host_keys.secret}"
     fallback_dns                = "${var.fallback_dns}"
     internal_master_lb_dns_name = "${aws_elb.internal_master.dns_name}"
-    dcos_lb_dns_name            = "${aws_elb.dcos.dns_name}"
     exhibitor_s3_bucket         = "${aws_s3_bucket.exhibitor.id}"
   }
 }

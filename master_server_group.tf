@@ -5,10 +5,7 @@ resource "aws_autoscaling_group" "master_server_group" {
   max_size = "${var.master_instance_count}"
   desired_capacity = "${var.master_instance_count}"
 
-  load_balancers = [
-    "${aws_elb.dcos.id}",
-    "${aws_elb.internal_master.id}"
-  ]
+  load_balancers = ["${aws_elb.internal_master.id}"]
 
   availability_zones = ["${aws_subnet.public.availability_zone}"]
   vpc_zone_identifier = ["${aws_subnet.public.id}"]

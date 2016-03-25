@@ -1,5 +1,5 @@
 output "master" {
-  value = "${aws_elb.dcos.dns_name}"
+  value = "${aws_elb.vpn.dns_name}"
 }
 
 output "public_slave" {
