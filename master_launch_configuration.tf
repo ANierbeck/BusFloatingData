@@ -16,7 +16,7 @@ resource "aws_launch_configuration" "master" {
 }
 
 resource "template_file" "master_user_data" {
-  template = "${path.module}/master_user_data.yml"
+  template = "${file("${path.module}/master_user_data.yml")}"
 
   vars {
     stack_name                  = "${var.stack_name}"
