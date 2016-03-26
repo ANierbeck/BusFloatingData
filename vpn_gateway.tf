@@ -1,7 +1,10 @@
 resource "aws_instance" "vpn" {
   vpc_security_group_ids = [
+    "${aws_security_group.admin.id}",
     "${aws_security_group.vpn.id}",
-    "${aws_security_group.admin.id}"
+    "${aws_security_group.master.id}",
+    "${aws_security_group.slave.id}",
+    "${aws_security_group.public_slave.id}"
   ]
 
   subnet_id = "${aws_subnet.public.id}"
