@@ -1,6 +1,10 @@
-# DCOS Terraform Module
+# DCOS Multi Master Terraform Module
 
 Using this [Terraform][] [module][], you can launch your own [DCOS][] cluster.
+
+The Mesosphere Datacenter Operating System (DCOS) spans all of the machines in your datacenter or cloud and treats 
+them as a single, shared set of resources. DCOS provides a highly elastic and highly scalable way to build, deploy and 
+manage modern applications using containers, microservices and big data systems.git 
 
 ![DCOS](/doc/images/dcos.png)
 
@@ -43,9 +47,15 @@ aws_access_key="*****"
 aws_secret_key="*****"
 aws_region="eu-west-1"
 ssh_public_key="ssh-rsa ***** bernd.zuther@codecentric.de"
+
+openvpn_admin_user="openvpn"
+openvpn_admin_pw="******"
 ```
 * *optionally* run `terraform plan -out terraform.plan`
 * run `terraform apply [terraform.plan]`
+
+```bash
+```
 
 ## Architecture
 
@@ -84,3 +94,9 @@ publicly accessible applications are run.
   point to point VPN between your secure networks or run a VPN server inside your DCOS cluster.
 
 ## OpenVPN
+
+OpenVPN Access Server is a full featured secure network tunneling VPN software solution that integrates OpenVPN server 
+capabilities, enterprise management capabilities, simplified OpenVPN Connect UI, and OpenVPN Client software packages 
+that accommodate Windows, MAC, Linux, Android, and iOS environments. OpenVPN Access Server supports a wide range of 
+configurations, including secure and granular remote access to internal network and/ or private cloud network resources 
+and applications with fine-grained access control. 
