@@ -17,6 +17,9 @@ function install_dcos_cli {
     chmod +x /tmp/dcos_cli_install.sh
     yes | /tmp/dcos_cli_install.sh /opt/mesosphere/dcos-cli http://${internal_master_lb_dns_name}
     ln -s /opt/mesosphere/dcos-cli/bin/dcos /usr/local/bin/dcos
+    dcos config set core.email johndoe@mesosphere.com
+    dcos config set core.token john_doe_token
+    dcos config set core.dcos_url http://leader.mesos
 }
 
 function install_oracle_java {
@@ -44,8 +47,23 @@ function waited_for_running_cluster {
     rm /opt/mesosphere/waited_for_running_cluster
 }
 
+function init_complete {
+    touch /opt/mesosphere/init_complete
+}
+
+function install_smack {
+    yes | dcos package install cassandra
+    yes | dcos package install kafka
+    yes | dcos package install --cli kafka
+    dcos kafka broker add 0
+    dcos kafka broker start 0
+    yes | dcos package install zeppelin
+}
+
 init
-install_oracle_java #need for same commandline extension like kafka
+install_oracle_java         #need for same commandline extension like kafka
 waited_for_running_cluster
 set_dcos_nameserver
 install_dcos_cli
+install_smack
+init_complete

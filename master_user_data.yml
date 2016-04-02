@@ -125,7 +125,7 @@
   "permissions": |-
     0644
 - "content": |
-    ${cluster_packages}
+${cluster_packages}
   "owner": |-
     root
   "path": |-

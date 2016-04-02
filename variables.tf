@@ -196,8 +196,7 @@ variable "cluster_packages" {
     [
       "dcos-config--setup_4597f57ee78b805648fda7ebc52e57aa209351c9",
       "dcos-metadata--setup_4597f57ee78b805648fda7ebc52e57aa209351c9"
-    ]
-EOF
+    ]EOF
 }
 
 //variable "cluster_packages" {
@@ -206,6 +205,5 @@ EOF
 //    [
 //      "dcos-config--setup_39bcd04b14a990a870cdff4543566e78d7507ba5",
 //      "dcos-metadata--setup_39bcd04b14a990a870cdff4543566e78d7507ba5"
-//    ]
-//EOF
+//    ]EOF
 //}
