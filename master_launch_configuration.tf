@@ -21,6 +21,7 @@ resource "template_file" "master_user_data" {
   vars {
     stack_name                  = "${var.stack_name}"
     aws_region                  = "${var.aws_region}"
+    cluster_packages            = "${var.cluster_packages}"
     aws_access_key_id           = "${aws_iam_access_key.host_keys.id}"
     aws_secret_access_key       = "${aws_iam_access_key.host_keys.secret}"
     fallback_dns                = "${var.fallback_dns}"

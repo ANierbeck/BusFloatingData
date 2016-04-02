@@ -55,6 +55,11 @@ variable "aws_availability_zone" {
   default = "eu-central-1b"
 }
 
+variable "dcos_gateway_instance_type" {
+  description = "Default instance type for masters"
+  default = "m3.medium"
+}
+
 variable "vpn_instance_type" {
   description = "Default instance type for masters"
   default = "m3.medium"
@@ -83,6 +88,7 @@ variable "vpc_subnet_range" {
 variable "master_instance_count" {
   description = "Amount of requested Masters"
   default = 1
+  #when override number of instances please use an other cluster_packages (see below)
 }
 
 variable "private_subnet_range" {
@@ -108,16 +114,17 @@ variable "fallback_dns" {
 variable "coreos_amis" {
   description = "AMI for CoreOS machine"
   default = {
-    us-west-1       = "ami-27553a47"
-    ap-northeast-1  = "ami-84e0c7ea"
-    us-gov-west-1   = "ami-05bc0164"
-    us-west-2       = "ami-00ebfc61"
-    us-east-1       = "ami-37bdc15d"
-    sa-east-1       = "ami-154af179"
-    ap-southeast-2  = "ami-f35b0590"
-    eu-west-1       = "ami-55d20b26"
-    eu-central-1    = "ami-fdd4c791"
-    ap-southeast-1  = "ami-da67a0b9"
+    us-west-1       = "ami-52e69432"
+    ap-northeast-1  = "ami-962c39f8"
+    ap-northeast-2  = "ami-03a76e6d"
+    us-gov-west-1   = "ami-0f3c806e"
+    us-west-2       = "ami-4f4ba32f"
+    us-east-1       = "ami-2c393546"
+    sa-east-1       = "ami-a49915c8"
+    ap-southeast-2  = "ami-74dcfc17"
+    eu-west-1       = "ami-c346c2b0"
+    eu-central-1    = "ami-cb8d6ba4"
+    ap-southeast-1  = "ami-3b8f4558"
   }
 }
 
@@ -182,3 +189,23 @@ variable "ubuntu_amis" {
     ap-southeast-1  = "ami-7902cb1a"
   }
 }
+
+variable "cluster_packages" {
+  description = "cluster packages for single master setup"
+  default = <<EOF
+    [
+      "dcos-config--setup_4597f57ee78b805648fda7ebc52e57aa209351c9",
+      "dcos-metadata--setup_4597f57ee78b805648fda7ebc52e57aa209351c9"
+    ]
+EOF
+}
+
+//variable "cluster_packages" {
+//  description = "cluster packages for multi master setup"
+//  default = <<EOF
+//    [
+//      "dcos-config--setup_39bcd04b14a990a870cdff4543566e78d7507ba5",
+//      "dcos-metadata--setup_39bcd04b14a990a870cdff4543566e78d7507ba5"
+//    ]
+//EOF
+//}

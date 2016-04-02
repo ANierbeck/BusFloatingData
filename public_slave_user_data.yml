@@ -125,10 +125,7 @@
   "permissions": |-
     0644
 - "content": |
-    [
-      "dcos-config--setup_4597f57ee78b805648fda7ebc52e57aa209351c9",
-      "dcos-metadata--setup_4597f57ee78b805648fda7ebc52e57aa209351c9"
-    ]
+    ${cluster_packages}
   "owner": |-
     root
   "path": |-

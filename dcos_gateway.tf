@@ -7,7 +7,7 @@ resource "aws_instance" "dcos" {
   subnet_id = "${aws_subnet.master.id}"
 
   ami = "${lookup(var.ubuntu_amis, var.aws_region)}"
-  instance_type = "m3.medium"
+  instance_type = "${var.dcos_gateway_instance_type}"
   key_name = "${aws_key_pair.dcos.key_name}"
   user_data = "${template_file.dcos_user_data.rendered}"
   associate_public_ip_address = false
