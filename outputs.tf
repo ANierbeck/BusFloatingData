@@ -1,3 +1,7 @@
+output "dcos_cli" {
+  value = "ssh ubuntu@${aws_instance.dcos.private_ip}"
+}
+
 output "vpn" {
   value = "https://${aws_elb.vpn.dns_name}"
 }
