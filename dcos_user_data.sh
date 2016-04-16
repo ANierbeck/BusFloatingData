@@ -79,7 +79,7 @@ function waited_until_kafka_is_running {
 function init_cassandra_schema {
     cat > /opt/smack/conf/init_killrweather_cassandra_job.json << EOF
 {
-    "schedule": "R/2014-03-08T20:00:00.000Z/PT1M",
+    "schedule": "R0/2014-03-08T20:00:00.000Z/PT1M",
     "name": "init_killrweather_cassandra_job",
     "container": {
         "type": "DOCKER",
