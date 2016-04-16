@@ -106,7 +106,8 @@ function init_ingest_app {
         "type": "DOCKER",
         "docker": {
             "image": "zutherb/mesos-killrweather-app",
-            "network": "HOST"
+            "network": "HOST",
+            "forcePullImage": true
         }
     },
     "cmd": "./ingest.sh -Dcassandra.connection.host=cassandra-dcos-node.cassandra.dcos.mesos -Dkafka.hosts.0=broker-0.kafka.mesos:1025",
@@ -125,12 +126,13 @@ function init_digest_app {
         "type": "DOCKER",
         "docker": {
             "image": "zutherb/mesos-killrweather-app",
-            "network": "HOST"
+            "network": "HOST",
+            "forcePullImage": true
         }
     },
     "cmd": "./digest.sh -Dcassandra.connection.host=cassandra-dcos-node.cassandra.dcos.mesos -Dkafka.hosts.0=broker-0.kafka.mesos:1025",
     "cpus": 1,
-    "mem": 2048.0
+    "mem": 4096.0
 }
 EOF
     dcos marathon app add /opt/smack/conf/killrweather_digest.json
@@ -141,7 +143,7 @@ function install_smack {
     dcos package install --yes chronos
     dcos package install --yes cassandra
     dcos package install --yes kafka
-    dcos package install --yes --cli kafka
+    dcos package install --yes spark
     waited_until_kafka_is_running
     dcos kafka broker add 0
     dcos kafka broker start 0
