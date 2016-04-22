@@ -190,12 +190,23 @@ variable "ubuntu_amis" {
   }
 }
 
+variable "authentication_enabled" {
+  description = "authentication_enabled"
+  default = true
+}
+
+variable "bootstrap_id" {
+  description = "bootstrap id that is used to download the bootstrap files"
+  default = "3a2b7e03c45cd615da8dfb1b103943894652cd71"
+}
+
+
 variable "cluster_packages" {
   description = "cluster packages for single master setup"
   default = <<EOF
     [
-      "dcos-config--setup_4597f57ee78b805648fda7ebc52e57aa209351c9",
-      "dcos-metadata--setup_4597f57ee78b805648fda7ebc52e57aa209351c9"
+      "dcos-config--setup_537afa008db7ba8f99ce73f9c0ef425fa61d3454",
+      "dcos-metadata--setup_537afa008db7ba8f99ce73f9c0ef425fa61d3454"
     ]EOF
 }
 
@@ -203,7 +214,7 @@ variable "cluster_packages" {
 //  description = "cluster packages for multi master setup"
 //  default = <<EOF
 //    [
-//      "dcos-config--setup_39bcd04b14a990a870cdff4543566e78d7507ba5",
-//      "dcos-metadata--setup_39bcd04b14a990a870cdff4543566e78d7507ba5"
+//      "dcos-config--setup_b9372277c9fedaca077d7638e6e445af062d1d86",
+//      "dcos-metadata--setup_b9372277c9fedaca077d7638e6e445af062d1d86"
 //    ]EOF
 //}

@@ -15,6 +15,8 @@ resource "template_file" "public_slave_user_data" {
   template = "${file("${path.module}/public_slave_user_data.yml")}"
 
   vars {
+    authentication_enabled      = "${var.authentication_enabled}"
+    bootstrap_id                = "${var.bootstrap_id}"
     stack_name                  = "${var.stack_name}"
     aws_region                  = "${var.aws_region}"
     cluster_packages            = "${var.cluster_packages}"
