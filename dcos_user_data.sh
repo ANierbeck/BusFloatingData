@@ -110,7 +110,7 @@ function init_ingest_app {
             "forcePullImage": true
         }
     },
-    "cmd": "./ingest.sh -Dcassandra.connection.host=cassandra-dcos-node.cassandra.dcos.mesos -Dkafka.hosts.0=broker-0.kafka.mesos:1025",
+    "cmd": "./ingest.sh -Dcassandra.connection.host=cassandra-dcos-node.cassandra.dcos.mesos -Dkafka.hosts.0=broker-0.kafka.mesos:1025 -Dkafka.zookeeper.connection=leader.mesos",
     "cpus": 1,
     "mem": 2048.0
 }
@@ -118,10 +118,10 @@ EOF
     dcos marathon app add /opt/smack/conf/killrweather_ingest.json
 }
 
-function init_digest_app {
-    cat > /opt/smack/conf/killrweather_digest.json << EOF
+function init_client_app {
+    cat > /opt/smack/conf/killrweather_client_app.json << EOF
 {
-    "id": "/digest",
+    "id": "/client-app",
     "container": {
         "type": "DOCKER",
         "docker": {
@@ -130,12 +130,32 @@ function init_digest_app {
             "forcePullImage": true
         }
     },
-    "cmd": "./digest.sh -Dcassandra.connection.host=cassandra-dcos-node.cassandra.dcos.mesos -Dkafka.hosts.0=broker-0.kafka.mesos:1025",
+    "cmd": "./client_app.sh -Dcassandra.connection.host=cassandra-dcos-node.cassandra.dcos.mesos -Dkafka.hosts.0=broker-0.kafka.mesos:1025 -Dkafka.zookeeper.connection=leader.mesos",
     "cpus": 1,
     "mem": 4096.0
 }
 EOF
-    dcos marathon app add /opt/smack/conf/killrweather_digest.json
+    dcos marathon app add /opt/smack/conf/killrweather_client_app.json
+}
+
+function init_app {
+    cat > /opt/smack/conf/killrweather_app.json << EOF
+{
+    "id": "/app",
+    "container": {
+        "type": "DOCKER",
+        "docker": {
+            "image": "zutherb/mesos-killrweather-app",
+            "network": "HOST",
+            "forcePullImage": true
+        }
+    },
+    "cmd": "./app.sh -Dcassandra.connection.host=cassandra-dcos-node.cassandra.dcos.mesos -Dkafka.hosts.0=broker-0.kafka.mesos:1025 -Dkafka.zookeeper.connection=leader.mesos",
+    "cpus": 1,
+    "mem": 4096.0
+}
+EOF
+    dcos marathon app add /opt/smack/conf/killrweather_app.json
 }
 
 function install_smack {
@@ -165,5 +185,6 @@ install_smack
 waited_until_chronos_is_running
 init_cassandra_schema
 init_ingest_app
-init_digest_app
+init_client_app
+init_app
 init_complete

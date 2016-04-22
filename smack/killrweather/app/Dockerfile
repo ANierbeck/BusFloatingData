@@ -13,6 +13,7 @@ RUN apt-get update && \
     rm -rf /tmp/sbt.deb
 
 ADD ingest.sh /opt/killrweather/ingest.sh
-ADD digest.sh /opt/killrweather/digest.sh
+ADD client_app.sh /opt/killrweather/client_app.sh
+ADD app.sh /opt/killrweather/app.sh
 
 WORKDIR /opt/killrweather
