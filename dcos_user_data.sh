@@ -9,6 +9,7 @@ function init {
     mkdir -p /opt/mesosphere/dcos-cli
     mkdir -p /opt/smack/state
     mkdir -p /opt/smack/conf
+    mkdir -p /opt/elk/conf
 }
 
 function install_dcos_cli {
@@ -158,6 +159,46 @@ EOF
     dcos marathon app add /opt/smack/conf/killrweather_app.json
 }
 
+function install_elk {
+    touch /opt/smack/state/waited_for_install_elk
+    dcos package install --yes elasticsearch
+cat > /opt/elk/conf/logstash.json << EOF
+{
+    "id": "/logstash",
+    "container": {
+        "type": "DOCKER",
+        "docker": {
+            "image": "logstash",
+            "network": "HOST",
+            "forcePullImage": true
+        }
+    },
+    "cmd": "logstash -e 'input { beats { port => 5044 } } output { elasticsearch { hosts => \"elasticsearch-executor.elasticsearch.mesos:9200\" } }'",
+    "cpus": 1,
+    "mem": 4096.0
+}
+EOF
+    dcos marathon app add /opt/elk/conf/logstash.json
+cat > /opt/elk/conf/kibana.json << EOF
+{
+    "id": "/kibana",
+    "container": {
+        "type": "DOCKER",
+        "docker": {
+            "image": "kibana",
+            "network": "HOST",
+            "forcePullImage": true
+        }
+    },
+    "cmd": "kibana --ELASTICSEARCH_URL=elasticsearch-executor.elasticsearch.mesos:9200",
+    "cpus": 1,
+    "mem": 512.0
+}
+EOF
+    dcos marathon app add /opt/elk/conf/kibana.json
+    rm /opt/smack/state/waited_for_install_elk
+}
+
 function install_smack {
     touch /opt/smack/state/waited_for_install_smack
     dcos package install --yes chronos
@@ -165,9 +206,9 @@ function install_smack {
     dcos package install --yes kafka
     dcos package install --yes spark
     waited_until_kafka_is_running
-    dcos kafka broker add 0
-    dcos kafka broker start 0
-    dcos kafka topic add killrweather.raw
+    dcos-kafka kafka broker add 0
+    dcos-kafka kafka broker start 0
+    dcos-kafka kafka topic add killrweather.raw
     dcos package install --yes zeppelin
     rm /opt/smack/state/waited_for_install_smack
 }
@@ -181,6 +222,7 @@ install_oracle_java                 #need for same commandline extension like ka
 waited_until_marathon_is_running
 set_dns_nameserver
 install_dcos_cli
+install_elk
 install_smack
 waited_until_chronos_is_running
 init_cassandra_schema

@@ -114,17 +114,17 @@ variable "fallback_dns" {
 variable "coreos_amis" {
   description = "AMI for CoreOS machine"
   default = {
-    us-west-1       = "ami-52e69432"
-    ap-northeast-1  = "ami-962c39f8"
-    ap-northeast-2  = "ami-03a76e6d"
-    us-gov-west-1   = "ami-0f3c806e"
-    us-west-2       = "ami-4f4ba32f"
-    us-east-1       = "ami-2c393546"
-    sa-east-1       = "ami-a49915c8"
-    ap-southeast-2  = "ami-74dcfc17"
-    eu-west-1       = "ami-c346c2b0"
-    eu-central-1    = "ami-cb8d6ba4"
-    ap-southeast-1  = "ami-3b8f4558"
+    us-west-1       = "ami-d8770bb8"
+    ap-northeast-1  = "ami-e304148d"
+    ap-northeast-2  = "ami-131dd47d"
+    us-gov-west-1   = "ami-cf19a5ae"
+    us-west-2       = "ami-4f7f8a2f"
+    us-east-1       = "ami-7a627510"
+    sa-east-1       = "ami-d75bd4bb"
+    ap-southeast-2  = "ami-a184a7c2"
+    eu-west-1       = "ami-3b941448"
+    eu-central-1    = "ami-e13fde8e"
+    ap-southeast-1  = "ami-52a07531"
   }
 }
 
@@ -188,6 +188,27 @@ variable "ubuntu_amis" {
     eu-central-1    = "ami-2ae1fb46"
     ap-southeast-1  = "ami-7902cb1a"
   }
+}
+
+variable "filebeat_download_url" {
+  description = "filebeats download url"
+  default = "https://download.elastic.co/beats/filebeat/filebeat-1.2.1-x86_64.tar.gz"
+}
+
+variable "filebeats_configuration" {
+  description = "filebeats configuration file"
+  default = <<EOF
+filebeat:
+  prospectors:
+    - paths:
+        - "/var/lib/mesos/slave/slaves/*/frameworks/*/executors/*/runs/latest/stdout"
+        - "/var/lib/mesos/slave/slaves/*/frameworks/*/executors/*/runs/latest/stderr"
+      fields:
+        node: "###NODE_TYPE###"
+output:
+  logstash:
+    hosts: ["logstash.marathon.mesos:5044"]
+EOF
 }
 
 variable "authentication_enabled" {

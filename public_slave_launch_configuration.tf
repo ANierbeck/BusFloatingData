@@ -17,6 +17,8 @@ resource "template_file" "public_slave_user_data" {
   vars {
     authentication_enabled      = "${var.authentication_enabled}"
     bootstrap_id                = "${var.bootstrap_id}"
+    filebeat_configuration      = "${base64encode(replace(var.filebeats_configuration, "###NODE_TYPE###", "public_slave"))}"
+    filebeat_download_url       = "${var.filebeat_download_url}"
     stack_name                  = "${var.stack_name}"
     aws_region                  = "${var.aws_region}"
     cluster_packages            = "${var.cluster_packages}"
