@@ -187,10 +187,15 @@ cat > /opt/elk/conf/kibana.json << EOF
         "docker": {
             "image": "kibana",
             "network": "HOST",
+            "parameters": [
+              {
+                "key": "ELASTICSEARCH_URL",
+                "value": "elasticsearch-executor.elasticsearch.mesos:9200"
+              }
+            ],
             "forcePullImage": true
         }
     },
-    "cmd": "kibana --ELASTICSEARCH_URL=elasticsearch-executor.elasticsearch.mesos:9200",
     "cpus": 1,
     "mem": 512.0
 }
@@ -206,9 +211,7 @@ function install_smack {
     dcos package install --yes kafka
     dcos package install --yes spark
     waited_until_kafka_is_running
-    dcos-kafka kafka broker add 0
-    dcos-kafka kafka broker start 0
-    dcos-kafka kafka topic add killrweather.raw
+    dcos kafka topic add killrweather.raw
     dcos package install --yes zeppelin
     rm /opt/smack/state/waited_for_install_smack
 }
