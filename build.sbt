@@ -32,7 +32,7 @@ lazy val commonDependencies = Seq(
   "de.heikoseeberger" %% "akka-http-json4s" % "1.4.1",
   "org.json4s" %% "json4s-jackson" % "3.2.11",
   "com.typesafe.akka" %% "akka-stream-kafka" % "0.11-M2",
-  "com.twitter"                    %% "chill-akka"          % "0.5.0",
+  "com.twitter"                    %% "chill-akka"          % "0.8.0",
   "org.apache.kafka"               %% "kafka"               % "0.9.0.1"
 )
 

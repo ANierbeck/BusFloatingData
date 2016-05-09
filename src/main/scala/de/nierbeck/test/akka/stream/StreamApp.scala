@@ -93,7 +93,7 @@ class StreamApp(system: ActorSystem, httpClient: Flow[HttpRequest, HttpResponse,
     future.onSuccess {
       case Some(entity) => {
         log.info(entity.toString)
-        val routeInfos = Unmarshal(entity).to[RouteInfos].onComplete {
+        Unmarshal(entity).to[RouteInfos].onComplete {
           case Success(routeInfos) => {
             log.info(routeInfos.toString)
             routeInfos.items.foreach { routeInfo =>
@@ -127,7 +127,7 @@ class StreamApp(system: ActorSystem, httpClient: Flow[HttpRequest, HttpResponse,
     vehiclesFuture.onSuccess {
       case Some(entity) => {
         log.info("got vehicle entities")
-        val vehicles = Unmarshal(entity).to[Vehicles].onComplete {
+        Unmarshal(entity).to[Vehicles].onComplete {
           case Success(vehicles) => {
             val currTime = new Date()
             log.info(vehicles.toString)

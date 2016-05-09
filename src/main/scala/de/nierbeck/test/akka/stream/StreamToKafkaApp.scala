@@ -27,9 +27,6 @@ import akka.kafka.scaladsl.{Producer, _}
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.serialization.{ByteArraySerializer, StringSerializer}
 
-/**
-  * Created by anierbeck on 08.05.16.
-  */
 object StreamToKafkaApp {
 
   implicit val system = ActorSystem("stream-system")
@@ -110,7 +107,7 @@ class StreamToKafkaApp(system: ActorSystem, httpClient: Flow[HttpRequest, HttpRe
 
                 Flow[Vehicle].map(elem => {
                   log.info(s"publishing element: ${elem}")
-                  new ProducerRecord[Array[Byte], Vehicle]("vehicles", elem)
+                  new ProducerRecord[Array[Byte], Vehicle]("METRO-Vehicles", elem)
                 }).to(producer).runWith(Source.actorPublisher(VehiclesActor.props(routeInfo, httpClient)))
 
               }

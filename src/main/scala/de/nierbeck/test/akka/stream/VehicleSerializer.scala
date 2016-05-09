@@ -1,24 +1,15 @@
 package de.nierbeck.test.akka.stream
 
 
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
+import java.io.ByteArrayOutputStream
 import java.util
 
-import akka.actor.ActorSystem
 import com.esotericsoftware.kryo.Kryo
-import com.esotericsoftware.kryo.io.{Input, Output}
+import com.esotericsoftware.kryo.io.Output
 import com.twitter.chill.ScalaKryoInstantiator
-import kafka.serializer.Encoder
-import kafka.utils.VerifiableProperties
-import org.apache.kafka.common.serialization.{Deserializer, Serializer}
+import org.apache.kafka.common.serialization.Serializer
 
-import scala.reflect.ClassTag
-
-/**
- * Serializes a {@link RawEvent} to a byte-array.
- */
-
-class VehicleSerializer() extends Serializer[Vehicle] /*with Deserializer[T]*/ {
+class VehicleSerializer() extends Serializer[Vehicle] {
   val kryo = new ScalaKryoInstantiator().newKryo()
   kryo.register(Vehicle.getClass)
   override def serialize(topic: String, r: Vehicle): Array[Byte] = {
@@ -33,7 +24,4 @@ class VehicleSerializer() extends Serializer[Vehicle] /*with Deserializer[T]*/ {
 
   override def close(): Unit = {}
 
-//  override def deserialize(topic: String, data: Array[Byte]): T = {
-//    withResource(new Input(new ByteArrayInputStream(data)))(input => kryo.readObject(input, classOf[T]))
-//  }
 }
