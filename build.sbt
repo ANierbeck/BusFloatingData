@@ -3,7 +3,8 @@ val logbackVer = "1.1.3"
 val scalaVer = "2.11.8"
 val scalaParsersVer= "1.0.4"
 val scalaTestVer = "2.2.4"
-val sparkVer = "1.5.0-RC1"
+val sparkVer = "1.6.0-M2"
+val spark = "1.6.1"
 
 lazy val compileOptions = Seq(
   "-unchecked",
@@ -33,7 +34,10 @@ lazy val commonDependencies = Seq(
   "org.json4s" %% "json4s-jackson" % "3.2.11",
   "com.typesafe.akka" %% "akka-stream-kafka" % "0.11-M2",
   "com.twitter"                    %% "chill-akka"          % "0.8.0",
-  "org.apache.kafka"               %% "kafka"               % "0.9.0.1"
+  "org.apache.kafka"               %% "kafka"               % "0.9.0.1",
+  "org.apache.spark"                %% "spark-streaming-kafka"     % spark,
+  "org.apache.spark"                %% "spark-core"                % spark,
+  "org.apache.spark"                %% "spark-streaming"           % spark
 )
 
 lazy val fttas = project in file(".")

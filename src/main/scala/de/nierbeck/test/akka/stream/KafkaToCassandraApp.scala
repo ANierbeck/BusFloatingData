@@ -48,20 +48,50 @@ class KafkaToCassandraApp(system: ActorSystem) {
 
   def run(): Unit = {
 
-    Consumer.plainSource(consumerSettings.withClientId("Akka-Client")).runForeach(cr => {
-      val vehicle: Vehicle = cr.value()
-      log.info(s"storing vehicle in cassandra: ${vehicle}")
-      cassandraSession.executeAsync(vehiclesStatement.bind(
-        vehicle.id,
-        vehicle.time,
-        vehicle.longitude.asInstanceOf[Object],
-        vehicle.latitude.asInstanceOf[Object],
-        vehicle.heading,
-        vehicle.route_id,
-        vehicle.run_id,
-        vehicle.seconds_since_report))
-    })
+//    Consumer.plainSource(consumerSettings.withClientId("Akka-Client")).runForeach(cr => {
+//      val vehicle: Vehicle = cr.value()
+//      log.info(s"storing vehicle in cassandra: ${vehicle}")
+//      cassandraSession.executeAsync(vehiclesStatement.bind(
+//        vehicle.id,
+//        vehicle.time,
+//        vehicle.longitude.asInstanceOf[Object],
+//        vehicle.latitude.asInstanceOf[Object],
+//        vehicle.heading,
+//        vehicle.route_id,
+//        vehicle.run_id,
+//        vehicle.seconds_since_report))
+//    })
 
+//    val x = Consumer.atMostOnceSource(consumerSettings.withClientId("Akka-Client")).mapAsync(1){ record => Future(record.value)}
+//    x.runForeach(vehicle => store(vehicle))
+
+    val source = Consumer.atMostOnceSource(consumerSettings.withClientId("Akka-Client"))
+    source.map(message => message.value).runForeach(vehicle => store(vehicle))
   }
 
+  def store(vehicle: Vehicle): Unit = {
+    log.info(s"storing vehicle in cassandra: ${vehicle}")
+
+    val statement = vehiclesStatement.bind(
+      vehicle.id,
+      vehicle.time.getOrElse(new java.util.Date()),
+      vehicle.longitude.asInstanceOf[Object],
+      vehicle.latitude.asInstanceOf[Object],
+      vehicle.heading,
+      vehicle.route_id.getOrElse(null),
+      vehicle.run_id,
+      vehicle.seconds_since_report)
+    log.info(s"Statement: ${statement}")
+
+    if (cassandraSession.isClosed) {
+      log.error("Session is already closed")
+      throw new RuntimeException("session already closed ...")
+    }
+    try {
+      log.info(s"executing statement with session: $cassandraSession")
+      cassandraSession.execute(statement)
+    } catch {
+      case e: Exception => log.error(s"Exception: ${e.getMessage}", e)
+    }
+  }
 }
