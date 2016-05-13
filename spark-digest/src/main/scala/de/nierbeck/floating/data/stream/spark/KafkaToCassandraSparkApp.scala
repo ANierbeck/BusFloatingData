@@ -1,6 +1,12 @@
 package de.nierbeck.floating.data.stream.spark
 
+import de.nierbeck.floating.data.domain.Vehicle
+import de.nierbeck.floating.data.serializer.VehicleDecoder
 import kafka.serializer.StringDecoder
+import org.apache.spark.SparkConf
+import org.apache.spark.streaming.kafka.KafkaUtils
+import org.apache.spark.streaming.{Seconds, StreamingContext}
+import com.datastax.spark.connector.streaming._
 
 /**
   * Created by anierbeck on 09.05.16.
