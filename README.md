@@ -1,38 +1,37 @@
-Bus Floating Data
+# Bus Floating Data #
 
 this project is a simple show case which shows how to create a streaming akka actor to ingest data from the http source to Kafka
 And consume those messages either via akka or spark to push them to a cassandra table. 
 
 The project is a multi project with cross compilation due to incompatabilities with kafka spark and akka when using the latest scala akka versions. 
 
-for a clean build from commandline: 
+### for a clean build from commandline:
 
 `sbt "; so clean ;so test; very publishLocal"`
 
-To compile it run: 
+### To compile it run:
 
 `;so test; very publishLocal`
  
-To run the applications 
+### To run the applications 
 
-ingest: 
+**ingest:** 
 
 `so ingest/run`
 
 select the 1st entry as the simple does all steps at once
 
 
-digest akka: 
+**digest akka:** 
 
 `so akkaDigest/run`
 
-digest spark: 
+**digest spark:** 
 
 `so sparkDigest/run`
 
 
-
-Pre-conditions to run those, have 
+## Pre-conditions to run those, have 
 
 a) a cassandra running
 b) a zookeeper running
@@ -50,7 +49,7 @@ to run kafka (not as a service)
 
 kafka-server-start /usr/local/etc/kafka/server.properties
 
-Operating Kafka
+### Operating Kafka
 
 to clean old data from kafka turn down the retention time in kafka for the topic
 
@@ -65,4 +64,3 @@ after that you can configure back the time to about 2 days (more isn't worth whe
 to check the current setting do the following: 
 
 `kafka-configs --zookeeper localhost:2181 --entity-type topics --describe --entity-name METRO-Vehicles`
-
