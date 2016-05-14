@@ -7,13 +7,12 @@ import akka.event.Logging
 import akka.kafka.ConsumerSettings
 import akka.kafka.scaladsl._
 import akka.stream.ActorMaterializer
-import com.datastax.driver.core.{Cluster, PreparedStatement, Session}
+import com.datastax.driver.core.{ Cluster, PreparedStatement, Session }
 import de.nierbeck.floating.data.domain.Vehicle
-import de.nierbeck.floating.data.serializer.VehicleDeserializer
+import de.nierbeck.floating.data.serializer.VehicleKryoDeserializer
 import de.nierbeck.floating.data.tiler.TileCalc
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.common.serialization.ByteArrayDeserializer
-import serializer.VehicleKryoDeserializer
 
 /**
  * Created by anierbeck on 09.05.16.

@@ -1,9 +1,8 @@
-/**
- * Created by anierbeck on 13.05.16.
- */
+package de.nierbeck.floating.data
+
 package object serializer {
 
-  import scala.language.{implicitConversions, postfixOps}
+  import scala.language.{ implicitConversions, postfixOps }
 
   type Closeable = { def close(): Unit }
 

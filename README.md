@@ -5,6 +5,10 @@ And consume those messages either via akka or spark to push them to a cassandra 
 
 The project is a multi project with cross compilation due to incompatabilities with kafka spark and akka when using the latest scala akka versions. 
 
+for a clean build from commandline: 
+
+`sbt "; so clean ;so test; very publishLocal"`
+
 To compile it run: 
 
 `;so test; very publishLocal`

@@ -3,28 +3,27 @@ package de.nierbeck.floating.data.stream
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{HttpRequest, HttpResponse, Uri}
+import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, Uri }
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{Flow, Sink, Source}
-import com.datastax.driver.core.{Cluster, PreparedStatement, Session}
+import akka.stream.scaladsl.{ Flow, Sink, Source }
+import com.datastax.driver.core.{ Cluster, PreparedStatement, Session }
 import de.heikoseeberger.akkahttpjson4s.Json4sSupport
 
 import scala.concurrent.Future
-import scala.util.{Failure, Success}
-import org.json4s.{DefaultFormats, Formats, Serialization, jackson}
+import scala.util.{ Failure, Success }
+import org.json4s.{ DefaultFormats, Formats, Serialization, jackson }
 
 import concurrent.duration._
 import akka.kafka.ProducerSettings
 import org.reactivestreams.Subscriber
 
 import scala.concurrent.Promise
-import akka.kafka.scaladsl.{Producer, _}
-import de.nierbeck.floating.data.domain.{RouteInfos, Routes, Vehicle}
+import akka.kafka.scaladsl.{ Producer, _ }
+import de.nierbeck.floating.data.domain.{ RouteInfos, Routes, Vehicle }
 import de.nierbeck.floating.data.serializer.VehicleKryoSerializer
 import org.apache.kafka.clients.producer.ProducerRecord
-import org.apache.kafka.common.serialization.{ByteArraySerializer, StringSerializer}
-import serializer.VehicleKryoSerializer
+import org.apache.kafka.common.serialization.{ ByteArraySerializer, StringSerializer }
 
 object StreamToKafkaApp {
 

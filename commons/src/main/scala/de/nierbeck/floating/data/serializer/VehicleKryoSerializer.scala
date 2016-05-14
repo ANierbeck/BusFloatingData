@@ -1,4 +1,4 @@
-package serializer
+package de.nierbeck.floating.data.serializer
 
 import java.io.ByteArrayOutputStream
 import java.util
