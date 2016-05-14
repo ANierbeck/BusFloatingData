@@ -1,8 +1,6 @@
-package de.nierbeck.floating.data
-
 /**
-  * Created by anierbeck on 13.05.16.
-  */
+ * Created by anierbeck on 13.05.16.
+ */
 package object serializer {
 
   import scala.language.{implicitConversions, postfixOps}

@@ -13,10 +13,11 @@ import de.nierbeck.floating.data.serializer.VehicleDeserializer
 import de.nierbeck.floating.data.tiler.TileCalc
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.common.serialization.ByteArrayDeserializer
+import serializer.VehicleKryoDeserializer
 
 /**
-  * Created by anierbeck on 09.05.16.
-  */
+ * Created by anierbeck on 09.05.16.
+ */
 object KafkaToCassandraApp {
 
   implicit val system = ActorSystem("stream-system")
@@ -31,7 +32,7 @@ object KafkaToCassandraApp {
   val vehiclesTiledStatement: PreparedStatement = cassandraSession.prepare("INSERT INTO streaming.vehicles_by_tileid(tileid, timeid, vehicle_id, time, longitude, latitude, heading, route_id, run_id, seconds_since_report) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 
   //Kafka
-  val consumerSettings = ConsumerSettings(system, new ByteArrayDeserializer, new VehicleDeserializer,
+  val consumerSettings = ConsumerSettings(system, new ByteArrayDeserializer, new VehicleKryoDeserializer,
     Set("METRO-Vehicles"))
     .withBootstrapServers("localhost:9092")
     .withGroupId("group1")
@@ -62,7 +63,7 @@ class KafkaToCassandraApp(system: ActorSystem) {
     dt.toDate
   }
 
-  def calcTileAndStore(vehicle:Vehicle): Unit = {
+  def calcTileAndStore(vehicle: Vehicle): Unit = {
     val tileId = convertLatLongToQuadKey(vehicle.longitude, vehicle.latitude)
     val timeId = calcTimeId(vehicle.time.getOrElse(new java.util.Date()))
     val statement = vehiclesTiledStatement.bind(
@@ -90,7 +91,8 @@ class KafkaToCassandraApp(system: ActorSystem) {
       vehicle.heading,
       vehicle.route_id.getOrElse(null),
       vehicle.run_id,
-      vehicle.seconds_since_report)
+      vehicle.seconds_since_report
+    )
     log.info(s"Statement: ${statement}")
 
     if (cassandraSession.isClosed) {

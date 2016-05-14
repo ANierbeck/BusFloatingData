@@ -2,7 +2,7 @@ package de.nierbeck.floating.data.stream
 
 package object stream {
 
-  import scala.language.{implicitConversions, postfixOps}
+  import scala.language.{ implicitConversions, postfixOps }
 
   type Closeable = { def close(): Unit }
 

@@ -5,16 +5,16 @@ import java.util.Date
 import akka.actor.Props
 import akka.event.Logging
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{HttpRequest, HttpResponse, Uri}
+import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, Uri }
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.ActorMaterializer
 import akka.stream.actor.ActorPublisher
-import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.scaladsl.{ Flow, Sink, Source }
 import de.heikoseeberger.akkahttpjson4s.Json4sSupport
-import de.nierbeck.floating.data.domain.{RouteInfo, Vehicle, Vehicles}
+import de.nierbeck.floating.data.domain.{ RouteInfo, Vehicle, Vehicles }
 
 import scala.concurrent.Future
-import scala.util.{Failure, Success}
+import scala.util.{ Failure, Success }
 
 object VehiclesActor {
 
@@ -32,7 +32,6 @@ class VehiclesActor(routeInfo: RouteInfo, httpClient: Flow[HttpRequest, HttpResp
   import org.json4s.jackson.JsonMethods._
   import Json4sSupport._
   import concurrent.duration._
-
 
   implicit val executionContext = context.dispatcher
   implicit val actorMaterializer = ActorMaterializer()
@@ -73,25 +72,25 @@ class VehiclesActor(routeInfo: RouteInfo, httpClient: Flow[HttpRequest, HttpResp
             log.debug(vehicles.toString)
             vehicles.items.foreach {
               vehicle =>
-              {
-                log.debug(vehicle.toString)
-                log.debug("sending vehicle to stream sink")
-                val vehicleToPersist = Vehicle(vehicle.id, Some(currTime), vehicle.latitude, vehicle.longitude, vehicle.heading, Some(routeInfo.id), vehicle.run_id, vehicle.seconds_since_report)
-                log.debug(s"sending Vehicle ${vehicleToPersist}")
-                if (buffer.isEmpty && totalDemand > 0) {
-                  log.info(s"Buffer Empty sending vehicle: ${vehicleToPersist}")
-                  onNext(vehicleToPersist)
-                } else {
-                  log.info(s"Buffering vehicle: ${vehicleToPersist}")
-                  buffer :+= vehicleToPersist
-                  if (totalDemand > 0) {
-                    val (use,keep) = buffer.splitAt(totalDemand.toInt)
-                    buffer = keep
-                    log.info(s"Demand is greater 0 sending ${use}")
-                    use foreach onNext
+                {
+                  log.debug(vehicle.toString)
+                  log.debug("sending vehicle to stream sink")
+                  val vehicleToPersist = Vehicle(vehicle.id, Some(currTime), vehicle.latitude, vehicle.longitude, vehicle.heading, Some(routeInfo.id), vehicle.run_id, vehicle.seconds_since_report)
+                  log.debug(s"sending Vehicle ${vehicleToPersist}")
+                  if (buffer.isEmpty && totalDemand > 0) {
+                    log.info(s"Buffer Empty sending vehicle: ${vehicleToPersist}")
+                    onNext(vehicleToPersist)
+                  } else {
+                    log.info(s"Buffering vehicle: ${vehicleToPersist}")
+                    buffer :+= vehicleToPersist
+                    if (totalDemand > 0) {
+                      val (use, keep) = buffer.splitAt(totalDemand.toInt)
+                      buffer = keep
+                      log.info(s"Demand is greater 0 sending ${use}")
+                      use foreach onNext
+                    }
                   }
                 }
-              }
             }
           }
           case Failure(ex) => log.error(ex, ex.getMessage)

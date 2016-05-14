@@ -6,18 +6,16 @@ import java.util
 import com.esotericsoftware.kryo.io.Input
 import com.twitter.chill.ScalaKryoInstantiator
 import de.nierbeck.floating.data.domain.Vehicle
+import kafka.serializer.Decoder
+import kafka.utils.VerifiableProperties
 import org.apache.kafka.common.serialization.Deserializer
 
-class VehicleKryoDeserializer() extends Deserializer[Vehicle] {
+class VehicleKryoDecoder(props: VerifiableProperties) extends Decoder[Vehicle] {
   val kryo = new ScalaKryoInstantiator().newKryo()
   kryo.register(classOf[Vehicle])
 
-  override def deserialize(topic: String, data: Array[Byte]): Vehicle = {
-    withResource(new Input(new ByteArrayInputStream(data)))(input => kryo.readObject(input, classOf[Vehicle]))
+  override def fromBytes(bytes: Array[Byte]): Vehicle = {
+    withResource(new Input(new ByteArrayInputStream(bytes)))(input => kryo.readObject(input, classOf[Vehicle]))
   }
-
-  override def configure(configs: util.Map[String, _], isKey: Boolean): Unit = {}
-
-  override def close(): Unit = {}
 
 }

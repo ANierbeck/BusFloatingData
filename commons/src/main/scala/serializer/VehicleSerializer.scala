@@ -1,4 +1,4 @@
-package de.nierbeck.floating.data.serializer
+package serializer
 
 import java.io.{ByteArrayOutputStream, ObjectOutputStream}
 import java.util
@@ -7,8 +7,8 @@ import de.nierbeck.floating.data.domain.Vehicle
 import org.apache.kafka.common.serialization.Serializer
 
 /**
-  * Created by anierbeck on 09.05.16.
-  */
+ * Created by anierbeck on 09.05.16.
+ */
 class VehicleSerializer extends Serializer[Vehicle] {
   override def configure(configs: util.Map[String, _], isKey: Boolean): Unit = {}
 

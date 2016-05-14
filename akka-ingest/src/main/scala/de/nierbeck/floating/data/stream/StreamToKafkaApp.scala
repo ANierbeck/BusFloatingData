@@ -15,16 +15,16 @@ import scala.util.{Failure, Success}
 import org.json4s.{DefaultFormats, Formats, Serialization, jackson}
 
 import concurrent.duration._
-
 import akka.kafka.ProducerSettings
 import org.reactivestreams.Subscriber
 
 import scala.concurrent.Promise
 import akka.kafka.scaladsl.{Producer, _}
 import de.nierbeck.floating.data.domain.{RouteInfos, Routes, Vehicle}
-import de.nierbeck.floating.data.serializer.VehicleSerializer
+import de.nierbeck.floating.data.serializer.VehicleKryoSerializer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.serialization.{ByteArraySerializer, StringSerializer}
+import serializer.VehicleKryoSerializer
 
 object StreamToKafkaApp {
 
@@ -39,9 +39,8 @@ object StreamToKafkaApp {
   val routeInfoStatement: PreparedStatement = cassandraSession.prepare("INSERT INTO streaming.routeInfos(id, display_name) VALUES(?,?);")
 
   //Kafka stuff
-  val producerSettings = ProducerSettings(system, new ByteArraySerializer, new VehicleSerializer)
+  val producerSettings = ProducerSettings(system, new ByteArraySerializer, new VehicleKryoSerializer)
     .withBootstrapServers("localhost:9092")
-
 
   def main(args: Array[String]): Unit = {
     val httpClient: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] = Http(system).outgoingConnection("api.metro.net")
@@ -97,12 +96,12 @@ class StreamToKafkaApp(system: ActorSystem, httpClient: Flow[HttpRequest, HttpRe
                 log.debug(routeInfo.toString)
                 cassandraSession.executeAsync(routeInfoStatement.bind(routeInfo.id, routeInfo.display_name))
                 extractRoutes(routeInfo.id)
-                log.info("adding new actor route for routeInfo:"+routeInfo)
+                log.info("adding new actor route for routeInfo:" + routeInfo)
 
-//                Source.actorPublisher(VehiclesActor.props(routeInfo, httpClient)).map(elem => {
-//                    log.info(s"publishing element: ${elem}")
-//                    new ProducerRecord[Array[Byte], Vehicle]("vehicles", elem)
-//                }).to(producer).run()
+                //                Source.actorPublisher(VehiclesActor.props(routeInfo, httpClient)).map(elem => {
+                //                    log.info(s"publishing element: ${elem}")
+                //                    new ProducerRecord[Array[Byte], Vehicle]("vehicles", elem)
+                //                }).to(producer).run()
 
                 Flow[Vehicle].map(elem => {
                   log.info(s"publishing element: ${elem}")

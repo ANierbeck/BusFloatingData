@@ -1,4 +1,4 @@
-package de.nierbeck.floating.data.serializer
+package serializer
 
 import java.io.ByteArrayOutputStream
 import java.util
@@ -10,7 +10,8 @@ import org.apache.kafka.common.serialization.Serializer
 
 class VehicleKryoSerializer() extends Serializer[Vehicle] {
   val kryo = new ScalaKryoInstantiator().newKryo()
-  kryo.register(Vehicle.getClass)
+  kryo.register(classOf[Vehicle])
+
   override def serialize(topic: String, r: Vehicle): Array[Byte] = {
     withResource(new Output(new ByteArrayOutputStream()))(output => {
       kryo.writeObject(output, r)

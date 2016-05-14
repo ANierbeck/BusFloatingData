@@ -5,17 +5,17 @@ import java.util.Date
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{HttpRequest, HttpResponse, Uri}
+import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, Uri }
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{Flow, Sink, Source}
-import com.datastax.driver.core.{Cluster, PreparedStatement, Session}
+import akka.stream.scaladsl.{ Flow, Sink, Source }
+import com.datastax.driver.core.{ Cluster, PreparedStatement, Session }
 import de.heikoseeberger.akkahttpjson4s.Json4sSupport
-import de.nierbeck.floating.data.domain.{RouteInfos, Routes, Vehicles}
+import de.nierbeck.floating.data.domain.{ RouteInfos, Routes, Vehicles }
 import org.apache.kafka.common
 
 import scala.concurrent.Future
-import scala.util.{Failure, Success}
+import scala.util.{ Failure, Success }
 
 /**
  * Created by anierbeck on 11.01.16.
@@ -46,7 +46,7 @@ object StreamApp {
 class StreamApp(system: ActorSystem, httpClient: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]]) {
 
   import Json4sSupport._
-  import StreamApp.{actorMaterializer, _}
+  import StreamApp.{ actorMaterializer, _ }
   import org.json4s._
 
   import concurrent.duration._
@@ -128,7 +128,8 @@ class StreamApp(system: ActorSystem, httpClient: Flow[HttpRequest, HttpResponse,
                     vehicle.heading,
                     vehicle.route_id,
                     vehicle.run_id,
-                    vehicle.seconds_since_report))
+                    vehicle.seconds_since_report
+                  ))
 
                 }
             }
