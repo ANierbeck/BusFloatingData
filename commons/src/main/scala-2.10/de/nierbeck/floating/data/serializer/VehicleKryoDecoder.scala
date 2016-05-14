@@ -12,7 +12,7 @@ import org.apache.kafka.common.serialization.Deserializer
 
 class VehicleKryoDecoder(props: VerifiableProperties) extends Decoder[Vehicle] {
   val kryo = new ScalaKryoInstantiator().newKryo()
-  kryo.register(classOf[Vehicle])
+  kryo.register(classOf[Vehicle], 1)
 
   override def fromBytes(bytes: Array[Byte]): Vehicle = {
     withResource(new Input(new ByteArrayInputStream(bytes)))(input => kryo.readObject(input, classOf[Vehicle]))

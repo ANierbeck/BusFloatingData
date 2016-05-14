@@ -21,7 +21,7 @@ import org.reactivestreams.Subscriber
 import scala.concurrent.Promise
 import akka.kafka.scaladsl.{ Producer, _ }
 import de.nierbeck.floating.data.domain.{ RouteInfos, Routes, Vehicle }
-import de.nierbeck.floating.data.serializer.VehicleKryoSerializer
+import de.nierbeck.floating.data.serializer.{ VehicleFstSerializer }
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.serialization.{ ByteArraySerializer, StringSerializer }
 
@@ -38,7 +38,7 @@ object StreamToKafkaApp {
   val routeInfoStatement: PreparedStatement = cassandraSession.prepare("INSERT INTO streaming.routeInfos(id, display_name) VALUES(?,?);")
 
   //Kafka stuff
-  val producerSettings = ProducerSettings(system, new ByteArraySerializer, new VehicleKryoSerializer)
+  val producerSettings = ProducerSettings(system, new ByteArraySerializer, new VehicleFstSerializer)
     .withBootstrapServers("localhost:9092")
 
   def main(args: Array[String]): Unit = {

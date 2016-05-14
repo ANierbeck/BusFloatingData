@@ -41,7 +41,8 @@ lazy val commonDependencies = Seq(
   "com.twitter"              %% "chill-akka"                 % "0.8.0",
 
   // datastax cassandra driver
-  "com.datastax.cassandra"   % "cassandra-driver-core"       % cassandraVer
+  "com.datastax.cassandra"   % "cassandra-driver-core"       % cassandraVer,
+  "de.ruedigermoeller"       %  "fst"                        % "2.45"
 )
 
 lazy val akkaDependencies = Seq(

@@ -9,7 +9,7 @@ import akka.kafka.scaladsl._
 import akka.stream.ActorMaterializer
 import com.datastax.driver.core.{ Cluster, PreparedStatement, Session }
 import de.nierbeck.floating.data.domain.Vehicle
-import de.nierbeck.floating.data.serializer.VehicleKryoDeserializer
+import de.nierbeck.floating.data.serializer.{ VehicleFstDeserializer }
 import de.nierbeck.floating.data.tiler.TileCalc
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.common.serialization.ByteArrayDeserializer
@@ -31,7 +31,7 @@ object KafkaToCassandraApp {
   val vehiclesTiledStatement: PreparedStatement = cassandraSession.prepare("INSERT INTO streaming.vehicles_by_tileid(tileid, timeid, vehicle_id, time, longitude, latitude, heading, route_id, run_id, seconds_since_report) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 
   //Kafka
-  val consumerSettings = ConsumerSettings(system, new ByteArrayDeserializer, new VehicleKryoDeserializer,
+  val consumerSettings = ConsumerSettings(system, new ByteArrayDeserializer, new VehicleFstDeserializer,
     Set("METRO-Vehicles"))
     .withBootstrapServers("localhost:9092")
     .withGroupId("group1")
