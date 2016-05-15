@@ -9,7 +9,7 @@ import akka.kafka.scaladsl._
 import akka.stream.ActorMaterializer
 import com.datastax.driver.core.{ Cluster, PreparedStatement, Session }
 import de.nierbeck.floating.data.domain.Vehicle
-import de.nierbeck.floating.data.serializer.{ VehicleFstDeserializer }
+import de.nierbeck.floating.data.serializer.VehicleFstDeserializer
 import de.nierbeck.floating.data.tiler.TileCalc
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.common.serialization.ByteArrayDeserializer
@@ -77,6 +77,18 @@ class KafkaToCassandraApp(system: ActorSystem) {
       vehicle.run_id,
       vehicle.seconds_since_report
     )
+    log.info(s"Statement: ${statement}")
+
+    if (cassandraSession.isClosed) {
+      log.error("Session is already closed")
+      throw new RuntimeException("session already closed ...")
+    }
+    try {
+      log.info(s"executing statement with session: $cassandraSession")
+      cassandraSession.execute(statement)
+    } catch {
+      case e: Exception => log.error(s"Exception: ${e.getMessage}", e)
+    }
   }
 
   def store(vehicle: Vehicle): Unit = {

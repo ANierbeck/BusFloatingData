@@ -28,9 +28,9 @@ CREATE TABLE routes (
 );
 
 CREATE TABLE vehicles_by_tileid (
-    tileid text,
-    timeid timestamp,
-    vehicle_id text,
+    tile_id text,
+    time_id timestamp,
+    id text,
     time timestamp,
     longitude double,
     latitude double,
@@ -38,5 +38,5 @@ CREATE TABLE vehicles_by_tileid (
     route_id text,
     run_id text,
     seconds_since_report int,
-    PRIMARY KEY ((tileid, timeid), vehicle_id, time)
+    PRIMARY KEY ((tile_id, time_id), id, time)
 );

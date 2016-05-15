@@ -1,12 +1,15 @@
 package de.nierbeck.floating.data.stream.spark
 
-import de.nierbeck.floating.data.domain.Vehicle
+import java.util.Date
+
+import de.nierbeck.floating.data.domain.{ TiledVehicle, Vehicle }
 import de.nierbeck.floating.data.serializer.{ VehicleDecoder, VehicleFstDecoder }
 import kafka.serializer.StringDecoder
 import org.apache.spark.SparkConf
 import org.apache.spark.streaming.kafka.KafkaUtils
 import org.apache.spark.streaming.{ Seconds, StreamingContext }
 import com.datastax.spark.connector.streaming._
+import de.nierbeck.floating.data.tiler.TileCalc
 
 /**
  * Created by anierbeck on 09.05.16.
@@ -32,7 +35,24 @@ object KafkaToCassandraSparkApp {
       Set(consumerTopic)
     )
 
-    kafkaStream.map { tuple => tuple._2 }.saveToCassandra("streaming", "vehicles")
+    val vehicle = kafkaStream.map { tuple => tuple._2 }.cache()
+
+    vehicle.saveToCassandra("streaming", "vehicles")
+
+    vehicle.filter(x => x.time.isDefined)
+
+    vehicle.map(vehicle => TiledVehicle(
+      TileCalc.convertLatLongToQuadKey(vehicle.latitude, vehicle.longitude),
+      TileCalc.transformTime(vehicle.time.get),
+      vehicle.id,
+      vehicle.time,
+      vehicle.latitude,
+      vehicle.longitude,
+      vehicle.heading,
+      vehicle.route_id,
+      vehicle.run_id,
+      vehicle.seconds_since_report
+    )).saveToCassandra("streaming", "vehicles_by_tileid")
 
     ssc.start()
     ssc.awaitTermination()

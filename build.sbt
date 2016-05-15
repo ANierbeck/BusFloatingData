@@ -18,6 +18,7 @@ val cassandraVer   = "3.0.1"
 val Slf4j          = "1.7.18"
 val spark          = "1.6.0"
 val sparkConnector = "1.5.0"
+val circeVersion   = "0.4.1"
 
 autoCompilerPlugins := true
 
@@ -76,6 +77,12 @@ lazy val logDependencies = Seq(
   "org.slf4j"                       % "jul-to-slf4j"                % Slf4j
 )
 
+lazy val akkaHttpDependencies = Seq(
+  "com.typesafe.akka"               %% "akka-http-experimental"     % akkaVer,
+  "com.typesafe.akka"               %% "akka-http-testkit-experimental" % "2.4.2-RC3",
+  "de.heikoseeberger"               %% "akka-http-circe"            % "1.6.0"
+)
+
 lazy val commonSettings = Seq(
   organization := "de.nierbeck.floating.data",
   version := "0.1.0-SNAPSHOT",
@@ -92,7 +99,7 @@ lazy val root = (project in file(".")).
     name := "BusFloatingData",
     scalaVersion := scalaVer
   ).
-  aggregate(commons, ingest, akkaDigest, sparkDigest)
+  aggregate(commons, ingest, akkaDigest, sparkDigest, akkaServer)
 
 lazy val commons = (project in file("commons")).
   settings(commonSettings: _*).
@@ -130,4 +137,14 @@ lazy val sparkDigest = (project in file("spark-digest")).
     libraryDependencies += "org.apache.kafka" %% "kafka" % "0.8.2.2",
     scalaVersion := "2.10.5",
     crossScalaVersions := Seq("2.10.5")
+  ).dependsOn(commons)
+
+lazy val akkaServer = (project in file("akka-server")).
+  settings(
+    name := "akka-server",
+    scalaVersion := scalaVer,
+    libraryDependencies ++= akkaDependencies,
+    libraryDependencies ++= akkaHttpDependencies,
+    libraryDependencies += "org.json4s" %% "json4s-jackson" % "{latestVersion}",
+    crossScalaVersions := Seq("2.11.8")
   ).dependsOn(commons)

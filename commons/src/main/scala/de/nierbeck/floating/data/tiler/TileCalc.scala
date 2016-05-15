@@ -1,5 +1,9 @@
 package de.nierbeck.floating.data.tiler
 
+import java.util.Date
+
+import de.nierbeck.floating.data.domain.BoundingBox
+
 object TileCalc {
 
   val levelOfDetail = 15
@@ -41,11 +45,6 @@ object TileCalc {
     quadKey.toString
   }
 
-  def convertLatLongToQuadKey(latitude: Double, longitude: Double): String = {
-    val tileXY = latLongToTileCoordinate(latitude, longitude)
-    tileCoordinateToQuadKey(tileXY._1, tileXY._2)
-  }
-
   private def keyCharTranslate(keyChar: Char, direction: Direction): Char = {
     keyChar match {
       case '0' =>
@@ -61,6 +60,11 @@ object TileCalc {
   }
 
   private def horizontal(direction: Direction) = direction == Left || direction == Right
+
+  def convertLatLongToQuadKey(latitude: Double, longitude: Double): String = {
+    val tileXY = latLongToTileCoordinate(latitude, longitude)
+    tileCoordinateToQuadKey(tileXY._1, tileXY._2)
+  }
 
   def keyTranslate(quadKey: String, index: Int, direction: Direction): String = {
 
@@ -82,5 +86,54 @@ object TileCalc {
       }
     }
     key
+  }
+
+  def convertBBoxToTileIDs(bBox: BoundingBox): Set[String] = {
+    val tileIDLeftTop = TileCalc.convertLatLongToQuadKey(bBox.leftTop.lat, bBox.leftTop.lon)
+    val tileIDRightBottom = TileCalc.convertLatLongToQuadKey(bBox.rightBotom.lat, bBox.rightBotom.lon)
+
+    if (tileIDLeftTop != tileIDRightBottom) {
+      val tileIDRightTop = TileCalc.convertLatLongToQuadKey(bBox.leftTop.lat, bBox.leftTop.lon)
+      val tileIDLeftBottom = TileCalc.convertLatLongToQuadKey(bBox.rightBotom.lat, bBox.rightBotom.lon)
+
+      if (tileIDLeftTop != tileIDRightTop && tileIDLeftBottom != tileIDRightBottom) {
+        var cursor = tileIDLeftTop
+        var countRight = 0
+        var tiles: Set[String] = Set()
+        while (cursor != tileIDRightTop) {
+
+          tiles = tiles + cursor
+          cursor = TileCalc.keyTranslate(cursor, cursor.length - 1, Right)
+          countRight = countRight + 1;
+        }
+
+        cursor = TileCalc.keyTranslate(tileIDLeftTop, tileIDLeftTop.length - 1, Down)
+        while (cursor != tileIDRightBottom) {
+          var startCursor = cursor
+          var increment = 0;
+          while (increment < countRight) {
+
+            tiles = tiles + cursor
+            cursor = TileCalc.keyTranslate(cursor, cursor.length - 1, Right)
+            increment = increment + 1;
+          }
+          if (cursor != tileIDRightBottom)
+            cursor = TileCalc.keyTranslate(startCursor, startCursor.length - 1, Down)
+        }
+
+        tiles
+      } else {
+        Set(tileIDLeftTop, tileIDRightBottom)
+      }
+    } else {
+      Set(tileIDLeftTop)
+    }
+  }
+
+  def transformTime(date: Date): Date = {
+    val dt = new org.joda.time.DateTime(date)
+    dt.withMinuteOfHour(0)
+    dt.withSecondOfMinute(0)
+    dt.toDate
   }
 }
