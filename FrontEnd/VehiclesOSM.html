@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <script src="http://ajax.aspnetcdn.com/ajax/jquery/jquery-1.9.0.js"></script>
+    <link rel="stylesheet" href="http://openlayers.org/en/v3.15.1/css/ol.css" type="text/css">
+    <style type="text/css">
+      html, body, #basicMap {
+          width: 100%;
+          height: 100%;
+          margin: 0;
+      }
+    </style>
+    <script src="http://openlayers.org/en/v3.15.1/build/ol.js" type="text/javascript"></script>
+    <title>OpenLayers 3 example</title>
+</head>
+<body>
+<div id="map" class="map"></div>
+<script type="text/javascript">
+
+      var self = this;
+
+      var center = new ol.Feature({
+        geometry: new ol.geom.Point(ol.proj.fromLonLat([-118.23194,34.12527]))
+      });
+
+      center.setStyle(new ol.style.Style({
+        image: new ol.style.Icon(/** @type {olx.style.IconOptions} */ ({
+          color: '#8959A8',
+          src: 'data/dot.png'
+        }))
+      }));
+
+      var vectorSource = new ol.source.Vector({
+        features: [center]
+      });
+
+      var vectorLayer = new ol.layer.Vector({
+        source: vectorSource
+      });
+
+      var rasterLayer = new ol.layer.Tile({
+        source: new ol.source.OSM()
+      });
+
+
+      var map = new ol.Map({
+        target: 'map',
+        layers: [rasterLayer, vectorLayer],
+        view: new ol.View({
+          projection: ol.proj.get('EPSG:3857'),
+          center: ol.proj.fromLonLat([-118.23194,34.12527]),
+          zoom: 9
+        })
+      });
+
+
+      var mapExtent = self.map.getView().calculateExtent(map.getSize());
+
+      var bottomRight = ol.extent.getBottomRight(self.mapExtent);
+      var topLeft = ol.extent.getTopLeft(self.mapExtent);
+
+      var brLonLat = ol.proj.toLonLat(self.bottomRight);
+
+      var tlLonLat = ol.proj.toLonLat(self.topLeft);
+
+      self.akkaServiceBasis = 'http://localhost:8000/vehicles/boundingBox?bbox='
+      self.akkaService = self.akkaServiceBasis+self.tlLonLat[1]+","+self.tlLonLat[0]+","+self.brLonLat[1]+","+self.brLonLat[0];
+
+      self.ajax = function(uri) {
+          var request = {
+              url: uri,
+              type: 'GET',
+              contentType: "application/json",
+              accepts: "application/json",
+
+              cache: false,
+              dataType: 'json',
+              error: function(jqXHR) {
+                  console.log("ajax error " + jqXHR.status);
+              }
+          };
+          return $.ajax(request);
+      };
+
+      self.map.on("moveend", function (e) {
+          console.log("moved");
+
+          self.ajax(self.akkaService).done(function(data) {
+              var geoms = [];
+              for (var i = 0; i < data.vehicles.length; i++) {
+                  var latitude = data.vehicles[i].lat;
+                  var longitude = data.vehicles[i].lon;
+                  var point = new ol.geom.Point(ol.proj.fromLonLat([longitude,latitude]));
+                  geoms.push(point);
+              }
+              console.log("geoms: "+geoms);
+
+              var vehicleFeature = self.vectorSource.getFeatureById("vehicles");
+              if (vehicleFeature == null) {
+                vehicleFeature = new ol.Feature();
+                self.vectorSource.addFeature(vehicleFeature);
+              }
+
+              if (geoms.length > 0) {
+                vehicleFeature.setGeometry(geoms);
+                console.log("feature updated");
+              }
+          });
+
+      });
+    </script>
+</body>
+</html>

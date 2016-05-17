@@ -132,8 +132,6 @@ object TileCalc {
 
   def transformTime(date: Date): Date = {
     val dt = new org.joda.time.DateTime(date)
-    dt.withMinuteOfHour(0)
-    dt.withSecondOfMinute(0)
-    dt.toDate
+    dt.withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0).toDate
   }
 }
