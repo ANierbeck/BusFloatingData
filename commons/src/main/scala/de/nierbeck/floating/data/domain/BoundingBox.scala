@@ -1,5 +1,5 @@
 package de.nierbeck.floating.data.domain
 
-case class LonLat(lon: Float, lat: Float)
+case class LatLon(lat: Float, lon: Float)
 
-case class BoundingBox(leftTop: LonLat, rightBotom: LonLat)
+case class BoundingBox(leftTop: LatLon, rightBotom: LatLon)

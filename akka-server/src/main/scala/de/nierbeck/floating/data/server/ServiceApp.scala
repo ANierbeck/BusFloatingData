@@ -1,6 +1,7 @@
 package de.nierbeck.floating.data.server
 
 import akka.actor.ActorSystem
+import akka.event.Logging
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Directives
 import akka.pattern.after
@@ -15,20 +16,21 @@ import scala.collection.JavaConversions._
 object ServiceApp extends RestService {
 
   import ServiceConfig._
+  import system.dispatcher
+
+  implicit val system = ActorSystem("service-api-http")
+  implicit val mat = ActorMaterializer()
+
+  override val logger = Logging(system, getClass.getName)
 
   def main(args: Array[String]): Unit = {
-
-    implicit val system = ActorSystem("service-api-http")
-    import system.dispatcher
-    implicit val mat = ActorMaterializer()
-
     val session = connect()
 
     Http()
       .bindAndHandle(route(session), serviceInterface, servicePort)
       .onComplete {
-        case Success(_) => system.log.info(s"Successfully bound to $serviceInterface:$servicePort")
-        case Failure(e) => system.log.error(s"Failed !!!! ${e.getMessage}")
+        case Success(_) => logger.info(s"Successfully bound to $serviceInterface:$servicePort")
+        case Failure(e) => logger.error(s"Failed !!!! ${e.getMessage}")
       }
 
     Await.ready(system.whenTerminated, Duration.Inf)
@@ -38,16 +40,10 @@ object ServiceApp extends RestService {
   def connect(): Session = {
     val cluster = Cluster.builder().addContactPoint(cassandraNodeName).withPort(Integer.valueOf(cassandraNodePort)).build()
     val metadata = cluster.getMetadata
-    printf(
-      "Connected to cluster: %s\n",
-      metadata.getClusterName
-    )
+    logger.info("Connected to cluster: {}", metadata.getClusterName)
     metadata.getAllHosts foreach {
       case host =>
-        printf(
-          "Datatacenter: %s; Host: %s; Rack: %s\n",
-          host.getDatacenter, host.getAddress, host.getRack
-        )
+        logger.info("Datatacenter: {}; Host: {}; Rack: {}", host.getDatacenter, host.getAddress, host.getRack)
     }
 
     cluster.newSession()

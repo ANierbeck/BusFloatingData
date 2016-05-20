@@ -3,8 +3,11 @@ package de.nierbeck.floating.data.tiler
 import java.util.Date
 
 import de.nierbeck.floating.data.domain.BoundingBox
+import org.slf4j.{ Logger, LoggerFactory }
 
 object TileCalc {
+
+  val logger = LoggerFactory.getLogger(this.getClass)
 
   val levelOfDetail = 15
 
@@ -89,25 +92,29 @@ object TileCalc {
   }
 
   def convertBBoxToTileIDs(bBox: BoundingBox): Set[String] = {
+    logger.info("calculating tiles for boundingbox")
     val tileIDLeftTop = TileCalc.convertLatLongToQuadKey(bBox.leftTop.lat, bBox.leftTop.lon)
     val tileIDRightBottom = TileCalc.convertLatLongToQuadKey(bBox.rightBotom.lat, bBox.rightBotom.lon)
 
     if (tileIDLeftTop != tileIDRightBottom) {
-      val tileIDRightTop = TileCalc.convertLatLongToQuadKey(bBox.leftTop.lat, bBox.leftTop.lon)
-      val tileIDLeftBottom = TileCalc.convertLatLongToQuadKey(bBox.rightBotom.lat, bBox.rightBotom.lon)
+      val tileIDRightTop = TileCalc.convertLatLongToQuadKey(bBox.leftTop.lat, bBox.rightBotom.lon)
+      val tileIDLeftBottom = TileCalc.convertLatLongToQuadKey(bBox.rightBotom.lat, bBox.leftTop.lon)
 
       if (tileIDLeftTop != tileIDRightTop && tileIDLeftBottom != tileIDRightBottom) {
         var cursor = tileIDLeftTop
+        logger.info(s"cursor: ${cursor}")
         var countRight = 0
         var tiles: Set[String] = Set()
         while (cursor != tileIDRightTop) {
-
           tiles = tiles + cursor
           cursor = TileCalc.keyTranslate(cursor, cursor.length - 1, Right)
           countRight = countRight + 1;
+          logger.info(s"new cursor: ${cursor}")
         }
 
         cursor = TileCalc.keyTranslate(tileIDLeftTop, tileIDLeftTop.length - 1, Down)
+
+        logger.info(s"new cursor: ${cursor}")
         while (cursor != tileIDRightBottom) {
           var startCursor = cursor
           var increment = 0;
@@ -116,11 +123,12 @@ object TileCalc {
             tiles = tiles + cursor
             cursor = TileCalc.keyTranslate(cursor, cursor.length - 1, Right)
             increment = increment + 1;
+            logger.info(s"new cursor: ${cursor}")
           }
           if (cursor != tileIDRightBottom)
             cursor = TileCalc.keyTranslate(startCursor, startCursor.length - 1, Down)
         }
-
+        logger.info(s"Done with tiles: ${tiles}")
         tiles
       } else {
         Set(tileIDLeftTop, tileIDRightBottom)

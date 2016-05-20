@@ -3,29 +3,27 @@
  */
 package de.nierbeck.floating.data.server
 
-import com.datastax.driver.core.{ ResultSet, Row, Session }
-import de.nierbeck.floating.data.domain.{ BoundingBox, LonLat, Vehicle }
+import com.datastax.driver.core.{ResultSet, Row, Session}
+import de.nierbeck.floating.data.domain.{BoundingBox, LatLon, Vehicle}
 import akka.actor.ActorSystem
-import akka.event.Logging
+import akka.event.{Logging, LoggingAdapter}
+import akka.http.scaladsl.server.StandardRoute
 import akka.stream.Materializer
-import com.fasterxml.jackson.annotation.JsonValue
+import com.fasterxml.jackson.databind.SerializationFeature
 import com.google.common.base.Strings
-import com.google.common.util.concurrent.{ FutureCallback, Futures, ListenableFuture }
-import de.heikoseeberger.akkahttpcirce.CirceSupport
-import de.heikoseeberger.akkahttpjson4s.Json4sSupport
+import com.google.common.util.concurrent.{FutureCallback, Futures, ListenableFuture}
+import com.lambdaworks.jacks.JacksMapper
 import de.nierbeck.floating.data.tiler.TileCalc
 
 import scala.collection.JavaConverters._
-import scala.concurrent.{ ExecutionContext, Future, Promise }
-import scala.util.{ Failure, Success, Try }
+import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.util.{Failure, Success, Try}
 
 trait RestService extends CorsSupport {
 
-  private val format = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+  val logger: LoggingAdapter
 
   def route(session: Session)(implicit system: ActorSystem, ec: ExecutionContext) = {
-
-    val log = Logging(system, getClass.getName)
 
     import org.json4s._
     import org.json4s.jackson.JsonMethods._
@@ -49,25 +47,23 @@ trait RestService extends CorsSupport {
       corsHandler {
         parameter('bbox.as[String]) { bbox =>
           get {
-            complete {
+            marshal {
               val bboxCoords: Array[String] = bbox.split(",")
-              val boundingBox: BoundingBox = new BoundingBox(LonLat(bboxCoords(1).toFloat, bboxCoords(0).toFloat), LonLat(bboxCoords(3).toFloat, bboxCoords(2).toFloat))
+              val boundingBox: BoundingBox = new BoundingBox(LatLon(bboxCoords(0).toFloat, bboxCoords(1).toFloat), LatLon(bboxCoords(2).toFloat, bboxCoords(3).toFloat))
 
-              log.info(s"Querrying with bounding Box: ${boundingBox}")
+              logger.debug(s"Querrying with bounding Box: ${boundingBox}")
 
               val tileIds: Set[String] = TileCalc.convertBBoxToTileIDs(boundingBox)
 
-              log.info(s"extracted tileids: ${tileIds}")
+              logger.debug(s"extracted ${tileIds.size} tileIds")
 
-              val timeStamp = new java.util.Date(System.currentTimeMillis() - 3600000)
-              val timeIdminusOne = TileCalc.transformTime(timeStamp)
-              val timeId = TileCalc.transformTime(new java.util.Date(System.currentTimeMillis()))
-
-              //new java.util.ArrayList(tileIds.toList.asJavaCollection)
+              val timeStamp = new java.util.Date(System.currentTimeMillis() - (5*60*1000))
+              val timeIdminusOne = TileCalc.transformTime(timeStamp).getTime
+              val timeId = TileCalc.transformTime(new java.util.Date(System.currentTimeMillis())).getTime
 
               val timeList = new java.util.ArrayList(List(timeIdminusOne, timeId).asJavaCollection)
 
-              log.info(s"timeId: ${timeIdminusOne},${timeId}")
+              logger.debug(s"timeId: ${timeIdminusOne},${timeId}")
 
               val futureResults: Set[Future[ResultSet]] = tileIds.map(tileId => session.executeAsync(selectTrajectoriesByBBox.bind(tileId, timeList)).toFuture)
 
@@ -77,15 +73,7 @@ trait RestService extends CorsSupport {
 
               val futureVehicles: Future[List[Vehicle]] = Future.sequence(futures.map(futureToFutureTry(_))).map(_.collect { case Success(x) => x }).map(set => set.toList.flatten)
 
-              val result: Future[String] = futureVehicles.map(vehicles => {
-                val vehicleJson = transformVehicleToJson(vehicles)
-
-                //              val json: String = compact(render(vehicleJson))
-                //              json
-                vehicleJson
-              })
-
-              result
+              futureVehicles
             }
           }
         }
@@ -110,27 +98,12 @@ trait RestService extends CorsSupport {
     }
   }
 
-  def transformVehicleToJson(vehicles: List[Vehicle]): String = {
-    import org.json4s._
-    import org.json4s.JsonDSL.WithDouble._
-
-    val vehiclesString = vehicles.map(vehicle => renderToString(vehicle))
-
-    "{\"vehicles\": \"" + vehiclesString.mkString(",") + "\"}"
-
-    /*("vehicles" ->
-      vehicles.map { v =>
-        ("vehicle" ->
-          ("vehicle_id" -> "blubber")
-        /*("vehicle_id" -> v.id) ~
-          ("lat" -> v.latitude.toString) ~
-          ("lon" -> v.longitude.toString)
-        )
-      })*/*/
-  }
-
-  def renderToString(vehicle: Vehicle): String = {
-    "{ \"id\":\"" + vehicle.id + "\", \"lat\":\"" + vehicle.latitude + "\", \"lon:\"" + vehicle.longitude + "\"}"
-  }
+  def marshal(m: => Future[Any])(implicit ec: ExecutionContext): StandardRoute =
+    StandardRoute(ctx => {
+      ctx.complete({
+        JacksMapper.mapper.enable(SerializationFeature.INDENT_OUTPUT)
+        m.map(JacksMapper.writeValueAsString(_))
+      })
+    })
 
 }

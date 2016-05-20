@@ -10,7 +10,7 @@
           margin: 0;
       }
     </style>
-    <script src="http://openlayers.org/en/v3.15.1/build/ol.js" type="text/javascript"></script>
+    <script src="http://openlayers.org/en/v3.15.1/build/ol-debug.js" type="text/javascript"></script>
     <title>OpenLayers 3 example</title>
 </head>
 <body>
@@ -30,12 +30,28 @@
         }))
       }));
 
+
       var vectorSource = new ol.source.Vector({
         features: [center]
       });
 
       var vectorLayer = new ol.layer.Vector({
         source: vectorSource
+      });
+
+
+      var iconStyle = new ol.style.Style({
+            image: new ol.style.Icon(/** @type {olx.style.IconOptions} */ ({
+            color: '#0000ff',
+            src: 'data/dot.png'
+            }))
+      });
+
+      self.vehicleSource = new ol.source.Vector();
+
+      var vehicleLayer = new ol.layer.Vector({
+        source: self.vehicleSource,
+        style: iconStyle
       });
 
       var rasterLayer = new ol.layer.Tile({
@@ -45,26 +61,15 @@
 
       var map = new ol.Map({
         target: 'map',
-        layers: [rasterLayer, vectorLayer],
+        layers: [rasterLayer, vectorLayer, vehicleLayer],
         view: new ol.View({
           projection: ol.proj.get('EPSG:3857'),
           center: ol.proj.fromLonLat([-118.23194,34.12527]),
-          zoom: 9
+          zoom: 14
         })
       });
 
-
-      var mapExtent = self.map.getView().calculateExtent(map.getSize());
-
-      var bottomRight = ol.extent.getBottomRight(self.mapExtent);
-      var topLeft = ol.extent.getTopLeft(self.mapExtent);
-
-      var brLonLat = ol.proj.toLonLat(self.bottomRight);
-
-      var tlLonLat = ol.proj.toLonLat(self.topLeft);
-
       self.akkaServiceBasis = 'http://localhost:8000/vehicles/boundingBox?bbox='
-      self.akkaService = self.akkaServiceBasis+self.tlLonLat[1]+","+self.tlLonLat[0]+","+self.brLonLat[1]+","+self.brLonLat[0];
 
       self.ajax = function(uri) {
           var request = {
@@ -82,31 +87,39 @@
           return $.ajax(request);
       };
 
-      self.map.on("moveend", function (e) {
-          console.log("moved");
+      self.map.on('moveend', function (event) {
+          console.log("map move end");
+
+          var mapExtent = self.map.getView().calculateExtent(map.getSize());
+          var bottomRight = ol.extent.getBottomRight(mapExtent);
+          var topLeft = ol.extent.getTopLeft(mapExtent);
+          var brLonLat = ol.proj.toLonLat(bottomRight);
+          var tlLonLat = ol.proj.toLonLat(topLeft);
+
+          self.akkaService = self.akkaServiceBasis+tlLonLat[1]+","+tlLonLat[0]+","+brLonLat[1]+","+brLonLat[0];
 
           self.ajax(self.akkaService).done(function(data) {
-              var geoms = [];
-              for (var i = 0; i < data.vehicles.length; i++) {
-                  var latitude = data.vehicles[i].lat;
-                  var longitude = data.vehicles[i].lon;
+              console.log("requested data");
+              if (self.vehicleSource.getFeatures().length > 0) {
+                console.log("cleared vehicleSource");
+                self.vehicleSource.clear();
+              }
+
+              for (var i = 0; i < data.length; i++) {
+                  var field = data[i];
+                  console.log("createing feature for data: "+field.id);
+                  var feature = new ol.Feature(field);
+
+                  var latitude = field.latitude;
+                  var longitude = field.longitude;
                   var point = new ol.geom.Point(ol.proj.fromLonLat([longitude,latitude]));
-                  geoms.push(point);
-              }
-              console.log("geoms: "+geoms);
 
-              var vehicleFeature = self.vectorSource.getFeatureById("vehicles");
-              if (vehicleFeature == null) {
-                vehicleFeature = new ol.Feature();
-                self.vectorSource.addFeature(vehicleFeature);
+                  feature.setGeometry(point)
+                  self.vehicleSource.addFeature(feature);
               }
 
-              if (geoms.length > 0) {
-                vehicleFeature.setGeometry(geoms);
-                console.log("feature updated");
-              }
+              console.log("feature updated");
           });
-
       });
     </script>
 </body>

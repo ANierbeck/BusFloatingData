@@ -13,7 +13,7 @@ val akkaVer        = "2.4.3"
 val logbackVer     = "1.1.3"
 val scalaVer       = "2.11.8"
 val scalaParsersVer= "1.0.4"
-val scalaTestVer   = "2.2.4"
+val scalaTestVer   = "2.2.6"
 val cassandraVer   = "3.0.1"
 val Slf4j          = "1.7.18"
 val spark          = "1.6.0"
@@ -53,12 +53,12 @@ lazy val akkaDependencies = Seq(
   "com.typesafe.akka"        %% "akka-testkit"               % akkaVer            % "test",
 
   // these are to avoid sbt warnings about transitive dependency conflicts
-  "com.typesafe.akka"        %  "akka-http-experimental_2.11" % "2.0.1",
-  "de.heikoseeberger"        %% "akka-http-json4s"           % "1.4.1",
-  "org.json4s"               %% "json4s-jackson"             % "3.2.11",
-  "com.typesafe.akka"        %% "akka-stream-kafka"          % "0.11-M2",
-  "org.apache.kafka"         %% "kafka"                      % "0.9.0.1",
-  "joda-time"                %  "joda-time"                  % "2.9.3"
+  "com.typesafe.akka"               %  "akka-http-experimental_2.11" % "2.0.1",
+  "com.typesafe.akka"               %% "akka-stream-kafka"          % "0.11-M2",
+  "org.apache.kafka"                %% "kafka"                      % "0.9.0.1",
+  "joda-time"                       %  "joda-time"                  % "2.9.3",
+  "de.heikoseeberger"               %% "akka-http-json4s"           % "1.6.0",
+  "org.json4s"                      %% "json4s-jackson"             % "3.2.11"
 )
 
 lazy val sparkDependencies = Seq(
@@ -79,8 +79,7 @@ lazy val logDependencies = Seq(
 
 lazy val akkaHttpDependencies = Seq(
   "com.typesafe.akka"               %% "akka-http-experimental"     % akkaVer,
-  "com.typesafe.akka"               %% "akka-http-testkit-experimental" % "2.4.2-RC3",
-  "de.heikoseeberger"               %% "akka-http-circe"            % "1.6.0"
+  "com.typesafe.akka"               %% "akka-http-testkit-experimental" % "2.4.2-RC3"
 )
 
 lazy val commonSettings = Seq(
@@ -145,6 +144,7 @@ lazy val akkaServer = (project in file("akka-server")).
     scalaVersion := scalaVer,
     libraryDependencies ++= akkaDependencies,
     libraryDependencies ++= akkaHttpDependencies,
-    libraryDependencies += "org.json4s" %% "json4s-jackson" % "{latestVersion}",
+    libraryDependencies += "org.scalatest" %% "scalatest" % scalaTestVer % "test",
+    libraryDependencies += "com.lambdaworks" %% "jacks" % "2.5.2",
     crossScalaVersions := Seq("2.11.8")
   ).dependsOn(commons)

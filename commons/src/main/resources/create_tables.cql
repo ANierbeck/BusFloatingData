@@ -29,7 +29,7 @@ CREATE TABLE routes (
 
 CREATE TABLE vehicles_by_tileid (
     tile_id text,
-    time_id timestamp,
+    time_id bigint,
     id text,
     time timestamp,
     longitude double,
