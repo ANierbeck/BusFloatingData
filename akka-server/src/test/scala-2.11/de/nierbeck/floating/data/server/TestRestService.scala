@@ -15,7 +15,7 @@ class TestRestService extends FlatSpec with ScalatestRouteTest with Matchers wit
 
     Get("vehicles/boundingBox?bbox=34.94656360293794,-120.20947906250001,33.295920016396764,-116.25440093750001") ~> route(session) ~> check {
       status shouldEqual 200
-//      assertResult()
+      //      assertResult()
     }
 
     ServiceApp.close(session)

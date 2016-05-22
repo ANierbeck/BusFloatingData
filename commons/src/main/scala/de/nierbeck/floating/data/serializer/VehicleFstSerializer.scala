@@ -1,6 +1,5 @@
 package de.nierbeck.floating.data.serializer
 
-import java.io.ByteArrayOutputStream
 import java.util
 
 import de.nierbeck.floating.data.domain.Vehicle

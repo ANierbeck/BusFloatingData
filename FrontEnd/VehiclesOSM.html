@@ -9,12 +9,28 @@
           height: 100%;
           margin: 0;
       }
+      .overlay {
+            background-color: #fff;
+            border: 2px #bbb solid;
+            border-radius: 7px;
+            border-top-right-radius: 0px;
+            -webkit-box-shadow: 4px 4px 5px 0px rgba(50, 50, 50, 0.75);
+            -moz-box-shadow: 4px 4px 5px 0px rgba(50, 50, 50, 0.75);
+            box-shadow: 4px 4px 5px 0px rgba(50, 50, 50, 0.75);
+            padding: 10px;
+            display: none;
+        }
     </style>
     <script src="http://openlayers.org/en/v3.15.1/build/ol-debug.js" type="text/javascript"></script>
     <title>OpenLayers 3 example</title>
 </head>
 <body>
-<div id="map" class="map"></div>
+<div id="map" class="map">
+    <div id="myOverlay" class="overlay">
+        <span id="coordinate" class="label label-primary"></span>
+        <ul id="routeInfos"></ul>
+    </div>
+</div>
 <script type="text/javascript">
 
       var self = this;
@@ -39,19 +55,10 @@
         source: vectorSource
       });
 
-
-      var iconStyle = new ol.style.Style({
-            image: new ol.style.Icon(/** @type {olx.style.IconOptions} */ ({
-            color: '#0000ff',
-            src: 'data/dot.png'
-            }))
-      });
-
       self.vehicleSource = new ol.source.Vector();
 
       var vehicleLayer = new ol.layer.Vector({
-        source: self.vehicleSource,
-        style: iconStyle
+        source: self.vehicleSource
       });
 
       var rasterLayer = new ol.layer.Tile({
@@ -60,6 +67,9 @@
 
 
       var map = new ol.Map({
+        controls: ol.control.defaults().extend([
+          new ol.control.OverviewMap()
+        ]),
         target: 'map',
         layers: [rasterLayer, vectorLayer, vehicleLayer],
         view: new ol.View({
@@ -70,6 +80,7 @@
       });
 
       self.akkaServiceBasis = 'http://localhost:8000/vehicles/boundingBox?bbox='
+      self.akkaRouteInfoService = 'http://localhost:8000/routeInfo/'
 
       self.ajax = function(uri) {
           var request = {
@@ -87,6 +98,9 @@
           return $.ajax(request);
       };
 
+
+      self.sessionStyle = {};
+
       self.map.on('moveend', function (event) {
           console.log("map move end");
 
@@ -97,6 +111,7 @@
           var tlLonLat = ol.proj.toLonLat(topLeft);
 
           self.akkaService = self.akkaServiceBasis+tlLonLat[1]+","+tlLonLat[0]+","+brLonLat[1]+","+brLonLat[0];
+
 
           self.ajax(self.akkaService).done(function(data) {
               console.log("requested data");
@@ -114,13 +129,103 @@
                   var longitude = field.longitude;
                   var point = new ol.geom.Point(ol.proj.fromLonLat([longitude,latitude]));
 
+                  var colorStyle;
+
+                  if (self.sessionStyle.hasOwnProperty(field.id)) {
+                    colorStyle = sessionStyle[field.id]
+                  } else {
+                    colorStyle = self.pickColor()
+                    self.sessionStyle[field.id] = colorStyle;
+                  }
+
+                  style = new ol.style.Style({
+                        image: new ol.style.Icon(/** @type {olx.style.IconOptions} */ ({
+                        color: colorStyle,
+                        src: 'data/arrow.png',
+                        rotation: field.heading
+                        }))
+                    });
+
                   feature.setGeometry(point)
+                  feature.setStyle(style)
+
                   self.vehicleSource.addFeature(feature);
               }
 
               console.log("feature updated");
           });
       });
+
+      self.createOverlay = function() {
+        return new ol.Overlay({
+            element: document.getElementById('myOverlay'),
+            positioning: 'top-right',
+            stopEvent: false,
+            insertFirst: false
+        });
+      }
+
+      self.queryRoutes = function(routeIds) {
+        for (var i = 0, ii = routeIds.length; i < ii; ++i) {
+            var requestUrl = self.akkaRouteInfoService+routeIds[i];
+            $('#coordinate').text();
+            self.ajax(requestUrl).done(function(data){
+                data[0].display_name
+                var txt = "<li>" + data[0].display_name + "</li>";
+                $('#routeInfos').append(txt)
+            });
+        }
+
+      }
+
+      self.setCoordinateAndShow = function(coordinate, pixel) {
+        $(overlay.getElement()).hide();
+        $('#routeInfos').empty();
+        // Set position
+        overlay.setPosition(coordinate);
+
+        var features = [];
+        self.map.forEachFeatureAtPixel(pixel, function(feature, layer) {
+          features.push(feature);
+        });
+
+        if (features.length > 0) {
+          var info = [];
+          var uniqueIds = [];
+
+
+          for (var i = 0, ii = features.length; i < ii; ++i) {
+            var routeId = features[i].get('route_id');
+
+            if ($.inArray(routeId, uniqueIds) == -1) {
+                uniqueIds.push(routeId);
+            }
+
+            self.queryRoutes(uniqueIds);
+            info.push(features[i].get('id'));
+          }
+
+          $('#coordinate').text(info.join(', ') || '(unknown)');
+          $(overlay.getElement()).show();
+        }
+      }
+
+      self.overlay = createOverlay();
+
+      console.log("created overlay: "+self.overlay);
+
+      self.map.addOverlay(self.overlay);
+
+      self.map.on('click', function(event) {
+            var coordinate = event.coordinate;
+            var pixel = event.pixel;
+            setCoordinateAndShow(coordinate, pixel);
+        });
+
+
+      self.pickColor = function() {
+        return "#000000".replace(/0/g,function(){return (~~(Math.random()*16)).toString(16);});
+      };
     </script>
 </body>
 </html>

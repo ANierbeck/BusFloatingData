@@ -92,7 +92,7 @@ object TileCalc {
   }
 
   def convertBBoxToTileIDs(bBox: BoundingBox): Set[String] = {
-    logger.info("calculating tiles for boundingbox")
+    logger.debug("calculating tiles for boundingbox")
     val tileIDLeftTop = TileCalc.convertLatLongToQuadKey(bBox.leftTop.lat, bBox.leftTop.lon)
     val tileIDRightBottom = TileCalc.convertLatLongToQuadKey(bBox.rightBotom.lat, bBox.rightBotom.lon)
 
@@ -102,19 +102,19 @@ object TileCalc {
 
       if (tileIDLeftTop != tileIDRightTop && tileIDLeftBottom != tileIDRightBottom) {
         var cursor = tileIDLeftTop
-        logger.info(s"cursor: ${cursor}")
+        logger.debug(s"cursor: ${cursor}")
         var countRight = 0
         var tiles: Set[String] = Set()
         while (cursor != tileIDRightTop) {
           tiles = tiles + cursor
           cursor = TileCalc.keyTranslate(cursor, cursor.length - 1, Right)
           countRight = countRight + 1;
-          logger.info(s"new cursor: ${cursor}")
+          logger.debug(s"new cursor: ${cursor}")
         }
 
         cursor = TileCalc.keyTranslate(tileIDLeftTop, tileIDLeftTop.length - 1, Down)
 
-        logger.info(s"new cursor: ${cursor}")
+        logger.debug(s"new cursor: ${cursor}")
         while (cursor != tileIDRightBottom) {
           var startCursor = cursor
           var increment = 0;
@@ -123,12 +123,12 @@ object TileCalc {
             tiles = tiles + cursor
             cursor = TileCalc.keyTranslate(cursor, cursor.length - 1, Right)
             increment = increment + 1;
-            logger.info(s"new cursor: ${cursor}")
+            logger.debug(s"new cursor: ${cursor}")
           }
           if (cursor != tileIDRightBottom)
             cursor = TileCalc.keyTranslate(startCursor, startCursor.length - 1, Down)
         }
-        logger.info(s"Done with tiles: ${tiles}")
+        logger.debug(s"Done with tiles: ${tiles}")
         tiles
       } else {
         Set(tileIDLeftTop, tileIDRightBottom)

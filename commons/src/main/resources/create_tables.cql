@@ -39,4 +39,4 @@ CREATE TABLE vehicles_by_tileid (
     run_id text,
     seconds_since_report int,
     PRIMARY KEY ((tile_id, time_id), id, time)
-);
+) WITH CLUSTERING ORDER BY (time DESC);

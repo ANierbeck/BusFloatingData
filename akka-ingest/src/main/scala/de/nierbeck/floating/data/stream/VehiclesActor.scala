@@ -12,6 +12,7 @@ import akka.stream.actor.ActorPublisher
 import akka.stream.scaladsl.{ Flow, Sink, Source }
 import de.heikoseeberger.akkahttpjson4s.Json4sSupport
 import de.nierbeck.floating.data.domain.{ RouteInfo, Vehicle, Vehicles }
+import org.joda.time.DateTime
 
 import scala.concurrent.Future
 import scala.util.{ Failure, Success }
@@ -68,14 +69,14 @@ class VehiclesActor(routeInfo: RouteInfo, httpClient: Flow[HttpRequest, HttpResp
         log.debug("got vehicle entities")
         val vehicles = Unmarshal(entity).to[Vehicles].onComplete {
           case Success(vehicles) => {
-            val currTime = new Date()
+            val currTime = DateTime.now
             log.debug(vehicles.toString)
             vehicles.items.foreach {
               vehicle =>
                 {
                   log.debug(vehicle.toString)
                   log.debug("sending vehicle to stream sink")
-                  val vehicleToPersist = Vehicle(vehicle.id, Some(currTime), vehicle.latitude, vehicle.longitude, vehicle.heading, Some(routeInfo.id), vehicle.run_id, vehicle.seconds_since_report)
+                  val vehicleToPersist = Vehicle(vehicle.id, Some(currTime.minusSeconds(vehicle.seconds_since_report).withMillisOfSecond(0).toDate), vehicle.latitude, vehicle.longitude, vehicle.heading, Some(routeInfo.id), vehicle.run_id, vehicle.seconds_since_report)
                   log.debug(s"sending Vehicle ${vehicleToPersist}")
                   if (buffer.isEmpty && totalDemand > 0) {
                     log.info(s"Buffer Empty sending vehicle: ${vehicleToPersist}")
