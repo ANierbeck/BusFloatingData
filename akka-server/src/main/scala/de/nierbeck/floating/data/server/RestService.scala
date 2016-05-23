@@ -4,7 +4,7 @@
 package de.nierbeck.floating.data.server
 
 import com.datastax.driver.core.{ResultSet, Row, Session}
-import de.nierbeck.floating.data.domain.{BoundingBox, LatLon, RouteInfo, Vehicle}
+import de.nierbeck.floating.data.domain._
 import akka.actor.ActorSystem
 import akka.event.{Logging, LoggingAdapter}
 import akka.http.scaladsl.server.StandardRoute
@@ -34,6 +34,7 @@ trait RestService extends CorsSupport {
     //prepared statements for cassandra calls
     val selectTrajectoriesByBBox = session.prepare("SELECT * FROM streaming.vehicles_by_tileid WHERE tile_id = ? AND time_id IN ? ")
     val selectRouteInfo = session.prepare("SELECT * FROM streaming.routeinfos WHERE ID = ?")
+    val selectRoute = session.prepare("SELECT * FROM streaming.routes WHERE route_id = ?")
 
     def service = pathSingleSlash {
       corsHandler {
@@ -98,7 +99,24 @@ trait RestService extends CorsSupport {
       }
     }
 
-    service ~ vehiclesOnBBox ~ routeInfo
+    def routes = path("route" / IntNumber) { routeId =>
+      corsHandler {
+        get {
+          marshal{
+            logger.info(s"route detaisl for route id: ${routeId}")
+
+            val futureResult: Future[ResultSet] = session.executeAsync(selectRoute.bind(routeId.toString)).toFuture
+
+            val futures: Future[List[RouteDetail]] = futureResult.map(resultSet => resultSet.iterator().asScala.map(row => {
+              RouteDetail(row.getString("route_id"), row.getString("id"), row.getDouble("longitude"), row.getDouble("latitude"), row.getString("display_name") )
+            }).toList)
+            futures
+          }
+        }
+      }
+    }
+
+    service ~ vehiclesOnBBox ~ routeInfo ~ routes
   }
 
   def futureToFutureTry[T](f: Future[T])(implicit ec: ExecutionContext): Future[Try[T]] =

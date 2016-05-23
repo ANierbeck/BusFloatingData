@@ -20,12 +20,13 @@ CREATE TABLE vehicles (
 
 CREATE TABLE routes (
     id text,
+    order_id int,
     route_id text,
     longitude double,
     latitude double,
     display_name text,
-    PRIMARY KEY (id, route_id)
-);
+    PRIMARY KEY (route_id, order_id, id)
+) WITH CLUSTERING ORDER BY (order_id ASC);
 
 CREATE TABLE vehicles_by_tileid (
     tile_id text,

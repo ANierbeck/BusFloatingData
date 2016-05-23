@@ -33,7 +33,7 @@ object StreamToKafkaApp {
   val cluster: Cluster = Cluster.builder().addContactPoint("localhost").withPort(9042).build()
   val cassandraSession: Session = cluster.connect()
 
-  val routeStatement: PreparedStatement = cassandraSession.prepare("INSERT INTO streaming.routes(id, route_id, longitude, latitude, display_name) VALUES(?, ?, ?, ?, ?);")
+  val routeStatement: PreparedStatement = cassandraSession.prepare("INSERT INTO streaming.routes(id, order_id, route_id, longitude, latitude, display_name) VALUES(?, ?, ?, ?, ?, ?);")
   val vehiclesStatement: PreparedStatement = cassandraSession.prepare("INSERT INTO streaming.vehicles(id, time, longitude, latitude, heading, route_id, run_id, seconds_since_report) VALUES(?, ?, ?, ?, ?, ?, ?, ?);")
   val routeInfoStatement: PreparedStatement = cassandraSession.prepare("INSERT INTO streaming.routeInfos(id, display_name) VALUES(?,?);")
 
@@ -137,11 +137,12 @@ class StreamToKafkaApp(system: ActorSystem, httpClient: Flow[HttpRequest, HttpRe
         val routes = Unmarshal(entity).to[Routes].onComplete {
           case Success(routes) => {
             log.debug(routes.toString)
-            routes.items.foreach { route =>
-              {
-                log.debug(route.toString)
-                cassandraSession.executeAsync(routeStatement.bind(route.id, routeId, route.longitude.asInstanceOf[Object], route.latitude.asInstanceOf[Object], route.display_name))
-              }
+            routes.items.zipWithIndex.foreach {
+              case (route, index) =>
+                {
+                  log.debug(route.toString)
+                  cassandraSession.executeAsync(routeStatement.bind(route.id, index.asInstanceOf[Object], routeId, route.longitude.asInstanceOf[Object], route.latitude.asInstanceOf[Object], route.display_name))
+                }
             }
           }
           case Failure(ex) => log.error(ex, ex.getMessage)

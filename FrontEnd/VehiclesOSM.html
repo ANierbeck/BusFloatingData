@@ -61,6 +61,11 @@
         source: self.vehicleSource
       });
 
+      self.routesSource = new ol.source.Vector();
+      var routeLayer = new ol.layer.Vector({
+        source: self.routesSource
+      });
+
       var rasterLayer = new ol.layer.Tile({
         source: new ol.source.OSM()
       });
@@ -71,7 +76,7 @@
           new ol.control.OverviewMap()
         ]),
         target: 'map',
-        layers: [rasterLayer, vectorLayer, vehicleLayer],
+        layers: [rasterLayer, vectorLayer, vehicleLayer, routeLayer],
         view: new ol.View({
           projection: ol.proj.get('EPSG:3857'),
           center: ol.proj.fromLonLat([-118.23194,34.12527]),
@@ -81,6 +86,7 @@
 
       self.akkaServiceBasis = 'http://localhost:8000/vehicles/boundingBox?bbox='
       self.akkaRouteInfoService = 'http://localhost:8000/routeInfo/'
+      self.akkaRouteService = 'http://localhost:8000/route/'
 
       self.ajax = function(uri) {
           var request = {
@@ -156,6 +162,44 @@
           });
       });
 
+      self.drawRoutes = function(routeIds) {
+        if(self.routesSource.getFeatures().length > 0) {
+            console.log("clear old routes")
+            self.routesSource.clear();
+        }
+        for (var i = 0, ii = routeIds.length; i < ii; ++i) {
+            var requestUrl = self.akkaRouteService+routeIds[i];
+            self.ajax(requestUrl).done(function(data){
+
+                if (data.length == 0)
+                    return;
+
+                var feature = new ol.Feature(data[i])
+                var lineString = new ol.geom.LineString();
+                for (var i = 0; i < data.length; i++) {
+                    var latitude = data[i].latitude;
+                    var longitude = data[i].longitude;
+                    var coord = ol.proj.fromLonLat([longitude,latitude]);
+                    lineString.appendCoordinate(coord);
+                }
+                feature.setGeometry(lineString)
+
+                feature.setStyle(new ol.style.Style({
+                    fill: new ol.style.Fill({
+                        color: 'rgba(255, 255, 255, 0.2)',
+                        weight: 4
+                    }),
+                    stroke: new ol.style.Stroke({
+                        color: '#808080',
+                        width: 4
+                    })
+                  }));
+
+                self.routesSource.addFeature(feature);
+            });
+        }
+      }
+
       self.createOverlay = function() {
         return new ol.Overlay({
             element: document.getElementById('myOverlay'),
@@ -197,13 +241,24 @@
           for (var i = 0, ii = features.length; i < ii; ++i) {
             var routeId = features[i].get('route_id');
 
-            if ($.inArray(routeId, uniqueIds) == -1) {
+            if (typeof routeId != 'undefined' && $.inArray(routeId, uniqueIds) == -1) {
                 uniqueIds.push(routeId);
             }
 
-            self.queryRoutes(uniqueIds);
             info.push(features[i].get('id'));
+            //maybe it's a lineString
+            console.log("Geom is: " + features[i].getGeometry());
+            if (typeof features[i].getGeometry == 'ol.geom.LineString') {
+                console.log("found a linestring");
+                var closestPoint = features[i].getClosestPoint(coordinate);
+                console.log("now query backend for route with closest point");
+            }
           }
+          if (uniqueIds.length > 0) {
+            self.queryRoutes(uniqueIds);
+            self.drawRoutes(uniqueIds);
+          }
+
 
           $('#coordinate').text(info.join(', ') || '(unknown)');
           $(overlay.getElement()).show();
