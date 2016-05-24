@@ -1,23 +1,36 @@
 /*
- * Copyright Audi Electronics Venture GmbH 2016
+ * Copyright 2016 Achim Nierbeck
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
+
 package de.nierbeck.floating.data.server
 
-import com.datastax.driver.core.{ResultSet, Row, Session}
+import com.datastax.driver.core.{ ResultSet, Row, Session }
 import de.nierbeck.floating.data.domain._
 import akka.actor.ActorSystem
-import akka.event.{Logging, LoggingAdapter}
+import akka.event.{ Logging, LoggingAdapter }
 import akka.http.scaladsl.server.StandardRoute
 import akka.stream.Materializer
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.google.common.base.Strings
-import com.google.common.util.concurrent.{FutureCallback, Futures, ListenableFuture}
+import com.google.common.util.concurrent.{ FutureCallback, Futures, ListenableFuture }
 import com.lambdaworks.jacks.JacksMapper
 import de.nierbeck.floating.data.tiler.TileCalc
 
 import scala.collection.JavaConverters._
-import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.util.{Failure, Success, Try}
+import scala.concurrent.{ ExecutionContext, Future, Promise }
+import scala.util.{ Failure, Success, Try }
 
 trait RestService extends CorsSupport {
 
@@ -102,13 +115,13 @@ trait RestService extends CorsSupport {
     def routes = path("route" / IntNumber) { routeId =>
       corsHandler {
         get {
-          marshal{
+          marshal {
             logger.info(s"route detaisl for route id: ${routeId}")
 
             val futureResult: Future[ResultSet] = session.executeAsync(selectRoute.bind(routeId.toString)).toFuture
 
             val futures: Future[List[RouteDetail]] = futureResult.map(resultSet => resultSet.iterator().asScala.map(row => {
-              RouteDetail(row.getString("route_id"), row.getString("id"), row.getDouble("longitude"), row.getDouble("latitude"), row.getString("display_name") )
+              RouteDetail(row.getString("route_id"), row.getString("id"), row.getDouble("longitude"), row.getDouble("latitude"), row.getString("display_name"))
             }).toList)
             futures
           }

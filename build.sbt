@@ -1,9 +1,23 @@
-import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys._
+/*
+ *    Copyright 2016 Achim Nierbeck
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ */
+
+import de.heikoseeberger.sbtheader.license.Apache2_0
 import de.heikoseeberger.sbtheader.{AutomateHeaderPlugin, HeaderPlugin}
 import sbt.Keys._
-
-AutomateHeaderPlugin.automateFor(Compile, Test)
-HeaderPlugin.settingsFor(Compile, Test)
 
 /**
  * root build.sbt
@@ -20,6 +34,7 @@ val spark          = "1.6.0"
 val sparkConnector = "1.5.0"
 val circeVersion   = "0.4.1"
 
+//needed for crosscompilation ...
 autoCompilerPlugins := true
 
 fork in run := true
@@ -35,6 +50,7 @@ lazy val compileOptions = Seq(
 
 resolvers += Resolver.bintrayRepo("hseeberger", "maven")
 
+//noinspection ScalaStyle
 lazy val commonDependencies = Seq(
   "ch.qos.logback"           %  "logback-classic"            % logbackVer,
   "org.scalatest"            %% "scalatest"                  % scalaTestVer       % "test",
@@ -46,6 +62,7 @@ lazy val commonDependencies = Seq(
   "de.ruedigermoeller"       %  "fst"                        % "2.45"
 )
 
+//noinspection ScalaStyle
 lazy val akkaDependencies = Seq(
   "org.scala-lang.modules"   %% "scala-parser-combinators"   % scalaParsersVer,
   "com.typesafe.akka"        %% "akka-actor"                 % akkaVer,
@@ -61,6 +78,7 @@ lazy val akkaDependencies = Seq(
   "org.json4s"                      %% "json4s-jackson"             % "3.2.11"
 )
 
+//noinspection ScalaStyle
 lazy val sparkDependencies = Seq(
   "com.datastax.spark"              %% "spark-cassandra-connector"  % sparkConnector,
   "org.apache.spark"                %% "spark-streaming-kafka"      % spark,
@@ -71,6 +89,7 @@ lazy val sparkDependencies = Seq(
   "org.apache.spark"                %% "spark-sql"                  % spark
 )
 
+//noinspection ScalaStyle
 lazy val logDependencies = Seq(
   "org.slf4j"                       % "slf4j-api"                   % Slf4j,
   "org.slf4j"                       % "jcl-over-slf4j"              % Slf4j,
@@ -86,13 +105,14 @@ lazy val commonSettings = Seq(
   organization := "de.nierbeck.floating.data",
   version := "0.1.0-SNAPSHOT",
   scalacOptions ++= compileOptions,
-  parallelExecution in Test := true, 
+  parallelExecution in Test := true,
   logBuffered in Test := false,
   libraryDependencies ++= commonDependencies,
   libraryDependencies ++= logDependencies
 )
 
 lazy val root = (project in file(".")).
+  enablePlugins(GitVersioning).
   settings(commonSettings: _*).
   settings(
     name := "BusFloatingData",
@@ -101,44 +121,65 @@ lazy val root = (project in file(".")).
   aggregate(commons, ingest, akkaDigest, sparkDigest, akkaServer)
 
 lazy val commons = (project in file("commons")).
+  enablePlugins(AutomateHeaderPlugin).
   settings(commonSettings: _*).
   settings(
     name := "commons",
     scalaVersion := scalaVer,
     libraryDependencies += "org.apache.kafka" %% "kafka" % "0.9.0.1" % "provided",
-    crossScalaVersions := Seq("2.10.5", scalaVer)
+    crossScalaVersions := Seq("2.10.5", scalaVer),
+    headers := Map(
+      "scala" -> Apache2_0("2016", "Achim Nierbeck"),
+      "conf" -> Apache2_0("2016", "Achim Nierbeck", "#")
+    )
   )
 
 lazy val ingest = (project in file("akka-ingest")).
+  enablePlugins(AutomateHeaderPlugin).
   settings(commonSettings: _*).
   settings(
     name := "akka-ingest",
     scalaVersion := scalaVer,
     libraryDependencies ++= akkaDependencies,
-    crossScalaVersions := Seq("2.11.8"),
-    mainClass in (Compile,run) := Some("de.nierbeck.floating.data.stream.StreamToKafkaApp")
+    crossScalaVersions := Seq(scalaVer),
+    mainClass in (Compile,run) := Some("de.nierbeck.floating.data.stream.StreamToKafkaApp"),
+    headers := Map(
+      "scala" -> Apache2_0("2016", "Achim Nierbeck"),
+      "conf" -> Apache2_0("2016", "Achim Nierbeck", "#")
+    )
   ).dependsOn(commons)
 
 lazy val akkaDigest = (project in file("akka-digest")).
+  enablePlugins(AutomateHeaderPlugin).
   settings(commonSettings: _*).
   settings(
     name := "akka-digest",
     scalaVersion := scalaVer,
     libraryDependencies ++= akkaDependencies,
-    crossScalaVersions := Seq("2.11.8")
+    crossScalaVersions := Seq(scalaVer),
+    headers := Map(
+      "scala" -> Apache2_0("2016", "Achim Nierbeck"),
+      "conf" -> Apache2_0("2016", "Achim Nierbeck", "#")
+    )
   ).dependsOn(commons)
 
 lazy val sparkDigest = (project in file("spark-digest")).
+  enablePlugins(AutomateHeaderPlugin).
   settings(commonSettings: _*).
   settings(
     name := "spark-digest",
     libraryDependencies ++= sparkDependencies,
     libraryDependencies += "org.apache.kafka" %% "kafka" % "0.8.2.2",
     scalaVersion := "2.10.5",
-    crossScalaVersions := Seq("2.10.5")
+    crossScalaVersions := Seq("2.10.5"),
+    headers := Map(
+      "scala" -> Apache2_0("2016", "Achim Nierbeck"),
+      "conf" -> Apache2_0("2016", "Achim Nierbeck", "#")
+    )
   ).dependsOn(commons)
 
 lazy val akkaServer = (project in file("akka-server")).
+  enablePlugins(AutomateHeaderPlugin).
   settings(
     name := "akka-server",
     scalaVersion := scalaVer,
@@ -146,5 +187,9 @@ lazy val akkaServer = (project in file("akka-server")).
     libraryDependencies ++= akkaHttpDependencies,
     libraryDependencies += "org.scalatest" %% "scalatest" % scalaTestVer % "test",
     libraryDependencies += "com.lambdaworks" %% "jacks" % "2.5.2",
-    crossScalaVersions := Seq("2.11.8")
+    crossScalaVersions := Seq(scalaVer),
+    headers := Map(
+      "scala" -> Apache2_0("2016", "Achim Nierbeck"),
+      "conf" -> Apache2_0("2016", "Achim Nierbeck", "#")
+    )
   ).dependsOn(commons)

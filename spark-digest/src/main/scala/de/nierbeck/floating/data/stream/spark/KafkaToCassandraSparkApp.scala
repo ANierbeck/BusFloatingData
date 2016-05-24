@@ -1,18 +1,32 @@
+/*
+ * Copyright 2016 Achim Nierbeck
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package de.nierbeck.floating.data.stream.spark
 
-import java.util.{ Date, Properties }
+import java.util.Properties
 
-import de.nierbeck.floating.data.domain.{ TiledVehicle, Vehicle }
-import de.nierbeck.floating.data.serializer.{ TiledVehicleEncoder, VehicleDecoder, VehicleFstDecoder }
+import com.datastax.spark.connector.streaming._
+import de.nierbeck.floating.data.domain.{TiledVehicle, Vehicle}
+import de.nierbeck.floating.data.serializer.{TiledVehicleEncoder, VehicleFstDecoder}
+import de.nierbeck.floating.data.tiler.TileCalc
 import kafka.serializer.StringDecoder
+import org.apache.kafka.clients.producer.{KafkaProducer, Producer, ProducerRecord}
 import org.apache.spark.SparkConf
 import org.apache.spark.streaming.kafka.KafkaUtils
-import org.apache.spark.streaming.{ Seconds, StreamingContext }
-import com.datastax.spark.connector.streaming._
-import de.nierbeck.floating.data.tiler.TileCalc
-import org.apache.kafka.clients.producer.{ KafkaProducer, Producer, ProducerRecord }
-import org.apache.kafka.clients.producer._
-import org.apache.spark.streaming.dstream.DStream
+import org.apache.spark.streaming.{Seconds, StreamingContext}
 
 /**
  * Created by anierbeck on 09.05.16.
@@ -36,6 +50,7 @@ object KafkaToCassandraSparkApp {
     producerConf.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer")
     producerConf.put("bootstrap.servers", "localhost:9092")
 
+    //noinspection ScalaStyle
     val ssc = new StreamingContext(sparkConf, Seconds(10))
 
     val kafkaStream = KafkaUtils.createDirectStream[String, Vehicle, StringDecoder, VehicleFstDecoder](
@@ -72,7 +87,7 @@ object KafkaToCassandraSparkApp {
       val producer: Producer[String, Array[Byte]] = new KafkaProducer[String, Array[Byte]](producerConf)
 
       tiledVehicles.foreach { tiledVehicle =>
-        val message = new ProducerRecord[String, Array[Byte]]("tiledVehicles", null, new TiledVehicleEncoder().toBytes(tiledVehicle))
+        val message = new ProducerRecord[String, Array[Byte]]("tiledVehicles", new TiledVehicleEncoder().toBytes(tiledVehicle))
         producer.send(message)
       }
 
