@@ -47,6 +47,5 @@ package object server {
       })
       p.future
     }
-    }
   }
 }
