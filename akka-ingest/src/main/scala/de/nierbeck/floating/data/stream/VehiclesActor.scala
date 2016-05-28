@@ -70,8 +70,9 @@ class VehiclesActor(routeInfo: RouteInfo, httpClient: Flow[HttpRequest, HttpResp
     }
   }
 
-  override def postStop() = tick.cancel()
+  override def postStop():Unit = tick.cancel()
 
+  //noinspection ScalaStyle
   def extractVehicles(routeId: String) = {
     val materializerVehicles = Source.single(HttpRequest(uri = Uri(s"/agencies/lametro/routes/$routeId/vehicles/"))).via(httpClient).runWith(Sink.head)
     val vehiclesFuture = materializerVehicles.map { x =>

@@ -16,6 +16,11 @@
 
 package de.nierbeck.floating.data
 
+import com.google.common.util.concurrent.{FutureCallback, Futures, ListenableFuture}
+
+import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.util.{Failure, Success, Try}
+
 package object server {
   val Traversable = scala.collection.immutable.Traversable
   type Traversable[+A] = scala.collection.immutable.Traversable[A]
@@ -28,4 +33,20 @@ package object server {
 
   val IndexedSeq = scala.collection.immutable.IndexedSeq
   type IndexedSeq[+A] = scala.collection.immutable.IndexedSeq[A]
+
+  def futureToFutureTry[T](f: Future[T])(implicit ec: ExecutionContext): Future[Try[T]] =
+    f.map(Success(_)).recover { case exception: Exception => Failure(exception) }
+
+  implicit class RichListenableFuture[T](lf: ListenableFuture[T]) {
+    def toFuture: Future[T] = {
+      val p = Promise[T]()
+      Futures.addCallback(lf, new FutureCallback[T] {
+        def onFailure(t: Throwable): Unit = p failure t
+
+        def onSuccess(result: T): Unit = p success result
+      })
+      p.future
+    }
+    }
+  }
 }

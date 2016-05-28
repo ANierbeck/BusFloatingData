@@ -19,7 +19,9 @@ package de.nierbeck.floating.data.tiler
 import java.util.Date
 
 import de.nierbeck.floating.data.domain.BoundingBox
-import org.slf4j.{ Logger, LoggerFactory }
+import org.slf4j.{Logger, LoggerFactory}
+
+import scala.annotation.tailrec
 
 object TileCalc {
 
@@ -47,21 +49,31 @@ object TileCalc {
   }
 
   private def tileCoordinateToQuadKey(tileX: Int, tileY: Int): String = {
-    val quadKey = new StringBuilder()
-    var i: Int = levelOfDetail
-    while (i > 0) {
-      var digit = 0
-      val mask = 1 << (i - 1)
-      if ((tileX & mask) != 0) {
-        digit = digit + 1
+    calcQuadKey(tileX, tileY, levelOfDetail, "")
+  }
+
+  @tailrec
+  private def calcQuadKey(tileX:Int, tileY:Int, index: Int, partKey: String): String = {
+    index match {
+      case 0 => partKey
+      case x:Int => {
+        val mask = 1 << (index - 1)
+        val tileXmask = tileX & mask
+        val tileYmask = tileY & mask
+
+        val digit = if (tileXmask != 0 && tileYmask != 0) {
+          3
+        } else if (tileXmask != 0) {
+          1
+        } else if (tileYmask != 0) {
+          2
+        } else {
+          0
+        }
+
+        calcQuadKey(tileX, tileY, index - 1, partKey + digit)
       }
-      if ((tileY & mask) != 0) {
-        digit = digit + 2
-      }
-      quadKey.append(digit)
-      i = i - 1
     }
-    quadKey.toString
   }
 
   private def keyCharTranslate(keyChar: Char, direction: Direction): Char = {
@@ -85,6 +97,7 @@ object TileCalc {
     tileCoordinateToQuadKey(tileXY._1, tileXY._2)
   }
 
+  //noinspection ScalaStyle
   def keyTranslate(quadKey: String, index: Int, direction: Direction): String = {
 
     val savedChar = quadKey.charAt(index)
@@ -101,14 +114,21 @@ object TileCalc {
         ((savedChar == '1') && (direction == Right || direction == Up)) ||
         ((savedChar == '2') && (direction == Left || direction == Down)) ||
         ((savedChar == '3') && (direction == Right || direction == Down))) {
-        key = keyTranslate(key, index - 1, direction);
+        key = keyTranslate(key, index - 1, direction)
       }
     }
     key
   }
 
+  /**
+    * calculates the contained tiles within one bounding box. To do so the algorithm crawls from the left top bbox coordinate
+    * to the top right coordinate corresponding tile. This is repeated till the right bottom bbox coordinate is reached.
+    *
+    * @param bBox - enclosing bounding box to calculate the tiles for.
+    * @return - a list of tileIDs, as String.
+    */
   def convertBBoxToTileIDs(bBox: BoundingBox): Set[String] = {
-    logger.debug("calculating tiles for boundingbox")
+    logger.debug("calculating tiles for bounding box")
     val tileIDLeftTop = TileCalc.convertLatLongToQuadKey(bBox.leftTop.lat, bBox.leftTop.lon)
     val tileIDRightBottom = TileCalc.convertLatLongToQuadKey(bBox.rightBotom.lat, bBox.rightBotom.lon)
 
@@ -132,17 +152,18 @@ object TileCalc {
 
         logger.debug(s"new cursor: ${cursor}")
         while (cursor != tileIDRightBottom) {
-          var startCursor = cursor
-          var increment = 0;
+          val startCursor = cursor
+          var increment = 0
           while (increment < countRight) {
 
             tiles = tiles + cursor
             cursor = TileCalc.keyTranslate(cursor, cursor.length - 1, Right)
-            increment = increment + 1;
+            increment = increment + 1
             logger.debug(s"new cursor: ${cursor}")
           }
-          if (cursor != tileIDRightBottom)
+          if (cursor != tileIDRightBottom) {
             cursor = TileCalc.keyTranslate(startCursor, startCursor.length - 1, Down)
+          }
         }
         logger.debug(s"Done with tiles: ${tiles}")
         tiles
