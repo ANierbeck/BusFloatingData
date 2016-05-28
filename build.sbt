@@ -71,7 +71,6 @@ lazy val akkaDependencies = Seq(
 
   // these are to avoid sbt warnings about transitive dependency conflicts
   "com.typesafe.akka"               %  "akka-http-experimental_2.11" % "2.0.1",
-  //"com.typesafe.akka"               %% "akka-stream-experimental"   % "2.0.4",
   "com.typesafe.akka"               %% "akka-stream-kafka"          % "0.11-M2",
   "org.apache.kafka"                %% "kafka"                      % "0.9.0.1",
   "joda-time"                       %  "joda-time"                  % "2.9.3",
