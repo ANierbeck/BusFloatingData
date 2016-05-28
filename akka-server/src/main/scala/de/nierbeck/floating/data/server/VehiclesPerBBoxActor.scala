@@ -44,16 +44,22 @@ class VehiclesPerBBoxActor extends Actor with ActorLogging{
 
 
   override def receive(): Receive = {
-    case boundingBox:BoundingBox => getVehiclesByBBox(boundingBox)
+    case boundingBox:BoundingBox => {
+      log.info("received a BBox query")
+      val x = getVehiclesByBBox(boundingBox)
+      log.info(s"X: ${x}")
+      sender() ! x
+    }
+    case _ => log.error("Wrong request")
   }
 
   def getVehiclesByBBox(boundingBox: BoundingBox)(implicit executionContext: ExecutionContext): Future[List[Vehicle]] = {
 
-    log.debug(s"Querrying with bounding Box: ${boundingBox}")
+    log.info(s"Querrying with bounding Box: ${boundingBox}")
 
     val tileIds: Set[String] = TileCalc.convertBBoxToTileIDs(boundingBox)
 
-    log.debug(s"extracted ${tileIds.size} tileIds")
+    log.info(s"extracted ${tileIds.size} tileIds")
 
     val timeStamp = new java.util.Date(System.currentTimeMillis() - (5 * 60 * 1000))
     val timeIdminusOne = TileCalc.transformTime(timeStamp).getTime
@@ -61,7 +67,7 @@ class VehiclesPerBBoxActor extends Actor with ActorLogging{
 
     val timeList = new java.util.ArrayList(List(timeIdminusOne, timeId).asJavaCollection)
 
-    log.debug(s"timeId: ${timeIdminusOne},${timeId}")
+    log.info(s"timeId: ${timeIdminusOne},${timeId}")
 
     val futureResults: Set[Future[ResultSet]] = tileIds.map(tileId => session.executeAsync(selectTrajectoriesByBBox.bind(tileId, timeList)).toFuture)
 
@@ -85,6 +91,7 @@ class VehiclesPerBBoxActor extends Actor with ActorLogging{
         case Success(x) => x
       }).map(set => set.toList.flatten)
 
+    log.info(s"Vehicles: ${futureVehicles}")
     futureVehicles
   }
 

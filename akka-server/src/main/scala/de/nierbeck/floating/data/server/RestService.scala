@@ -36,7 +36,7 @@ trait RestService extends CorsSupport {
 
   val session:Session
 
-  implicit val timeout = Timeout(15 seconds)
+  implicit val timeout = Timeout(3 seconds)
 
   def route()(implicit system: ActorSystem, ec: ExecutionContext): Route = {
 
@@ -62,7 +62,7 @@ trait RestService extends CorsSupport {
               val boundingBox: BoundingBox =
                 new BoundingBox(LatLon(bboxCoords(0).toFloat, bboxCoords(1).toFloat), LatLon(bboxCoords(2).toFloat, bboxCoords(3).toFloat))
 
-              vehiclesPerBBox ? boundingBox
+              (vehiclesPerBBox ? boundingBox).mapTo[Future[List[Vehicle]]]
             }
           }
         }
