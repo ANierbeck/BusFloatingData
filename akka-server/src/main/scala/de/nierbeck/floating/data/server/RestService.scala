@@ -44,8 +44,6 @@ trait RestService extends CorsSupport {
 
     import akka.http.scaladsl.server.Directives._
 
-    val vehiclesPerBBox = system.actorOf(VehiclesPerBBoxActor.props(), "vehicles-per-bbox")
-
     def service = pathSingleSlash {
       corsHandler {
         encodeResponse {
