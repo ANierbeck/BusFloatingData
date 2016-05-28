@@ -33,15 +33,12 @@ object VehiclesPerBBoxActor {
 
 }
 
-class VehiclesPerBBoxActor extends Actor with ActorLogging{
+class VehiclesPerBBoxActor extends CassandraQuery {
 
   implicit val executionContext = context.dispatcher
   implicit val actorMaterializer = ActorMaterializer()
 
-  val session:Session = CassandraConnector.connect()
-
   val selectTrajectoriesByBBox = session.prepare("SELECT * FROM streaming.vehicles_by_tileid WHERE tile_id = ? AND time_id IN ? ")
-
 
   override def receive(): Receive = {
     case boundingBox:BoundingBox => {
@@ -92,10 +89,6 @@ class VehiclesPerBBoxActor extends Actor with ActorLogging{
       }).map(set => set.toList.flatten)
 
     futureVehicles
-  }
-
-  override def postStop(): Unit = {
-    CassandraConnector.close(session)
   }
 
 }

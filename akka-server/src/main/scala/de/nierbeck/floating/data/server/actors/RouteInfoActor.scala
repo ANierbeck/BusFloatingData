@@ -17,12 +17,10 @@ object RouteInfoActor {
 
 }
 
-class RouteInfoActor extends Actor with ActorLogging {
+class RouteInfoActor extends CassandraQuery {
 
   implicit val executionContext = context.dispatcher
   implicit val actorMaterializer = ActorMaterializer()
-
-  val session:Session = CassandraConnector.connect()
 
   val selectRouteInfo = session.prepare("SELECT * FROM streaming.routeinfos WHERE ID = ?")
 
@@ -42,10 +40,6 @@ class RouteInfoActor extends Actor with ActorLogging {
     }).toList)
 
     futures
-  }
-
-  override def postStop(): Unit = {
-    CassandraConnector.close(session)
   }
 
 }
