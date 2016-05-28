@@ -25,10 +25,12 @@ import com.datastax.driver.core.{ResultSet, Session}
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.lambdaworks.jacks.JacksMapper
 import de.nierbeck.floating.data.domain._
+import de.nierbeck.floating.data.server.actors.{RouteDetailActor, RouteInfoActor, VehiclesPerBBoxActor}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Success
 
 trait RestService extends CorsSupport {
 
@@ -38,11 +40,14 @@ trait RestService extends CorsSupport {
 
   implicit val timeout = Timeout(3 seconds)
 
+  //noinspection ScalaStyle
   def route()(implicit system: ActorSystem, ec: ExecutionContext): Route = {
 
     import akka.http.scaladsl.server.Directives._
 
     val vehiclesPerBBox = system.actorOf(VehiclesPerBBoxActor.props(), "vehicles-per-bbox")
+    val routeDetailsPerId = system.actorOf(RouteDetailActor.props(), "route-details-id")
+    val routeInfosPerId = system.actorOf(RouteInfoActor.props(), "route-info-id")
 
     def service = pathSingleSlash {
       corsHandler {
@@ -62,7 +67,9 @@ trait RestService extends CorsSupport {
               val boundingBox: BoundingBox =
                 new BoundingBox(LatLon(bboxCoords(0).toFloat, bboxCoords(1).toFloat), LatLon(bboxCoords(2).toFloat, bboxCoords(3).toFloat))
 
-              (vehiclesPerBBox ? boundingBox).mapTo[Future[List[Vehicle]]]
+              val askedVehicles:Future[Future[List[Vehicle]]] = (vehiclesPerBBox ? boundingBox).mapTo[Future[List[Vehicle]]]
+              askedVehicles.flatMap(future => future)
+
             }
           }
         }
@@ -73,7 +80,7 @@ trait RestService extends CorsSupport {
       corsHandler {
         get {
           marshal {
-            retrieveRouteInfo(routeId)
+            (routeInfosPerId ? routeId).mapTo[Future[List[RouteInfo]]].flatMap(future => future)
           }
         }
       }
@@ -83,7 +90,10 @@ trait RestService extends CorsSupport {
       corsHandler {
         get {
           marshal {
-            retrieveRouteDetail(routeId)
+
+            (routeDetailsPerId ? routeId).mapTo[Future[List[RouteDetail]]].flatMap(future => future)
+
+//            retrieveRouteDetail(routeId)
           }
         }
       }
@@ -130,32 +140,6 @@ trait RestService extends CorsSupport {
     } ~ service ~ vehiclesOnBBox ~ routeInfo ~ routes
   }
 
-  private def retrieveRouteDetail(routeId: Int)(implicit executionContext: ExecutionContext): Future[List[RouteDetail]] = {
-    logger.info(s"route detaisl for route id: ${routeId}")
-
-    val selectRoute = session.prepare("SELECT * FROM streaming.routes WHERE route_id = ?")
-
-    val futureResult: Future[ResultSet] = session.executeAsync(selectRoute.bind(routeId.toString)).toFuture
-
-    val futures: Future[List[RouteDetail]] = futureResult.map(resultSet => resultSet.iterator().asScala.map(row => {
-      RouteDetail(row.getString("route_id"), row.getString("id"), row.getDouble("longitude"), row.getDouble("latitude"), row.getString("display_name"))
-    }).toList)
-    futures
-  }
-
-  private def retrieveRouteInfo(routeId: Int)(implicit executionContext: ExecutionContext): Future[List[RouteInfo]] = {
-    logger.info(s"routeinfo requested for route id ${routeId}")
-
-    val selectRouteInfo = session.prepare("SELECT * FROM streaming.routeinfos WHERE ID = ?")
-
-    val futureResult: Future[ResultSet] = session.executeAsync(selectRouteInfo.bind(routeId.toString)).toFuture
-
-    val futures: Future[List[RouteInfo]] = futureResult.map(resultSet => resultSet.iterator().asScala.map(row => {
-      RouteInfo(row.getString("id"), row.getString("display_name"))
-    }).toList)
-
-    futures
-  }
 
   def marshal(m: => Future[Any])(implicit ec: ExecutionContext): StandardRoute =
     StandardRoute(ctx => {

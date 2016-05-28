@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package de.nierbeck.floating.data.server
+package de.nierbeck.floating.data.server.actors
 
 import akka.actor.{Actor, ActorLogging, Props}
 import akka.stream.ActorMaterializer
 import com.datastax.driver.core.{ResultSet, Session}
-import de.nierbeck.floating.data.domain.{BoundingBox, LatLon, Vehicle}
+import de.nierbeck.floating.data.domain.{BoundingBox, Vehicle}
+import de.nierbeck.floating.data.server._
 import de.nierbeck.floating.data.tiler.TileCalc
 
 import scala.collection.JavaConverters._
-
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
 
@@ -91,7 +91,6 @@ class VehiclesPerBBoxActor extends Actor with ActorLogging{
         case Success(x) => x
       }).map(set => set.toList.flatten)
 
-    log.info(s"Vehicles: ${futureVehicles}")
     futureVehicles
   }
 
