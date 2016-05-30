@@ -16,16 +16,19 @@
 
 package de.nierbeck.floating.data.server
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorRef, ActorSystem}
 import akka.event.LoggingAdapter
+import akka.http.scaladsl.model.ws.{Message, TextMessage}
 import akka.http.scaladsl.server.{Route, StandardRoute}
 import akka.pattern.ask
+import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
+import akka.stream.scaladsl._
 import akka.util.Timeout
 import com.datastax.driver.core.{ResultSet, Session}
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.lambdaworks.jacks.JacksMapper
 import de.nierbeck.floating.data.domain._
-import de.nierbeck.floating.data.server.actors.{RouteDetailActor, RouteInfoActor, VehiclesPerBBoxActor}
+import de.nierbeck.floating.data.server.actors.{RouteDetailActor, RouteInfoActor, VehiclePublisher, VehiclesPerBBoxActor}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
@@ -36,7 +39,7 @@ trait RestService extends CorsSupport {
 
   val logger: LoggingAdapter
 
-  val session:Session
+  val session: Session
 
   implicit val timeout = Timeout(3 seconds)
 
@@ -48,6 +51,8 @@ trait RestService extends CorsSupport {
     val vehiclesPerBBox = system.actorOf(VehiclesPerBBoxActor.props(), "vehicles-per-bbox")
     val routeDetailsPerId = system.actorOf(RouteDetailActor.props(), "route-details-id")
     val routeInfosPerId = system.actorOf(RouteInfoActor.props(), "route-info-id")
+
+    val vehicleSource: Source[Vehicle, ActorRef] = Source.actorPublisher[Vehicle](VehiclePublisher.props)
 
     def service = pathSingleSlash {
       corsHandler {
@@ -67,7 +72,7 @@ trait RestService extends CorsSupport {
               val boundingBox: BoundingBox =
                 new BoundingBox(LatLon(bboxCoords(0).toFloat, bboxCoords(1).toFloat), LatLon(bboxCoords(2).toFloat, bboxCoords(3).toFloat))
 
-              val askedVehicles:Future[Future[List[Vehicle]]] = (vehiclesPerBBox ? boundingBox).mapTo[Future[List[Vehicle]]]
+              val askedVehicles: Future[Future[List[Vehicle]]] = (vehiclesPerBBox ? boundingBox).mapTo[Future[List[Vehicle]]]
               askedVehicles.flatMap(future => future)
 
             }
@@ -90,42 +95,38 @@ trait RestService extends CorsSupport {
       corsHandler {
         get {
           marshal {
-
             (routeDetailsPerId ? routeId).mapTo[Future[List[RouteDetail]]].flatMap(future => future)
-
-//            retrieveRouteDetail(routeId)
           }
         }
       }
     }
 
-    /*   val vehiclesPerBBoxService:Flow[Message, Message, Future[TextMessage] ] = Flow[Message].map {
-         case TextMessage.Strict(bbox) => {
-           val bboxCoords: Array[String] = bbox.split(",")
-           val boundingBox: BoundingBox = new BoundingBox(LatLon(bboxCoords(0).toFloat, bboxCoords(1).toFloat), LatLon(bboxCoords(2).toFloat, bboxCoords(3).toFloat))
+    val vehiclesPerBBoxService = Flow[Message].map {
+      case TextMessage.Strict(bbox) => {
+        val bboxCoords: Array[String] = bbox.split(",")
+        val boundingBox: BoundingBox = new BoundingBox(LatLon(bboxCoords(0).toFloat, bboxCoords(1).toFloat), LatLon(bboxCoords(2).toFloat, bboxCoords(3).toFloat))
 
-           val vehicles = vehiclesPerBBox ? boundingBox
+        val vehicles = (vehiclesPerBBox ? boundingBox).mapTo[Future[List[Vehicle]]].flatMap(future => future)
 
-           JacksMapper.mapper.enable(SerializationFeature.INDENT_OUTPUT)
-           val result:Future[TextMessage] = vehicles.map(JacksMapper.writeValueAsString(_)).map(vehicleString => TextMessage(vehicleString))
-           return result
-         }
-         case _ => Future{TextMessage("Message type unsupported")}
-       }
+        JacksMapper.mapper.enable(SerializationFeature.INDENT_OUTPUT)
+        val result: Future[String] = vehicles.map(JacksMapper.writeValueAsString(_))
+        TextMessage(Source.fromFuture(result))
+      }
+      case _ => TextMessage("Message type unsupported")
+    }
 
 
-       // Websocket endpoints
-       def webSocketVehicles =
-         path("vehicles" / "boundingBox") {
-           parameter('bbox.as[String]) { bbox =>
-             get {
-                 logger.info("WebSocket request ...")
-                 handleWebSocketMessages(vehiclesPerBBoxService)
-   //              getVehiclesByBBox(bbox)
-             }
-           }
-       }
-   */
+
+    // Websocket endpoints
+    def webSocketVehicles =
+      path("ws" / "vehicles" / "boundingBox") {
+        parameter('bbox.as[String]) { bbox =>
+          get {
+            logger.info("WebSocket request ...")
+            handleWebSocketMessages(vehiclesPerBBoxService)
+          }
+        }
+      }
 
     // Frontend
     def index = (path("") | pathPrefix("index.htm")) {
@@ -133,11 +134,11 @@ trait RestService extends CorsSupport {
     }
     def img = (pathPrefix("data") & path(Segment)) { resource => getFromResource(s"data/$resource") }
 
-    def js = (pathPrefix("js") & path(Segment)) { resource => getFromResource(s"js/${resource}")}
+    def js = (pathPrefix("js") & path(Segment)) { resource => getFromResource(s"js/${resource}") }
 
     get {
       index ~ img ~ js
-    } ~ service ~ vehiclesOnBBox ~ routeInfo ~ routes
+    } ~ service ~ vehiclesOnBBox ~ routeInfo ~ routes ~ webSocketVehicles
   }
 
 
