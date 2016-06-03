@@ -39,5 +39,20 @@ CREATE TABLE vehicles_by_tileid (
     route_id text,
     run_id text,
     seconds_since_report int,
-    PRIMARY KEY ((tile_id, time_id), id, time)
+    PRIMARY KEY ((tile_id, time_id), time, id)
 ) WITH CLUSTERING ORDER BY (time DESC);
+
+CREATE TABLE vehiclecluster (
+    id int PRIMARY KEY,
+    longitude double,
+    latitude double,
+    amount int
+);
+
+CREATE TABLE vehiclecluster_by_tileid (
+    tile_id text PRIMARY KEY,
+    id int,
+    longitude double,
+    latitude double,
+    amount int
+);

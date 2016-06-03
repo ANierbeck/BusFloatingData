@@ -19,19 +19,25 @@ package de.nierbeck.floating.data.stream.spark
 import java.util.Properties
 
 import breeze.linalg.DenseMatrix
-import com.datastax.spark.connector.streaming._
-import de.nierbeck.floating.data.domain.{TiledVehicle, Vehicle, VehicleCluster}
+import com.datastax.spark.connector._
+import de.nierbeck.floating.data.domain.{TiledVehicle, TiledVehicleCluster, Vehicle, VehicleCluster}
 import de.nierbeck.floating.data.serializer.{TiledVehicleEncoder, VehicleFstDecoder}
 import de.nierbeck.floating.data.tiler.TileCalc
 import kafka.serializer.StringDecoder
+import nak.cluster
 import nak.cluster.{DBSCAN, GDBSCAN, Kmeans}
 import org.apache.kafka.clients.producer.{KafkaProducer, Producer, ProducerRecord}
+import org.apache.spark.rdd.RDD
+import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.{SparkConf, streaming}
 import org.apache.spark.streaming.kafka.KafkaUtils
-import org.apache.spark.streaming.{Duration, Seconds, StreamingContext}
+import org.apache.spark.streaming.{Seconds, StreamingContext}
+import org.slf4j.{Logger, LoggerFactory}
 
-object KafkaToCassandraSparkApp {
+//noinspection ScalaStyle
+object CalcClusterSparkApp {
+
+  val log:Logger = LoggerFactory.getLogger(getClass.getName)
 
   import scala.language.implicitConversions
 
@@ -39,7 +45,7 @@ object KafkaToCassandraSparkApp {
 
     val consumerTopic = "METRO-Vehicles" //args(0)
     val sparkConf = new SparkConf()
-      .setMaster("local[2]")
+      .setMaster("local[4]")
       .setAppName(getClass.getName)
       .set("spark.cassandra.connection.host", "localhost" /*s"${args(1)}"*/ )
       .set("spark.cassandra.connection.port", "9042" /*"${args(2)}"*/ )
@@ -51,56 +57,38 @@ object KafkaToCassandraSparkApp {
     producerConf.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer")
     producerConf.put("bootstrap.servers", "localhost:9092")
 
-    //noinspection ScalaStyle
-    val ssc = new StreamingContext(sparkConf, Seconds(10))
+    val sc = new SparkContext(sparkConf)
 
-    val kafkaStream = KafkaUtils.createDirectStream[String, Vehicle, StringDecoder, VehicleFstDecoder](
-      ssc,
-      consumerProperties,
-      Set(consumerTopic)
-    )
+    val vehiclesRdd:RDD[Vehicle] = sc.cassandraTable[Vehicle]("streaming", "vehicles").where("time > '2016-06-04 00:00:00'")
 
-    val vehicle = kafkaStream.map { tuple => tuple._2 }.cache()
+    val vehiclesPos:Array[Double] = vehiclesRdd.flatMap(vehicle => Seq[Double](vehicle.latitude, vehicle.longitude)).collect()
 
-    vehicle.saveToCassandra("streaming", "vehicles")
+    val dm = DenseMatrix.create[Double](vehiclesPos.length / 2, 2, vehiclesPos)
 
-    vehicle.filter(x => x.time.isDefined)
+    log.info("calculate cluster")
+    val cluster = dbscan(dm)
+    log.info("cluster calculated")
 
-    val tiledVehicle = vehicle.map(vehicle => TiledVehicle(
-      TileCalc.convertLatLongToQuadKey(vehicle.latitude, vehicle.longitude),
-      TileCalc.transformTime(vehicle.time.get),
-      vehicle.id,
-      vehicle.time,
-      vehicle.latitude,
-      vehicle.longitude,
-      vehicle.heading,
-      vehicle.route_id,
-      vehicle.run_id,
-      vehicle.seconds_since_report
-    ))
+    val clusterRdd = sc.parallelize(cluster)
 
-    tiledVehicle.cache()
+    val clustered:RDD[VehicleCluster] = clusterRdd.filter(cluster => cluster.points.size > 4).map{cluster =>
+      val points = cluster.points
+      VehicleCluster(cluster.id.toInt, points(0).value(0), points(0).value(1), cluster.points.size)
+    }
 
-    tiledVehicle.saveToCassandra("streaming", "vehicles_by_tileid")
+    clustered.saveToCassandra("streaming", "vehiclecluster")
 
-    tiledVehicle.foreachRDD(rdd => rdd.foreachPartition(f = tiledVehicles => {
+    clustered.map(vehiclCluster => TiledVehicleCluster(TileCalc.convertLatLongToQuadKey(vehiclCluster.latitude, vehiclCluster.longitude), vehiclCluster.id, vehiclCluster.latitude, vehiclCluster.longitude, vehiclCluster.amount)).saveToCassandra("streaming", "vehiclecluster_by_tileid")
 
-      val producer: Producer[String, Array[Byte]] = new KafkaProducer[String, Array[Byte]](producerConf)
-
-      tiledVehicles.foreach { tiledVehicle =>
-        val message = new ProducerRecord[String, Array[Byte]]("tiledVehicles", new TiledVehicleEncoder().toBytes(tiledVehicle))
-        producer.send(message)
-      }
-
-      producer.close()
-
-    }))
-
-//    val positions:DStream[Double] = vehicle.flatMap(vehicle => Seq[Double](vehicle.latitude, vehicle.longitude))
-
-    ssc.start()
-    ssc.awaitTermination()
-    ssc.stop()
   }
 
+
+  def dbscan(v : breeze.linalg.DenseMatrix[Double]):Seq[GDBSCAN.Cluster[Double]] = {
+    val gdbscan = new GDBSCAN(
+      DBSCAN.getNeighbours(epsilon = 0.001, distance = Kmeans.euclideanDistance),
+      DBSCAN.isCorePoint(minPoints = 3)
+    )
+    val clusters = gdbscan.cluster(v)
+    clusters
+  }
 }

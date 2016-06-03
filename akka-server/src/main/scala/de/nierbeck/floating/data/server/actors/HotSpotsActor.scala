@@ -16,10 +16,11 @@
 
 package de.nierbeck.floating.data.server.actors
 
+import akka.actor.Actor.Receive
 import akka.actor.{Actor, ActorLogging, Props}
 import akka.stream.ActorMaterializer
-import com.datastax.driver.core.{ResultSet, Session}
-import de.nierbeck.floating.data.domain.{BoundingBox, Vehicle}
+import com.datastax.driver.core.ResultSet
+import de.nierbeck.floating.data.domain.{BoundingBox, Vehicle, VehicleCluster}
 import de.nierbeck.floating.data.server._
 import de.nierbeck.floating.data.tiler.TileCalc
 
@@ -27,31 +28,28 @@ import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
 
-object VehiclesPerBBoxActor {
+object HotSpotsActor {
 
-  def props():Props = Props(new VehiclesPerBBoxActor())
+  def props():Props = Props(new HotSpotsActor())
 
 }
 
-class VehiclesPerBBoxActor extends CassandraQuery {
+class HotSpotsActor extends CassandraQuery{
 
   implicit val executionContext = context.dispatcher
   implicit val actorMaterializer = ActorMaterializer()
 
-  val selectTrajectoriesByBBox = session.prepare("SELECT * FROM streaming.vehicles_by_tileid WHERE tile_id = ? AND time_id IN ? AND time > ? ")
+  val selectHotSpotsByBoundingBox = session.prepare("SELECT * FROM streaming.vehiclecluster_by_tileid WHERE tile_id = ?")
 
-  override def receive(): Receive = {
+  override def receive: Receive = {
     case boundingBox:BoundingBox => {
       log.info("received a BBox query")
-      val x = getVehiclesByBBox(boundingBox)
-      log.info(s"X: ${x}")
-      sender() ! x
-      context.system.eventStream.publish(boundingBox)
+      sender() ! getHotSpotsByBBox(boundingBox)
     }
     case _ => log.error("Wrong request")
   }
 
-  def getVehiclesByBBox(boundingBox: BoundingBox)(implicit executionContext: ExecutionContext): Future[List[Vehicle]] = {
+  def getHotSpotsByBBox(boundingBox: BoundingBox)(implicit executionContext: ExecutionContext): Future[List[VehicleCluster]] = {
 
     log.info(s"Querrying with bounding Box: ${boundingBox}")
 
@@ -59,37 +57,28 @@ class VehiclesPerBBoxActor extends CassandraQuery {
 
     log.info(s"extracted ${tileIds.size} tileIds")
 
-    val timeStamp = new java.util.Date(System.currentTimeMillis() - (5 * 60 * 1000))
-    val timeIdminusOne = TileCalc.transformTime(timeStamp).getTime
-    val timeId = TileCalc.transformTime(new java.util.Date(System.currentTimeMillis())).getTime
+    val futureResults: Set[Future[ResultSet]] = tileIds.map(tileId => session.executeAsync(selectHotSpotsByBoundingBox.bind(tileId)).toFuture)
 
-    val timeList = new java.util.ArrayList(List(timeIdminusOne, timeId).asJavaCollection)
-
-    log.info(s"timeId: ${timeIdminusOne},${timeId}")
-
-    val futureResults: Set[Future[ResultSet]] = tileIds.map(tileId => session.executeAsync(selectTrajectoriesByBBox.bind(tileId, timeList, timeStamp)).toFuture)
-
-    val futures: Set[Future[List[Vehicle]]] =
+    val futures: Set[Future[List[VehicleCluster]]] =
       futureResults.map(
         resultFuture => resultFuture.map(
           resultSet => resultSet.iterator().asScala.map(row => {
-            Vehicle(
-              row.getString("id"),
-              Some(row.getTimestamp("time")),
+            VehicleCluster(
+              row.getInt("id"),
               row.getDouble("latitude"),
               row.getDouble("longitude"),
-              row.getInt("heading"),
-              Some(row.getString("route_id")))
+              row.getInt("amount"))
           }).toList))
 
-    val futureVehicles: Future[List[Vehicle]] =
+    val futureVehicleClusters: Future[List[VehicleCluster]] =
       Future.sequence(
         futures.map(
           futureToFutureTry(_))).map(_.collect {
         case Success(x) => x
       }).map(set => set.toList.flatten)
 
-    futureVehicles
+    futureVehicleClusters
+
   }
 
 }

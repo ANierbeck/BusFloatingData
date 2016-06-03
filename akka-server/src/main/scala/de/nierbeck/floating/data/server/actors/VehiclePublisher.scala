@@ -19,7 +19,7 @@ package de.nierbeck.floating.data.server.actors
 import akka.actor.Actor.Receive
 import akka.actor.Props
 import akka.stream.actor.ActorPublisher
-import de.nierbeck.floating.data.domain.Vehicle
+import de.nierbeck.floating.data.domain.{BoundingBox, Vehicle}
 
 object VehiclePublisher {
   def props: Props =  Props(new VehiclePublisher())
@@ -28,10 +28,12 @@ object VehiclePublisher {
 class VehiclePublisher extends ActorPublisher[Vehicle]{
 
   override def preStart:Unit = {
-    context.system.eventStream.subscribe(self, classOf[Vehicle])
+    context.system.eventStream.subscribe(self, classOf[BoundingBox])
   }
 
   override def receive: Receive = {
     case vehicle: Vehicle => if (isActive && totalDemand > 0) onNext(vehicle)
+    case bbox: BoundingBox => {
+    }
   }
 }

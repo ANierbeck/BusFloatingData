@@ -8,55 +8,60 @@ self.getWebsocket = function() {
 };
 
 var center = new ol.Feature({
-geometry: new ol.geom.Point(ol.proj.fromLonLat([-118.23194,34.12527]))
+    geometry: new ol.geom.Point(ol.proj.fromLonLat([-118.23194,34.12527]))
 });
 
 center.setStyle(new ol.style.Style({
-image: new ol.style.Icon(/** @type {olx.style.IconOptions} */ ({
-  color: '#8959A8',
-  src: 'data/dot.png'
-}))
+    image: new ol.style.Icon(/** @type {olx.style.IconOptions} */ ({
+      color: '#8959A8',
+      src: 'data/dot.png'
+    }))
 }));
 
 
 var vectorSource = new ol.source.Vector({
-features: [center]
+    features: [center]
 });
 
 var vectorLayer = new ol.layer.Vector({
-source: vectorSource
+    source: vectorSource
 });
 
 self.vehicleSource = new ol.source.Vector();
-
 var vehicleLayer = new ol.layer.Vector({
-source: self.vehicleSource
+    source: self.vehicleSource
 });
 
 self.routesSource = new ol.source.Vector();
 var routeLayer = new ol.layer.Vector({
-source: self.routesSource
+    source: self.routesSource
+});
+
+self.hotspotSource = new ol.source.Vector();
+var hotspotLayer = new ol.layer.Vector({
+    source: self.hotspotSource
 });
 
 var rasterLayer = new ol.layer.Tile({
-source: new ol.source.OSM()
+    source: new ol.source.OSM()
 });
 
 
 var map = new ol.Map({
-controls: ol.control.defaults().extend([
-  new ol.control.OverviewMap()
-]),
-target: 'map',
-layers: [rasterLayer, vectorLayer, vehicleLayer, routeLayer],
-view: new ol.View({
-  projection: ol.proj.get('EPSG:3857'),
-  center: ol.proj.fromLonLat([-118.23194,34.12527]),
-  zoom: 14
-})
+    controls: ol.control.defaults().extend([
+      new ol.control.OverviewMap()
+    ]),
+    target: 'map',
+    layers: [rasterLayer, vectorLayer, vehicleLayer, routeLayer, hotspotLayer],
+    view: new ol.View({
+      projection: ol.proj.get('EPSG:3857'),
+      center: ol.proj.fromLonLat([-118.23194,34.12527]),
+      zoom: 14
+    })
 });
 
 self.akkaServiceBasis = 'http://localhost:8000/vehicles/boundingBox?bbox='
+self.akkaHotSpotBasis = 'http://localhost:8000/hotspots/boundingBox?bbox='
 self.akkaRouteInfoService = 'http://localhost:8000/routeInfo/'
 self.akkaRouteService = 'http://localhost:8000/route/'
 
@@ -139,7 +144,7 @@ self.map.on('moveend', function (event) {
   var brLonLat = ol.proj.toLonLat(bottomRight);
   var tlLonLat = ol.proj.toLonLat(topLeft);
 
-  self.akkaService = self.akkaServiceBasis+tlLonLat[1]+","+tlLonLat[0]+","+brLonLat[1]+","+brLonLat[0];
+  akkaService = self.akkaServiceBasis+tlLonLat[1]+","+tlLonLat[0]+","+brLonLat[1]+","+brLonLat[0];
 
 //  var socket = self.getWebsocket();
 //
@@ -150,10 +155,23 @@ self.map.on('moveend', function (event) {
 //
 //  socket.send(tlLonLat[1]+","+tlLonLat[0]+","+brLonLat[1]+","+brLonLat[0])
 
-  self.ajax(self.akkaService).done(function(data){
+  self.ajax(akkaService).done(function(data){
     console.log("got data")
     self.drawDataOnMap(data);
   });
+
+  if ($('#hotspot').is(':checked')) {
+    console.log("draw hotspots")
+    self.ajax(self.akkaHotSpotBasis+tlLonLat[1]+","+tlLonLat[0]+","+brLonLat[1]+","+brLonLat[0]).done(function(data){
+      self.drawHotSpotsOnMap(data)
+    });
+  } else {
+      if (self.hotspotSource.getFeatures().length > 0) {
+         console.log("cleared hotspotSource");
+         self.hotspotSource.clear();
+      }
+  }
+
 });
 
 self.drawRoutes = function(routeIds) {
@@ -271,6 +289,34 @@ self.map.on('click', function(event) {
     setCoordinateAndShow(coordinate, pixel);
 });
 
+self.drawHotSpotsOnMap = function(data) {
+   console.log("draw clusters")
+   if (self.hotspotSource.getFeatures().length > 0) {
+     console.log("cleared hotspotSource");
+     self.hotspotSource.clear();
+   }
+
+   for (var i = 0; i < data.length; i++) {
+       var field = data[i];
+       var feature = new ol.Feature(field);
+
+       var latitude = field.latitude;
+       var longitude = field.longitude;
+       var point = new ol.geom.Point(ol.proj.fromLonLat([longitude,latitude]));
+
+       style = new ol.style.Style({
+             image: new ol.style.Icon(/** @type {olx.style.IconOptions} */ ({
+             src: 'data/bus.png'
+             }))
+         });
+
+       feature.setGeometry(point)
+       feature.setStyle(style)
+
+       self.hotspotSource.addFeature(feature);
+   }
+
+}
 
 self.pickColor = function() {
 return "#000000".replace(/0/g,function(){return (~~(Math.random()*16)).toString(16);});

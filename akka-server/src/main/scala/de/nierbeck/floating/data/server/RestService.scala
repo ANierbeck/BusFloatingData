@@ -28,7 +28,7 @@ import com.datastax.driver.core.{ResultSet, Session}
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.lambdaworks.jacks.JacksMapper
 import de.nierbeck.floating.data.domain._
-import de.nierbeck.floating.data.server.actors.{RouteDetailActor, RouteInfoActor, VehiclePublisher, VehiclesPerBBoxActor}
+import de.nierbeck.floating.data.server.actors._
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
@@ -51,6 +51,7 @@ trait RestService extends CorsSupport {
     val vehiclesPerBBox = system.actorOf(VehiclesPerBBoxActor.props(), "vehicles-per-bbox")
     val routeDetailsPerId = system.actorOf(RouteDetailActor.props(), "route-details-id")
     val routeInfosPerId = system.actorOf(RouteInfoActor.props(), "route-info-id")
+    val hotspots = system.actorOf(HotSpotsActor.props(), "hotspots")
 
     val vehicleSource: Source[Vehicle, ActorRef] = Source.actorPublisher[Vehicle](VehiclePublisher.props)
 
@@ -101,6 +102,21 @@ trait RestService extends CorsSupport {
       }
     }
 
+    def hotSpots = path("hotspots" / "boundingBox") {
+      corsHandler {
+        parameter('bbox.as[String]) { bbox =>
+          get {
+            marshal {
+              val bboxCoords: Array[String] = bbox.split(",")
+              val boundingBox: BoundingBox =
+                new BoundingBox(LatLon(bboxCoords(0).toFloat, bboxCoords(1).toFloat), LatLon(bboxCoords(2).toFloat, bboxCoords(3).toFloat))
+              (hotspots ? boundingBox).mapTo[Future[List[VehicleCluster]]].flatMap(future => future)
+            }
+          }
+        }
+      }
+    }
+
     val vehiclesPerBBoxService = Flow[Message].map {
       case TextMessage.Strict(bbox) => {
         val bboxCoords: Array[String] = bbox.split(",")
@@ -138,7 +154,7 @@ trait RestService extends CorsSupport {
 
     get {
       index ~ img ~ js
-    } ~ service ~ vehiclesOnBBox ~ routeInfo ~ routes ~ webSocketVehicles
+    } ~ service ~ vehiclesOnBBox ~ routeInfo ~ routes ~ webSocketVehicles ~ hotSpots
   }
 
 

@@ -23,9 +23,6 @@ import java.nio.file.{ Files, Paths }
 import de.nierbeck.floating.data.domain.Vehicle
 import org.scalatest.{ FlatSpec, Matchers }
 
-/**
- * Created by anierbeck on 14.05.16.
- */
 class TestKryoSerialization extends FlatSpec with Matchers {
 
   "Vehicle" should "be serialized via Kryo and back deserialized again" ignore {

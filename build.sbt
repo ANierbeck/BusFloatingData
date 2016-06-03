@@ -86,7 +86,9 @@ lazy val sparkDependencies = Seq(
   "org.apache.spark"                %% "spark-streaming"            % spark,
   "org.apache.spark"                %% "spark-streaming-kafka"      % spark,
   "org.apache.spark"                %% "spark-catalyst"             % spark,
-  "org.apache.spark"                %% "spark-sql"                  % spark
+  "org.apache.spark"                %% "spark-sql"                  % spark,
+  "org.apache.spark"                %% "spark-mllib"                % spark,
+  "org.scalanlp"                    %%  "nak"                       % "1.3"
 )
 
 //noinspection ScalaStyle
@@ -172,6 +174,7 @@ lazy val sparkDigest = (project in file("spark-digest")).
     libraryDependencies += "org.apache.kafka" %% "kafka" % "0.8.2.2",
     scalaVersion := "2.10.5",
     crossScalaVersions := Seq("2.10.5"),
+    mainClass in (run) := Some("de.nierbeck.floating.data.stream.spark.KafkaToCassandraSparkApp"),
     headers := Map(
       "scala" -> Apache2_0("2016", "Achim Nierbeck"),
       "conf" -> Apache2_0("2016", "Achim Nierbeck", "#")
