@@ -25,6 +25,7 @@ import de.nierbeck.floating.data.server._
 import de.nierbeck.floating.data.tiler.TileCalc
 
 import scala.collection.JavaConverters._
+import scala.collection.JavaConversions._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
 
@@ -65,6 +66,7 @@ class HotSpotsActor extends CassandraQuery{
           resultSet => resultSet.iterator().asScala.map(row => {
             VehicleCluster(
               row.getInt("id"),
+              row.getLong("timestamp"),
               row.getDouble("latitude"),
               row.getDouble("longitude"),
               row.getInt("amount"))

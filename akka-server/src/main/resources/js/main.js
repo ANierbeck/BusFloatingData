@@ -8,7 +8,8 @@ self.getWebsocket = function() {
 };
 
 var center = new ol.Feature({
-    geometry: new ol.geom.Point(ol.proj.fromLonLat([-118.23194,34.12527]))
+    //geometry: new ol.geom.Point(ol.proj.fromLonLat([-118.23194,34.12527]))
+    geometry: new ol.geom.Point(ol.proj.fromLonLat([-118.30814,34.05374]))
 });
 
 center.setStyle(new ol.style.Style({
@@ -55,7 +56,9 @@ var map = new ol.Map({
     layers: [rasterLayer, vectorLayer, vehicleLayer, routeLayer, hotspotLayer],
     view: new ol.View({
       projection: ol.proj.get('EPSG:3857'),
-      center: ol.proj.fromLonLat([-118.23194,34.12527]),
+      //34.05374 | -118.30814
+      //center: ol.proj.fromLonLat([-118.23194,34.12527]),
+      center: ol.proj.fromLonLat([-118.30814,34.05374]),
       zoom: 14
     })
 });

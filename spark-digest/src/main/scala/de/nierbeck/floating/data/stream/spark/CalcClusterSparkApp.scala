@@ -16,7 +16,7 @@
 
 package de.nierbeck.floating.data.stream.spark
 
-import java.util.Properties
+import java.util.{Date, Properties}
 
 import breeze.linalg.DenseMatrix
 import com.datastax.spark.connector._
@@ -59,7 +59,7 @@ object CalcClusterSparkApp {
 
     val sc = new SparkContext(sparkConf)
 
-    val vehiclesRdd:RDD[Vehicle] = sc.cassandraTable[Vehicle]("streaming", "vehicles").where("time > '2016-06-04 00:00:00'")
+    val vehiclesRdd:RDD[Vehicle] = sc.cassandraTable[Vehicle]("streaming", "vehicles").where("time > '2016-06-05 11:10:00'")
 
     val vehiclesPos:Array[Double] = vehiclesRdd.flatMap(vehicle => Seq[Double](vehicle.latitude, vehicle.longitude)).collect()
 
@@ -67,28 +67,95 @@ object CalcClusterSparkApp {
 
     log.info("calculate cluster")
     val cluster = dbscan(dm)
-    log.info("cluster calculated")
+    log.info(s"cluster calculated: ${cluster.seq.size}")
 
     val clusterRdd = sc.parallelize(cluster)
 
-    val clustered:RDD[VehicleCluster] = clusterRdd.filter(cluster => cluster.points.size > 4).map{cluster =>
-      val points = cluster.points
-      VehicleCluster(cluster.id.toInt, points(0).value(0), points(0).value(1), cluster.points.size)
+    val clusterRddFiltered = clusterRdd/*.filter(cluster => cluster.points.size > 4)*/.cache()
+
+    val clusterdByKey = clusterRddFiltered.map(cluster => (cluster.id, cluster))
+
+    val coordPointList:RDD[(Long,(Double,Double))] = clusterRddFiltered.map{ cluster =>
+      val points:Seq[GDBSCAN.Point[Double]] = cluster.points
+
+      val coords: List[Double] = points.map(point => point.value.data).toList.flatMap(x => x.toList)
+
+      val coordTuples = convertListToTuple(coords, List.empty)
+
+      val x = coordTuples.map(coordTuple => (points.size, convertToPoint(coordTuple)))
+
+      (cluster.id, x)
+    }.map{pointListTuple =>
+      (pointListTuple._1, pointListTuple._2.foldLeft((0, (0.0,0.0,0.0))) {
+        case ((count,(accA,accB,accC)), (z,(a,b,c))) => ( z,  (accA + a, accB + b, accC + c))
+      })
+    }.map{ case ((id, (count, (a, b, c)))) =>
+      (id, (a/count, b/count, c/count))
+    }.map{ case ((id,(a,b,c))) =>
+      import Math._
+      val lon = atan2(b,a)
+      val hyp = sqrt(a * a + b * b)
+      val lat = atan2(c, hyp)
+      (id, (lat * 180 / PI, lon * 180 / PI))
     }
+
+    val clustered:RDD[VehicleCluster] = clusterdByKey.join(coordPointList).map{ case ( (clusterId, (cluster, (centerLat, centerLon))) )  =>
+      VehicleCluster(clusterId.toInt, new Date().getTime, centerLat, centerLon, cluster.points.size)
+    }
+
+
+/*
+    val clustered:RDD[VehicleCluster] = clusterRddFiltered.map{cluster =>
+      val points:Seq[GDBSCAN.Point[Double]] = cluster.points
+
+      val coords: List[Double] = points.map(point => point.value.data).toList.flatMap(x => x.toList)
+
+//      val coordTuples = convertListToTuple(coords, List.empty)
+//      coordTuples.map(coordTuple => convertToPoint(coordTuple))
+
+      VehicleCluster(cluster.id.toInt, points(0).value(0), points(0).value(1), cluster.points.size, coords)
+    }
+*/
 
     clustered.saveToCassandra("streaming", "vehiclecluster")
 
-    clustered.map(vehiclCluster => TiledVehicleCluster(TileCalc.convertLatLongToQuadKey(vehiclCluster.latitude, vehiclCluster.longitude), vehiclCluster.id, vehiclCluster.latitude, vehiclCluster.longitude, vehiclCluster.amount)).saveToCassandra("streaming", "vehiclecluster_by_tileid")
+    clustered.map(vehiclCluster => TiledVehicleCluster(TileCalc.convertLatLongToQuadKey(vehiclCluster.latitude, vehiclCluster.longitude), vehiclCluster.id, vehiclCluster.timeStamp, vehiclCluster.latitude, vehiclCluster.longitude, vehiclCluster.amount)).saveToCassandra("streaming", "vehiclecluster_by_tileid")
 
   }
 
+  def convertToPoint(coordTuple:(Double,Double)):(Double,Double,Double) = {
+    import Math._
+
+    val lat = coordTuple._1 * PI / 180
+    val lon = coordTuple._2 * PI / 180
+
+    val a = cos(lat) * cos(lon)
+    val b = cos(lat) * sin(lon)
+    val c = sin(lat)
+
+    (a,b,c)
+  }
 
   def dbscan(v : breeze.linalg.DenseMatrix[Double]):Seq[GDBSCAN.Cluster[Double]] = {
     val gdbscan = new GDBSCAN(
       DBSCAN.getNeighbours(epsilon = 0.001, distance = Kmeans.euclideanDistance),
-      DBSCAN.isCorePoint(minPoints = 3)
+      DBSCAN.isCorePoint(minPoints = 4)
     )
     val clusters = gdbscan.cluster(v)
     clusters
   }
+
+  def convertListToTuple(incomingList: List[Double], tupleList: List[(Double, Double)]): List[(Double, Double)] = {
+
+    if (incomingList.size >= 2) {
+      val newTuples: List[(Double, Double)] = tupleList :+ (incomingList.head, incomingList.tail.head)
+      if (incomingList.size > 2)
+        convertListToTuple(incomingList.tail.tail, newTuples)
+      else
+        newTuples
+    } else {
+      tupleList
+    }
+  }
+
 }

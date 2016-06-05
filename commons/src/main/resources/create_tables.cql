@@ -43,16 +43,20 @@ CREATE TABLE vehicles_by_tileid (
 ) WITH CLUSTERING ORDER BY (time DESC);
 
 CREATE TABLE vehiclecluster (
-    id int PRIMARY KEY,
+    id int,
+    time_stamp bigint,
     longitude double,
     latitude double,
-    amount int
+    amount int,
+    PRIMARY KEY (id, time_stamp)
 );
 
 CREATE TABLE vehiclecluster_by_tileid (
-    tile_id text PRIMARY KEY,
+    tile_id text,
     id int,
+    time_stamp bigint,
     longitude double,
     latitude double,
-    amount int
+    amount int,
+    PRIMARY KEY (tile_id, id, time_stamp)
 );
