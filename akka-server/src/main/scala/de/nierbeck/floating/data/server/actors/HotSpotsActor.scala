@@ -62,15 +62,18 @@ class HotSpotsActor extends CassandraQuery{
 
     val futures: Set[Future[List[VehicleCluster]]] =
       futureResults.map(
-        resultFuture => resultFuture.map(
-          resultSet => resultSet.iterator().asScala.map(row => {
-            VehicleCluster(
+        resultFuture => resultFuture.map{ resultSet =>
+            resultSet.iterator().asScala.map{ row =>
+//            log.info("found vehicleCluster in db")
+            val vehicle = VehicleCluster(
               row.getInt("id"),
-              row.getLong("timestamp"),
+              row.getLong("time_stamp"),
               row.getDouble("latitude"),
               row.getDouble("longitude"),
               row.getInt("amount"))
-          }).toList))
+//            log.info(s"vehicleCluster: ${vehicle}")
+            vehicle
+          }.toList})
 
     val futureVehicleClusters: Future[List[VehicleCluster]] =
       Future.sequence(

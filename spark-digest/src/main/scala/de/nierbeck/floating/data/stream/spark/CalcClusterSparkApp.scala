@@ -59,15 +59,19 @@ object CalcClusterSparkApp {
 
     val sc = new SparkContext(sparkConf)
 
-    val vehiclesRdd:RDD[Vehicle] = sc.cassandraTable[Vehicle]("streaming", "vehicles").where("time > '2016-06-05 11:10:00'")
+    val vehiclesRdd:RDD[Vehicle] = sc.cassandraTable[Vehicle]("streaming", "vehicles").where("time > '2016-06-05 18:00:00' and time < '2016-06-05 18:15:00'")
 
     val vehiclesPos:Array[Double] = vehiclesRdd.flatMap(vehicle => Seq[Double](vehicle.latitude, vehicle.longitude)).collect()
+
+    log.info(s"got ${vehiclesPos.length} positions, first: ${vehiclesPos.head},${vehiclesPos.tail.head}")
 
     val dm = DenseMatrix.create[Double](vehiclesPos.length / 2, 2, vehiclesPos)
 
     log.info("calculate cluster")
     val cluster = dbscan(dm)
     log.info(s"cluster calculated: ${cluster.seq.size}")
+
+    log.info(s"clusters: ${cluster}")
 
     val clusterRdd = sc.parallelize(cluster)
 
@@ -76,15 +80,15 @@ object CalcClusterSparkApp {
     val clusterdByKey = clusterRddFiltered.map(cluster => (cluster.id, cluster))
 
     val coordPointList:RDD[(Long,(Double,Double))] = clusterRddFiltered.map{ cluster =>
-      val points:Seq[GDBSCAN.Point[Double]] = cluster.points
+      //cluster.map(_.points.map(_.value.toArray))
+      val points: Seq[Array[Double]] = cluster.points.map(_.value.toArray)
+      log.info(s"cluster: ${cluster}")
 
-      val coords: List[Double] = points.map(point => point.value.data).toList.flatMap(x => x.toList)
+      val coords: List[Double] = points.toList.flatMap(x => x.toList)
 
       val coordTuples = convertListToTuple(coords, List.empty)
 
-      val x = coordTuples.map(coordTuple => (points.size, convertToPoint(coordTuple)))
-
-      (cluster.id, x)
+      (cluster.id, coordTuples.map(coordTuple => (points.size, convertToPoint(coordTuple))))
     }.map{pointListTuple =>
       (pointListTuple._1, pointListTuple._2.foldLeft((0, (0.0,0.0,0.0))) {
         case ((count,(accA,accB,accC)), (z,(a,b,c))) => ( z,  (accA + a, accB + b, accC + c))
@@ -137,6 +141,7 @@ object CalcClusterSparkApp {
   }
 
   def dbscan(v : breeze.linalg.DenseMatrix[Double]):Seq[GDBSCAN.Cluster[Double]] = {
+    log.info(s"calculating cluster for denseMatrix: ${v.data.head}, ${v.data.tail.head}")
     val gdbscan = new GDBSCAN(
       DBSCAN.getNeighbours(epsilon = 0.001, distance = Kmeans.euclideanDistance),
       DBSCAN.isCorePoint(minPoints = 4)
