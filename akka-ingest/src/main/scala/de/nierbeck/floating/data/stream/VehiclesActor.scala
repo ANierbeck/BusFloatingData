@@ -59,9 +59,9 @@ class VehiclesActor(routeInfo: RouteInfo, httpClient: Flow[HttpRequest, HttpResp
 
   log.info(s"VehiclesActor for routeID ${routeInfo.id} created")
 
-  val tick = context.system.scheduler.schedule(0 seconds, 30 seconds, self, Tick())
-
   var buffer = Vector.empty[Vehicle]
+
+  val tick = context.system.scheduler.schedule(0 seconds, 30 seconds, self, Tick())
 
   override def receive: Receive = {
     case Tick() => {

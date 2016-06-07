@@ -174,7 +174,7 @@ lazy val sparkDigest = (project in file("spark-digest")).
     libraryDependencies += "org.apache.kafka" %% "kafka" % "0.8.2.2",
     scalaVersion := "2.10.5",
     crossScalaVersions := Seq("2.10.5"),
-    mainClass in (run) := Some("de.nierbeck.floating.data.stream.spark.KafkaToCassandraSparkApp"),
+    mainClass in (run) := Some("de.nierbeck.floating.data.stream.spark.KafkaToCassandraSparkAppgit "),
     headers := Map(
       "scala" -> Apache2_0("2016", "Achim Nierbeck"),
       "conf" -> Apache2_0("2016", "Achim Nierbeck", "#")

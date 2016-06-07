@@ -19,27 +19,27 @@ package de.nierbeck.floating.data.stream
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, Uri }
+import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCode, Uri}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{ Flow, Sink, Source }
-import com.datastax.driver.core.{ Cluster, PreparedStatement, Session }
+import akka.stream.scaladsl.{Flow, Sink, Source}
+import com.datastax.driver.core.{Cluster, PreparedStatement, Session}
 import de.heikoseeberger.akkahttpjson4s.Json4sSupport
 
 import scala.concurrent.Future
-import scala.util.{ Failure, Success }
-import org.json4s.{ DefaultFormats, Formats, Serialization, jackson }
+import scala.util.{Failure, Success}
+import org.json4s.{DefaultFormats, Formats, Serialization, jackson}
 
 import concurrent.duration._
 import akka.kafka.ProducerSettings
 import org.reactivestreams.Subscriber
 
 import scala.concurrent.Promise
-import akka.kafka.scaladsl.{ Producer, _ }
-import de.nierbeck.floating.data.domain.{ RouteInfos, Routes, Vehicle }
-import de.nierbeck.floating.data.serializer.{ VehicleFstSerializer }
+import akka.kafka.scaladsl.{Producer, _}
+import de.nierbeck.floating.data.domain.{RouteInfos, Routes, Vehicle}
+import de.nierbeck.floating.data.serializer.VehicleFstSerializer
 import org.apache.kafka.clients.producer.ProducerRecord
-import org.apache.kafka.common.serialization.{ ByteArraySerializer, StringSerializer }
+import org.apache.kafka.common.serialization.{ByteArraySerializer, StringSerializer}
 
 object StreamToKafkaApp {
 
@@ -95,8 +95,8 @@ class StreamToKafkaApp(system: ActorSystem, httpClient: Flow[HttpRequest, HttpRe
     val materializer = Source.single(HttpRequest(uri = Uri("/agencies/lametro/routes/"))).via(httpClient).runWith(Sink.head)
     val future = materializer.map { x =>
       x.status match {
-        case status if status.isSuccess() => { log.info("success"); Some(x.entity) }
-        case status if status.isFailure() => { None }
+        case status:StatusCode if status.isSuccess() => { log.info("success"); Some(x.entity) }
+        case status:StatusCode if status.isFailure() => { None }
       }
     }
 
@@ -137,13 +137,13 @@ class StreamToKafkaApp(system: ActorSystem, httpClient: Flow[HttpRequest, HttpRe
 
   }
 
-  def extractRoutes(routeId: String) = {
+  def extractRoutes(routeId: String): Unit = {
 
     val materializer = Source.single(HttpRequest(uri = Uri(s"/agencies/lametro/routes/$routeId/sequence/"))).via(httpClient).runWith(Sink.head)
     val future = materializer.map { x =>
       x.status match {
-        case status if status.isSuccess() => { Some(x.entity) }
-        case status if status.isFailure() => { None }
+        case status:StatusCode if status.isSuccess() => { Some(x.entity) }
+        case status:StatusCode if status.isFailure() => { None }
       }
     }
 
