@@ -44,11 +44,6 @@ var hotspotLayer = new ol.layer.Vector({
     source: self.hotspotSource
 });
 
-self.hotspotDetailsSource = new ol.source.Vector();
-var hotspotDetailsLayer = new ol.layer.Vector({
-    source: self.hotspotDetailsSource
-});
-
 var rasterLayer = new ol.layer.Tile({
     source: new ol.source.OSM()
 });
@@ -59,7 +54,7 @@ var map = new ol.Map({
       new ol.control.OverviewMap()
     ]),
     target: 'map',
-    layers: [rasterLayer, vectorLayer, vehicleLayer, routeLayer, hotspotLayer, hotspotDetailsLayer],
+    layers: [rasterLayer, vectorLayer, vehicleLayer, routeLayer, hotspotLayer],
     view: new ol.View({
       projection: ol.proj.get('EPSG:3857'),
       //34.05374 | -118.30814
@@ -73,7 +68,6 @@ self.akkaServiceBasis = 'http://localhost:8000/vehicles/boundingBox?bbox='
 self.akkaHotSpotBasis = 'http://localhost:8000/hotspots/boundingBox?bbox='
 self.akkaRouteInfoService = 'http://localhost:8000/routeInfo/'
 self.akkaRouteService = 'http://localhost:8000/route/'
-self.akkaHotSpotDetails = 'http://localhost:8000/hotspots/'
 
 self.ajax = function(uri) {
   var request = {
@@ -233,38 +227,6 @@ self.createOverlay = function() {
     });
 }
 
-self.drawClusterDetails = function(clusterId) {
-    var requestUrl = self.akkaHotSpotDetails+clusterId;
-    self.ajax(requestUrl).done(function(data){
-       if (self.hotspotDetailsSource.getFeatures().length > 0) {
-         console.log("cleared hotspotDetailsSource");
-         self.hotspotDetailsSource.clear();
-       }
-       var feature = new ol.Feature(data)
-       for (var i = 0, ii = data.length; i < ii; ++i){
-//        console.log(data[i])
-           var field = data[i];
-           feature.setId(field.id);
-
-           var latitude = field.latitude;
-           var longitude = field.longitude;
-           var point = new ol.geom.Point(ol.proj.fromLonLat([longitude,latitude]));
-
-           style = new ol.style.Style({
-                image: new ol.style.Icon(/** @type {olx.style.IconOptions} */ ({
-                color: '#FFFFFF',
-                src: 'data/dot.png'
-                }))
-            });
-
-          feature.setGeometry(point)
-          feature.setStyle(style)
-
-       }
-       self.hotspotDetailsSource.addFeature(feature);
-    });
-}
-
 self.queryRoutes = function(routeIds) {
     for (var i = 0, ii = routeIds.length; i < ii; ++i) {
         var requestUrl = self.akkaRouteInfoService+routeIds[i];
@@ -312,7 +274,6 @@ self.setCoordinateAndShow = function(coordinate, pixel) {
 
         if (features[i].getId().indexOf("Cluster-") == 0) {
             console.log("found a cluster");
-            self.drawClusterDetails(features[i].getProperties().id)
         }
       }
       if (uniqueIds.length > 0) {
