@@ -52,6 +52,7 @@ trait RestService extends CorsSupport {
     val routeDetailsPerId = system.actorOf(RouteDetailActor.props(), "route-details-id")
     val routeInfosPerId = system.actorOf(RouteInfoActor.props(), "route-info-id")
     val hotspots = system.actorOf(HotSpotsActor.props(), "hotspots")
+    val hotSpotDetailsPerId = system.actorOf(HotSpotDetailsActor.props(), "hotspotDetails")
 
     val vehicleSource: Source[Vehicle, ActorRef] = Source.actorPublisher[Vehicle](VehiclePublisher.props)
 
@@ -117,6 +118,16 @@ trait RestService extends CorsSupport {
       }
     }
 
+    def hotSpotDetails = path("hotspots" / LongNumber) { hotSpotId =>
+      corsHandler{
+        get{
+          marshal{
+            (hotSpotDetailsPerId ? hotSpotId).mapTo[List[VehicleClusterDetails]]
+          }
+        }
+      }
+    }
+
     val vehiclesPerBBoxService = Flow[Message].map {
       case TextMessage.Strict(bbox) => {
         val bboxCoords: Array[String] = bbox.split(",")
@@ -154,7 +165,7 @@ trait RestService extends CorsSupport {
 
     get {
       index ~ img ~ js
-    } ~ service ~ vehiclesOnBBox ~ routeInfo ~ routes ~ webSocketVehicles ~ hotSpots
+    } ~ service ~ vehiclesOnBBox ~ routeInfo ~ routes ~ webSocketVehicles ~ hotSpots ~ hotSpotDetails
   }
 
 

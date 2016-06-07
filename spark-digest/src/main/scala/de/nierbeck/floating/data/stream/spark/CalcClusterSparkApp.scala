@@ -20,7 +20,7 @@ import java.util.{Date, Properties}
 
 import breeze.linalg.DenseMatrix
 import com.datastax.spark.connector._
-import de.nierbeck.floating.data.domain.{TiledVehicle, TiledVehicleCluster, Vehicle, VehicleCluster}
+import de.nierbeck.floating.data.domain._
 import de.nierbeck.floating.data.serializer.{TiledVehicleEncoder, VehicleFstDecoder}
 import de.nierbeck.floating.data.tiler.TileCalc
 import kafka.serializer.StringDecoder
@@ -59,28 +59,41 @@ object CalcClusterSparkApp {
 
     val sc = new SparkContext(sparkConf)
 
-    val vehiclesRdd:RDD[Vehicle] = sc.cassandraTable[Vehicle]("streaming", "vehicles").where("time > '2016-06-05 18:00:00' and time < '2016-06-05 18:15:00'")
+    val vehiclesRdd:RDD[Vehicle] = sc.cassandraTable[Vehicle]("streaming", "vehicles").where("time > '2016-06-05 18:00:00' and time < '2016-06-05 19:00:00'")
 
-    val vehiclesPos:Array[Double] = vehiclesRdd.flatMap(vehicle => Seq[Double](vehicle.latitude, vehicle.longitude)).collect()
+    val vehiclesPos:Array[Double] = vehiclesRdd
+      .flatMap(vehicle => Seq[(String, (Double,Double))]((s"${vehicle.id}_${vehicle.latitude}_${vehicle.longitude}",(vehicle.latitude, vehicle.longitude))))
+      .reduceByKey((x,y) => x)
+      .map(x => List(x._2._1, x._2._2)).flatMap(identity)
+      .collect()
+
+    val seqOfVehiclePos:Seq[Array[Double]] = Seq(vehiclesPos)
 
     log.info(s"got ${vehiclesPos.length} positions, first: ${vehiclesPos.head},${vehiclesPos.tail.head}")
 
-    val dm = DenseMatrix.create[Double](vehiclesPos.length / 2, 2, vehiclesPos)
+    val vehiclePosRdd: RDD[Array[Double]] = sc.parallelize(seqOfVehiclePos)
 
-    log.info("calculate cluster")
-    val cluster = dbscan(dm)
-    log.info(s"cluster calculated: ${cluster.seq.size}")
+    val denseMatrixRdd: RDD[DenseMatrix[Double]] = vehiclePosRdd.map(vehiclePosArray => DenseMatrix.create[Double](vehiclePosArray.length / 2, 2, vehiclePosArray))
 
-    log.info(s"clusters: ${cluster}")
-
-    val clusterRdd = sc.parallelize(cluster)
+    val clusterRdd: RDD[GDBSCAN.Cluster[Double]] = denseMatrixRdd.map(dm => dbscan(dm)).flatMap(identity)
 
     val clusterRddFiltered = clusterRdd/*.filter(cluster => cluster.points.size > 4)*/.cache()
+
+    clusterRddFiltered.map{ cluster =>
+      val timeStamp:Long = new Date().getTime
+      val id:Long = cluster.id
+      val points = cluster.points.map(_.value.toArray)
+      points.zipWithIndex.map{tuple =>
+        val points = correctLatLon(tuple._1(0), tuple._1(1))
+        val index = tuple._2
+        VehicleClusterDetails(id, index, timeStamp, points._1, points._2)
+      }
+    }.flatMap(identity)
+      .saveToCassandra("streaming", "vehicleclusterdetails")
 
     val clusterdByKey = clusterRddFiltered.map(cluster => (cluster.id, cluster))
 
     val coordPointList:RDD[(Long,(Double,Double))] = clusterRddFiltered.map{ cluster =>
-      //cluster.map(_.points.map(_.value.toArray))
       val points: Seq[Array[Double]] = cluster.points.map(_.value.toArray)
       log.info(s"cluster: ${cluster}")
 
@@ -107,20 +120,6 @@ object CalcClusterSparkApp {
       VehicleCluster(clusterId.toInt, new Date().getTime, centerLat, centerLon, cluster.points.size)
     }
 
-
-/*
-    val clustered:RDD[VehicleCluster] = clusterRddFiltered.map{cluster =>
-      val points:Seq[GDBSCAN.Point[Double]] = cluster.points
-
-      val coords: List[Double] = points.map(point => point.value.data).toList.flatMap(x => x.toList)
-
-//      val coordTuples = convertListToTuple(coords, List.empty)
-//      coordTuples.map(coordTuple => convertToPoint(coordTuple))
-
-      VehicleCluster(cluster.id.toInt, points(0).value(0), points(0).value(1), cluster.points.size, coords)
-    }
-*/
-
     clustered.saveToCassandra("streaming", "vehiclecluster")
 
     clustered.map(vehiclCluster => TiledVehicleCluster(TileCalc.convertLatLongToQuadKey(vehiclCluster.latitude, vehiclCluster.longitude), vehiclCluster.id, vehiclCluster.timeStamp, vehiclCluster.latitude, vehiclCluster.longitude, vehiclCluster.amount)).saveToCassandra("streaming", "vehiclecluster_by_tileid")
@@ -143,8 +142,8 @@ object CalcClusterSparkApp {
   def dbscan(v : breeze.linalg.DenseMatrix[Double]):Seq[GDBSCAN.Cluster[Double]] = {
     log.info(s"calculating cluster for denseMatrix: ${v.data.head}, ${v.data.tail.head}")
     val gdbscan = new GDBSCAN(
-      DBSCAN.getNeighbours(epsilon = 0.001, distance = Kmeans.euclideanDistance),
-      DBSCAN.isCorePoint(minPoints = 4)
+      DBSCAN.getNeighbours(epsilon = 0.0005, distance = Kmeans.euclideanDistance),
+      DBSCAN.isCorePoint(minPoints = 3)
     )
     val clusters = gdbscan.cluster(v)
     clusters
@@ -153,7 +152,7 @@ object CalcClusterSparkApp {
   def convertListToTuple(incomingList: List[Double], tupleList: List[(Double, Double)]): List[(Double, Double)] = {
 
     if (incomingList.size >= 2) {
-      val newTuples: List[(Double, Double)] = tupleList :+ (incomingList.head, incomingList.tail.head)
+      val newTuples: List[(Double, Double)] = tupleList :+ correctLatLon(incomingList.head, incomingList.tail.head)
       if (incomingList.size > 2)
         convertListToTuple(incomingList.tail.tail, newTuples)
       else
@@ -162,5 +161,21 @@ object CalcClusterSparkApp {
       tupleList
     }
   }
+
+  //this only works for LosAngeles
+  private def correctLatLon(lat: Double, lon: Double) = {
+    val MinLatitude = -85.05112878
+    val MaxLatitude = 85.05112878
+    val MinLongitude = -180
+    val MaxLongitude = 180
+
+    if (lat < MinLatitude || lat > MaxLatitude) {
+      //obviously the cluster did switch the coordinates
+      (lon, lat)
+    } else {
+      (lat, lon)
+    }
+  }
+
 
 }

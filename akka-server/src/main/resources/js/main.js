@@ -9,6 +9,7 @@ self.getWebsocket = function() {
 
 var center = new ol.Feature({
     //geometry: new ol.geom.Point(ol.proj.fromLonLat([-118.23194,34.12527]))
+    id: "center",
     geometry: new ol.geom.Point(ol.proj.fromLonLat([-118.30814,34.05374]))
 });
 
@@ -43,6 +44,11 @@ var hotspotLayer = new ol.layer.Vector({
     source: self.hotspotSource
 });
 
+self.hotspotDetailsSource = new ol.source.Vector();
+var hotspotDetailsLayer = new ol.layer.Vector({
+    source: self.hotspotDetailsSource
+});
+
 var rasterLayer = new ol.layer.Tile({
     source: new ol.source.OSM()
 });
@@ -53,7 +59,7 @@ var map = new ol.Map({
       new ol.control.OverviewMap()
     ]),
     target: 'map',
-    layers: [rasterLayer, vectorLayer, vehicleLayer, routeLayer, hotspotLayer],
+    layers: [rasterLayer, vectorLayer, vehicleLayer, routeLayer, hotspotLayer, hotspotDetailsLayer],
     view: new ol.View({
       projection: ol.proj.get('EPSG:3857'),
       //34.05374 | -118.30814
@@ -67,6 +73,7 @@ self.akkaServiceBasis = 'http://localhost:8000/vehicles/boundingBox?bbox='
 self.akkaHotSpotBasis = 'http://localhost:8000/hotspots/boundingBox?bbox='
 self.akkaRouteInfoService = 'http://localhost:8000/routeInfo/'
 self.akkaRouteService = 'http://localhost:8000/route/'
+self.akkaHotSpotDetails = 'http://localhost:8000/hotspots/'
 
 self.ajax = function(uri) {
   var request = {
@@ -107,6 +114,7 @@ self.drawDataOnMap = function(data) {
        var field = data[i];
        console.log("createing feature for data: "+field.id);
        var feature = new ol.Feature(field);
+       feature.setId(field.id);
 
        var latitude = field.latitude;
        var longitude = field.longitude;
@@ -189,15 +197,16 @@ self.drawRoutes = function(routeIds) {
             if (data.length == 0)
                 return;
 
-            var feature = new ol.Feature(data[i])
+            var feature = new ol.Feature(data)
             var lineString = new ol.geom.LineString();
-            for (var i = 0; i < data.length; i++) {
-                var latitude = data[i].latitude;
-                var longitude = data[i].longitude;
+            for (var j = 0; j < data.length; j++) {
+                var latitude = data[j].latitude;
+                var longitude = data[j].longitude;
                 var coord = ol.proj.fromLonLat([longitude,latitude]);
                 lineString.appendCoordinate(coord);
             }
             feature.setGeometry(lineString)
+            feature.setId("Route-"+data[0].routeId);
 
             feature.setStyle(new ol.style.Style({
                 fill: new ol.style.Fill({
@@ -221,6 +230,38 @@ self.createOverlay = function() {
         positioning: 'top-right',
         stopEvent: false,
         insertFirst: false
+    });
+}
+
+self.drawClusterDetails = function(clusterId) {
+    var requestUrl = self.akkaHotSpotDetails+clusterId;
+    self.ajax(requestUrl).done(function(data){
+       if (self.hotspotDetailsSource.getFeatures().length > 0) {
+         console.log("cleared hotspotDetailsSource");
+         self.hotspotDetailsSource.clear();
+       }
+       var feature = new ol.Feature(data)
+       for (var i = 0, ii = data.length; i < ii; ++i){
+//        console.log(data[i])
+           var field = data[i];
+           feature.setId(field.id);
+
+           var latitude = field.latitude;
+           var longitude = field.longitude;
+           var point = new ol.geom.Point(ol.proj.fromLonLat([longitude,latitude]));
+
+           style = new ol.style.Style({
+                image: new ol.style.Icon(/** @type {olx.style.IconOptions} */ ({
+                color: '#FFFFFF',
+                src: 'data/dot.png'
+                }))
+            });
+
+          feature.setGeometry(point)
+          feature.setStyle(style)
+
+       }
+       self.hotspotDetailsSource.addFeature(feature);
     });
 }
 
@@ -262,11 +303,16 @@ self.setCoordinateAndShow = function(coordinate, pixel) {
 
         info.push(features[i].get('id'));
         //maybe it's a lineString
-        console.log("Geom is: " + features[i].getGeometry());
-        if (typeof features[i].getGeometry == 'ol.geom.LineString') {
+        console.log("Geom is: " + features[i].getId());
+        if (features[i].getId().indexOf("Route-") == 0) {
             console.log("found a linestring");
-            var closestPoint = features[i].getClosestPoint(coordinate);
+            var closestPoint = features[i].getGeometry().getClosestPoint(coordinate);
             console.log("now query backend for route with closest point");
+        }
+
+        if (features[i].getId().indexOf("Cluster-") == 0) {
+            console.log("found a cluster");
+            self.drawClusterDetails(features[i].getProperties().id)
         }
       }
       if (uniqueIds.length > 0) {
@@ -302,6 +348,7 @@ self.drawHotSpotsOnMap = function(data) {
    for (var i = 0; i < data.length; i++) {
        var field = data[i];
        var feature = new ol.Feature(field);
+       feature.setId("Cluster-"+field.id);
 
        var latitude = field.latitude;
        var longitude = field.longitude;

@@ -19,3 +19,7 @@ package de.nierbeck.floating.data.domain
 case class VehicleCluster(id: Int, timeStamp: Long, latitude: Double, longitude: Double, amount: Int)
 
 case class TiledVehicleCluster(tileId:String, id: Int, timeStamp: Long, latitude: Double, longitude: Double, amount: Int)
+
+case class VehicleClusterDetails(id: Long, posId: Int, timeStamp: Long, latitude: Double, longitude: Double)
+
+case class TiledVehicleClusterDetails(tileId:String, id: Long, posId: Int, timeStamp: Long, latitude: Double, longitude: Double)

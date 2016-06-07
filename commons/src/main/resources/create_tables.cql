@@ -60,3 +60,12 @@ CREATE TABLE vehiclecluster_by_tileid (
     amount int,
     PRIMARY KEY (tile_id, id, time_stamp)
 );
+
+CREATE TABLE vehicleclusterdetails (
+    id bigint,
+    pos_id int,
+    time_stamp bigint,
+    longitude double,
+    latitude double,
+    PRIMARY KEY (id, pos_id, timestamp)
+);
