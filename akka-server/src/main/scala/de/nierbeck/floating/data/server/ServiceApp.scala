@@ -16,10 +16,14 @@
 
 package de.nierbeck.floating.data.server
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.event.Logging
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.HttpMethods._
+import akka.http.scaladsl.model.ws.UpgradeToWebSocket
+import akka.http.scaladsl.model.{HttpRequest, HttpResponse, Uri}
 import akka.stream.ActorMaterializer
+import de.nierbeck.floating.data.server.actors.{RouterActor, TiledVehiclesFromKafkaActor}
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
@@ -38,10 +42,30 @@ object ServiceApp extends RestService {
 
   def main(args: Array[String]): Unit = {
 
+    val router: ActorRef = system.actorOf(Props[RouterActor], "router")
+    val vmactor: ActorRef = system.actorOf(TiledVehiclesFromKafkaActor.props(router), "Kafka-Consumer")
+
+
+    val requestHandler: HttpRequest => HttpResponse = {
+      case req@HttpRequest(GET, Uri.Path("/ws/vehicles"), _, _, _) =>
+        req.header[UpgradeToWebSocket] match {
+          case Some(upgrade) => upgrade.handleMessages(Flows.graphFlowWithStats(router))
+          case None => HttpResponse(400, entity = "Not a valid websocket request!")
+        }
+      case _: HttpRequest => HttpResponse(404, entity = "Unknown resource!")
+    }
+
     Http()
       .bindAndHandle(route(), serviceInterface, servicePort)
       .onComplete {
         case Success(_) => logger.info(s"Successfully bound to $serviceInterface:$servicePort")
+        case Failure(e) => logger.error(s"Failed !!!! ${e.getMessage}")
+      }
+
+    Http()
+      .bindAndHandleSync(requestHandler, "localhost", 8001)
+      .onComplete {
+        case Success(_) => logger.info(s"Successfully started Server")
         case Failure(e) => logger.error(s"Failed !!!! ${e.getMessage}")
       }
 

@@ -2,7 +2,7 @@ var self = this;
 
 
 self.getWebsocket = function() {
-    var path = "ws://localhost:8000/ws/vehicles/boundingBox?bbox=";
+    var path = "ws://localhost:8001/ws/vehicles";
 //    path += bbox;
     return new WebSocket(path);
 };
@@ -87,6 +87,7 @@ self.ajax = function(uri) {
 
 
 self.sessionStyle = {};
+self.selectedColor = [];
 
 //self.socket = self.getWebsocket();
 //
@@ -105,39 +106,48 @@ self.drawDataOnMap = function(data) {
    }
 
    for (var i = 0; i < data.length; i++) {
-       var field = data[i];
-       console.log("createing feature for data: "+field.id);
-       var feature = new ol.Feature(field);
-       feature.setId(field.id);
-
-       var latitude = field.latitude;
-       var longitude = field.longitude;
-       var point = new ol.geom.Point(ol.proj.fromLonLat([longitude,latitude]));
-
-       var colorStyle;
-
-       if (self.sessionStyle.hasOwnProperty(field.id)) {
-         colorStyle = sessionStyle[field.id]
-       } else {
-         colorStyle = self.pickColor()
-         self.sessionStyle[field.id] = colorStyle;
-       }
-
-       style = new ol.style.Style({
-             image: new ol.style.Icon(/** @type {olx.style.IconOptions} */ ({
-             color: colorStyle,
-             src: 'data/arrow.png',
-             rotation: field.heading
-             }))
-         });
-
-       feature.setGeometry(point)
-       feature.setStyle(style)
-
-       self.vehicleSource.addFeature(feature);
+       self.draw(data[i])
    }
 
    console.log("feature updated");
+}
+
+self.draw = function(data) {
+   var field = data;
+   console.log("field: "+field)
+   console.log("createing feature for data: "+field.id);
+   var feature = new ol.Feature(field);
+   feature.setId(field.id);
+
+   var latitude = field.latitude;
+   var longitude = field.longitude;
+   var point = new ol.geom.Point(ol.proj.fromLonLat([longitude,latitude]));
+
+   var colorStyle;
+
+   if (self.sessionStyle.hasOwnProperty(field.id)) {
+     colorStyle = sessionStyle[field.id]
+   } else {
+     colorStyle = self.pickColor()
+     while ($.inArray(colorStyle, self.selectedColor) > -1) {
+        colorStyle = self.pickColor();
+     }
+     self.sessionStyle[field.id] = colorStyle;
+   }
+
+   style = new ol.style.Style({
+         image: new ol.style.Icon(/** @type {olx.style.IconOptions} */ ({
+         color: colorStyle,
+         src: 'data/arrow.png',
+         rotation: field.heading
+         }))
+     });
+
+   feature.setGeometry(point)
+   feature.setStyle(style)
+
+   self.vehicleSource.addFeature(feature);
+
 }
 
 self.map.on('moveend', function (event) {
@@ -151,14 +161,16 @@ self.map.on('moveend', function (event) {
 
   akkaService = self.akkaServiceBasis+tlLonLat[1]+","+tlLonLat[0]+","+brLonLat[1]+","+brLonLat[0];
 
-//  var socket = self.getWebsocket();
-//
-//  socket.onmessage = function (msg) {
-//      console.log("got websocket response")
-//      self.drawDataOnMap(msg.data);
-//  }
-//
-//  socket.send(tlLonLat[1]+","+tlLonLat[0]+","+brLonLat[1]+","+brLonLat[0])
+  self.socket = self.getWebsocket();
+
+  self.socket.onmessage = function (msg) {
+      self.draw( jQuery.parseJSON(msg.data));
+  }
+
+  self.socket.onopen = function (e) {
+    self.socket.send(tlLonLat[1]+","+tlLonLat[0]+","+brLonLat[1]+","+brLonLat[0])
+  }
+
 
   self.ajax(akkaService).done(function(data){
     console.log("got data")

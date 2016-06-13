@@ -59,7 +59,7 @@ class VehiclesPerBBoxActor extends CassandraQuery {
 
     log.info(s"extracted ${tileIds.size} tileIds")
 
-    val timeStamp = new java.util.Date(System.currentTimeMillis() - (10 * 60 * 1000))
+    val timeStamp = new java.util.Date(System.currentTimeMillis() - (5 * 60 * 1000))
     val timeIdminusOne = TileCalc.transformTime(timeStamp).getTime
     val timeId = TileCalc.transformTime(new java.util.Date(System.currentTimeMillis())).getTime
 

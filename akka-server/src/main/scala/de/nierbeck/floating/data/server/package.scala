@@ -17,6 +17,7 @@
 package de.nierbeck.floating.data
 
 import com.google.common.util.concurrent.{FutureCallback, Futures, ListenableFuture}
+import de.nierbeck.floating.data.domain.{BoundingBox, LatLon}
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success, Try}
@@ -47,5 +48,12 @@ package object server {
       })
       p.future
     }
+  }
+
+  def toBoundingBox(bbox: String): BoundingBox = {
+    val bboxCoords: Array[String] = bbox.split(",")
+    val boundingBox: BoundingBox =
+      new BoundingBox(LatLon(bboxCoords(0).toFloat, bboxCoords(1).toFloat), LatLon(bboxCoords(2).toFloat, bboxCoords(3).toFloat))
+    boundingBox
   }
 }

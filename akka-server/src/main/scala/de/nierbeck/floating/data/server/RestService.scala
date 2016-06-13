@@ -54,8 +54,6 @@ trait RestService extends CorsSupport {
     val hotspots = system.actorOf(HotSpotsActor.props(), "hotspots")
     val hotSpotDetailsPerId = system.actorOf(HotSpotDetailsActor.props(), "hotspotDetails")
 
-    val vehicleSource: Source[Vehicle, ActorRef] = Source.actorPublisher[Vehicle](VehiclePublisher.props)
-
     def service = pathSingleSlash {
       corsHandler {
         encodeResponse {
@@ -70,9 +68,7 @@ trait RestService extends CorsSupport {
         parameter('bbox.as[String]) { bbox =>
           get {
             marshal {
-              val bboxCoords: Array[String] = bbox.split(",")
-              val boundingBox: BoundingBox =
-                new BoundingBox(LatLon(bboxCoords(0).toFloat, bboxCoords(1).toFloat), LatLon(bboxCoords(2).toFloat, bboxCoords(3).toFloat))
+              val boundingBox: BoundingBox = toBoundingBox(bbox)
 
               val askedVehicles: Future[Future[List[Vehicle]]] = (vehiclesPerBBox ? boundingBox).mapTo[Future[List[Vehicle]]]
               askedVehicles.flatMap(future => future)
@@ -108,9 +104,7 @@ trait RestService extends CorsSupport {
         parameter('bbox.as[String]) { bbox =>
           get {
             marshal {
-              val bboxCoords: Array[String] = bbox.split(",")
-              val boundingBox: BoundingBox =
-                new BoundingBox(LatLon(bboxCoords(0).toFloat, bboxCoords(1).toFloat), LatLon(bboxCoords(2).toFloat, bboxCoords(3).toFloat))
+              val boundingBox: BoundingBox = toBoundingBox(bbox)
               (hotspots ? boundingBox).mapTo[Future[List[VehicleCluster]]].flatMap(future => future)
             }
           }
@@ -130,8 +124,7 @@ trait RestService extends CorsSupport {
 
     val vehiclesPerBBoxService = Flow[Message].map {
       case TextMessage.Strict(bbox) => {
-        val bboxCoords: Array[String] = bbox.split(",")
-        val boundingBox: BoundingBox = new BoundingBox(LatLon(bboxCoords(0).toFloat, bboxCoords(1).toFloat), LatLon(bboxCoords(2).toFloat, bboxCoords(3).toFloat))
+        val boundingBox: BoundingBox = toBoundingBox(bbox)
 
         val vehicles = (vehiclesPerBBox ? boundingBox).mapTo[Future[List[Vehicle]]].flatMap(future => future)
 
@@ -167,7 +160,6 @@ trait RestService extends CorsSupport {
       index ~ img ~ js
     } ~ service ~ vehiclesOnBBox ~ routeInfo ~ routes ~ webSocketVehicles ~ hotSpots ~ hotSpotDetails
   }
-
 
   def marshal(m: => Future[Any])(implicit ec: ExecutionContext): StandardRoute =
     StandardRoute(ctx => {
