@@ -55,30 +55,7 @@ class TiledVehiclesFromKafkaActor(router: ActorRef) extends Actor with ActorLogg
   val source = Consumer.atMostOnceSource(consumerSettings.withClientId("Akka-Client"))
   source.map(message => message.value).runForeach(vehicle => router ! vehicle)
 
-//  context.system.scheduler.schedule(delay, interval) {
-//    val json = getStats.mkString(", ")
-//    router ! json
-//  }
-
   override def receive: Actor.Receive = {
     case _ => // just ignore any messages
   }
-
-//  def getStats: Map[String, Long] = {
-//    //    log.info("getStats called")
-//
-//    val baseStats = Map[String, Long](
-//      "count.procs" -> Runtime.getRuntime.availableProcessors(),
-//      "count.mem.free" -> Runtime.getRuntime.freeMemory(),
-//      "count.mem.maxMemory" -> Runtime.getRuntime.maxMemory(),
-//      "count.mem.totalMemory" -> Runtime.getRuntime.totalMemory()
-//    )
-//
-//    val roots = File.listRoots()
-//    val totalSpaceMap = roots.map(root => s"count.fs.total.${root.getAbsolutePath}" -> root.getTotalSpace) toMap
-//    val freeSpaceMap = roots.map(root => s"count.fs.free.${root.getAbsolutePath}" -> root.getFreeSpace) toMap
-//    val usuableSpaceMap = roots.map(root => s"count.fs.usuable.${root.getAbsolutePath}" -> root.getUsableSpace) toMap
-//
-//    baseStats ++ totalSpaceMap ++ freeSpaceMap ++ usuableSpaceMap
-//  }
 }

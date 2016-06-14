@@ -40,7 +40,7 @@ object Flows {
       val merge = builder.add(Merge[String](2))
       val filter = builder.add(Flow[String].filter(_ => false))
 
-      // convert to int so we can connect to merge
+      // get BBox from request and send it to route, return nothing ...
       val mapMsgToString = builder.add(Flow[Message].map[String] {
         case TextMessage.Strict(msg) => {
           println(s"received message: $msg")
@@ -50,13 +50,15 @@ object Flows {
           ""
         }
       })
+      //outgoing message ...
       val mapStringToMsg = builder.add(Flow[String].map[Message](x => TextMessage.Strict(x)))
 
-      val statsSource = builder.add(source)
+      //add source to flow
+      val vehiclesSource = builder.add(source)
 
       // connect the graph
       mapMsgToString ~> filter ~> merge // this part of the merge will never provide msgs
-      statsSource ~> merge ~> mapStringToMsg
+      vehiclesSource ~> merge ~> mapStringToMsg
 
       // expose ports
       FlowShape(mapMsgToString.in, mapStringToMsg.out)
