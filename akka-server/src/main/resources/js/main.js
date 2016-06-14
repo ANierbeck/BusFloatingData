@@ -3,7 +3,6 @@ var self = this;
 
 self.getWebsocket = function() {
     var path = "ws://localhost:8001/ws/vehicles";
-//    path += bbox;
     return new WebSocket(path);
 };
 
@@ -89,14 +88,6 @@ self.ajax = function(uri) {
 self.sessionStyle = {};
 self.selectedColor = [];
 
-//self.socket = self.getWebsocket();
-//
-//self.socket.onmessage = function (msg) {
-//  console.log("got websocket response")
-////  var data = JSON.parse(msg.data);
-////  console.log("got websocket data: " + data);
-//  self.drawDataOnMap(msg.data);
-//}
 
 self.drawDataOnMap = function(data) {
    console.log("requested data");
@@ -125,14 +116,14 @@ self.draw = function(data) {
 
    var colorStyle;
 
-   if (self.sessionStyle.hasOwnProperty(field.id)) {
-     colorStyle = sessionStyle[field.id]
+   if (self.sessionStyle.hasOwnProperty(field.route_id)) {
+     colorStyle = sessionStyle[field.route_id]
    } else {
      colorStyle = self.pickColor()
      while ($.inArray(colorStyle, self.selectedColor) > -1) {
         colorStyle = self.pickColor();
      }
-     self.sessionStyle[field.id] = colorStyle;
+     self.sessionStyle[field.route_id] = colorStyle;
    }
 
    style = new ol.style.Style({
@@ -152,6 +143,10 @@ self.draw = function(data) {
 
 self.map.on('moveend', function (event) {
   console.log("map move end");
+
+  if (self.socket != null) {
+    self.socket.close();
+  }
 
   var mapExtent = self.map.getView().calculateExtent(map.getSize());
   var bottomRight = ol.extent.getBottomRight(mapExtent);
