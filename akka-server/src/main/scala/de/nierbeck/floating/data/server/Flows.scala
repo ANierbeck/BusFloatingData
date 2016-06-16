@@ -44,9 +44,13 @@ object Flows {
       val mapMsgToString = builder.add(Flow[Message].map[String] {
         case TextMessage.Strict(msg) => {
           println(s"received message: $msg")
-          val bbox = toBoundingBox(msg)
-          println(s"transformedt to bbox: $bbox")
-          router ! bbox
+          if (msg.contains("close")) {
+            router ! msg
+          } else {
+            val bbox = toBoundingBox(msg)
+            println(s"transformedt to bbox: $bbox")
+            router ! bbox
+          }
           ""
         }
       })

@@ -65,6 +65,7 @@ class VehiclePublisher(router: ActorRef) extends ActorPublisher[String] with Act
     case bbox: BoundingBox => {
       log.info("received BBox changing behavior")
       tileIds = TileCalc.convertBBoxToTileIDs(bbox)
+      log.info(s"${tileIds.size} tiles are requested")
       unstashAll()
       become(streamAndQueueVehicles, discardOld = false)
     }
@@ -99,6 +100,14 @@ class VehiclePublisher(router: ActorRef) extends ActorPublisher[String] with Act
     // subscriber stops, so we stop ourselves.
     case Cancel =>
       context.stop(self)
+
+    case stringMsg:String => {
+      if ("close" == stringMsg) {
+        log.info("closing websocket connection")
+        become(receive, discardOld = true)
+        router ! Cancel
+      }
+    }
   }
 
   /**

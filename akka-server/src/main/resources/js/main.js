@@ -105,7 +105,6 @@ self.drawDataOnMap = function(data) {
 
 self.draw = function(data) {
    var field = data;
-   console.log("field: "+field)
    console.log("createing feature for data: "+field.id);
    var feature = new ol.Feature(field);
    feature.setId(field.id);
@@ -136,15 +135,17 @@ self.draw = function(data) {
 
    feature.setGeometry(point)
    feature.setStyle(style)
-
+   console.log("feature created")
    self.vehicleSource.addFeature(feature);
 
 }
+
 
 self.map.on('moveend', function (event) {
   console.log("map move end");
 
   if (self.socket != null) {
+    self.socket.send("close")
     self.socket.close();
   }
 
@@ -239,7 +240,6 @@ self.queryRoutes = function(routeIds) {
         var requestUrl = self.akkaRouteInfoService+routeIds[i];
         $('#coordinate').text();
         self.ajax(requestUrl).done(function(data){
-            data[0].display_name
             var txt = "<li>" + data[0].display_name + "</li>";
             $('#routeInfos').append(txt)
         });
@@ -274,9 +274,10 @@ self.setCoordinateAndShow = function(coordinate, pixel) {
         //maybe it's a lineString
         console.log("Geom is: " + features[i].getId());
         if (features[i].getId().indexOf("Route-") == 0) {
+            info.push(features[i].get('routeId'))
             console.log("found a linestring");
             var closestPoint = features[i].getGeometry().getClosestPoint(coordinate);
-            console.log("now query backend for route with closest point");
+            console.log("now query backend for route with closest point: "+closestPoint);
         }
 
         if (features[i].getId().indexOf("Cluster-") == 0) {
