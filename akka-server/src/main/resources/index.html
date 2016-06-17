@@ -1,7 +1,9 @@
 <!doctype html>
 <html lang="en">
 <head>
-    <script src="http://ajax.aspnetcdn.com/ajax/jquery/jquery-1.10.2.js"></script>
+    <link rel="stylesheet" href="http://code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+    <script src="http://code.jquery.com/jquery-3.0.0.min.js"></script>
+    <script src="http://code.jquery.com/ui/1.11.4/jquery-ui.min.js" integrity="sha256-xNjb53/rY+WmG+4L6tTl9m6PpqknWZvRt0rO1SRnJzw=" crossorigin="anonymous"></script>
     <link rel="stylesheet" href="http://openlayers.org/en/v3.15.1/css/ol.css" type="text/css">
     <style type="text/css">
       html, body, #basicMap {
@@ -32,10 +34,17 @@
     </div>
 </div>
 <div>
-    <label class="checkbox">
-        <input id="hotspot" type="checkbox"/>HotSpots
-    </label>
+    <input type="checkbox" id="hotspot"><label for="hotspot" class="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only" role="button">HotSpots</label>
+
+    <p>
+        <label for="amount">Time to look back:</label>
+        <input type="text" id="amount" readonly style="border:0; color:#f6931f; font-weight:bold;">
+    </p>
+    <div>
+        <div id="slider"></div>
+    </div>
 </div>
+
 <script type="text/javascript" src="js/main.js"></script>
 </body>
 </html>

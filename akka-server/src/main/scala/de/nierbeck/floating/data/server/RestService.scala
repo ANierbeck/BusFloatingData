@@ -65,12 +65,12 @@ trait RestService extends CorsSupport {
 
     def vehiclesOnBBox = path("vehicles" / "boundingBox") {
       corsHandler {
-        parameter('bbox.as[String]) { bbox =>
+        parameter('bbox.as[String], 'time.as[String] ? "5") { (bbox, time) =>
           get {
             marshal {
               val boundingBox: BoundingBox = toBoundingBox(bbox)
 
-              val askedVehicles: Future[Future[List[Vehicle]]] = (vehiclesPerBBox ? boundingBox).mapTo[Future[List[Vehicle]]]
+              val askedVehicles: Future[Future[List[Vehicle]]] = (vehiclesPerBBox ? (boundingBox, time)).mapTo[Future[List[Vehicle]]]
               askedVehicles.flatMap(future => future)
 
             }

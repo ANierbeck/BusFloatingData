@@ -39,7 +39,6 @@ class RouteDetailActor extends CassandraQuery {
   implicit val actorMaterializer = ActorMaterializer()
 
   val selectRoute = session.prepare("SELECT * FROM streaming.routes WHERE route_id = ?")
-  val selectRouteByStop = session.prepare("SELECT * FROM streaming.routes WHERE route_id = ? and ")
 
   override def receive: Receive = {
     case routeId: Int => sender() ! retrieveRouteDetail(routeId)

@@ -41,16 +41,16 @@ class VehiclesPerBBoxActor extends CassandraQuery {
   val selectTrajectoriesByBBox = session.prepare("SELECT * FROM streaming.vehicles_by_tileid WHERE tile_id = ? AND time_id IN ? AND time > ? ")
 
   override def receive(): Receive = {
-    case boundingBox:BoundingBox => {
+    case (boundingBox: BoundingBox,time: String) => {
       log.info("received a BBox query")
-      val x = getVehiclesByBBox(boundingBox)
+      val x = getVehiclesByBBox(boundingBox, time)
       log.info(s"X: ${x}")
       sender() ! x
     }
     case _ => log.error("Wrong request")
   }
 
-  def getVehiclesByBBox(boundingBox: BoundingBox)(implicit executionContext: ExecutionContext): Future[List[Vehicle]] = {
+  def getVehiclesByBBox(boundingBox: BoundingBox, time: String)(implicit executionContext: ExecutionContext): Future[List[Vehicle]] = {
 
     log.info(s"Querrying with bounding Box: ${boundingBox}")
 
@@ -58,7 +58,9 @@ class VehiclesPerBBoxActor extends CassandraQuery {
 
     log.info(s"extracted ${tileIds.size} tileIds")
 
-    val timeStamp = new java.util.Date(System.currentTimeMillis() - (10 * 60 * 1000))
+    val timing = time.toInt
+
+    val timeStamp = new java.util.Date(System.currentTimeMillis() - (timing * 60 * 1000))
     val timeIdminusOne = TileCalc.transformTime(timeStamp).getTime
     val timeId = TileCalc.transformTime(new java.util.Date(System.currentTimeMillis())).getTime
 
