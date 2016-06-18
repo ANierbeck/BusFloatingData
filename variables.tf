@@ -67,7 +67,7 @@ variable "vpn_instance_type" {
 
 variable "master_instance_type" {
   description = "Default instance type for masters"
-  default = "m3.large"
+  default = "m3.xlarge"
 }
 
 variable "slave_instance_type" {
@@ -163,15 +163,15 @@ variable "dns_domainnames" {
 variable "vpn_amis" {
   description = "VPN AMIs for regions"
   default = {
-    us-west-1       = "ami-21166541"
-    ap-northeast-1  = "ami-9b414ef5"
-    us-west-2       = "ami-4e57bb2e"
-    us-east-1       = "ami-db5269b1"
-    sa-east-1       = "ami-6138ba0d"
-    ap-southeast-2  = "ami-f32c0d90"
-    eu-west-1       = "ami-75833a06"
-    eu-central-1    = "ami-33896d5c"
-    ap-southeast-1  = "ami-240bc347"
+    us-west-1       = "ami-20423a40"
+    ap-northeast-1  = "ami-f33bda92"
+    us-west-2       = "ami-a1b847c1"
+    us-east-1       = "ami-7ab25917"
+    sa-east-1       = "ami-1356de7f"
+    ap-southeast-2  = "ami-f3331c90"
+    eu-west-1       = "ami-c61185b5"
+    eu-central-1    = "ami-51e30f3e"
+    ap-southeast-1  = "ami-47518724"
   }
 }
 

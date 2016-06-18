@@ -209,9 +209,10 @@ function install_smack {
     dcos package install --yes chronos
     dcos package install --yes cassandra
     dcos package install --yes kafka
+    dcos package install --yes --cli kafka
     dcos package install --yes spark
     waited_until_kafka_is_running
-    dcos kafka topic add killrweather.raw
+    dcos kafka topic create killrweather.raw
     dcos package install --yes zeppelin
     rm /opt/smack/state/waited_for_install_smack
 }
