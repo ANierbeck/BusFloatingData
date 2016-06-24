@@ -96,8 +96,6 @@ object KafkaToCassandraSparkApp {
 
     }))
 
-//    val positions:DStream[Double] = vehicle.flatMap(vehicle => Seq[Double](vehicle.latitude, vehicle.longitude))
-
     ssc.start()
     ssc.awaitTermination()
     ssc.stop()

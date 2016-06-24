@@ -43,9 +43,9 @@ class VehiclesPerBBoxActor extends CassandraQuery {
   override def receive(): Receive = {
     case (boundingBox: BoundingBox,time: String) => {
       log.info("received a BBox query")
-      val x = getVehiclesByBBox(boundingBox, time)
-      log.info(s"X: ${x}")
-      sender() ! x
+      val eventualVehicles = getVehiclesByBBox(boundingBox, time)
+      log.info(s"X: ${eventualVehicles}")
+      sender() ! eventualVehicles
     }
     case _ => log.error("Wrong request")
   }
