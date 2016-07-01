@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 function init {
-    export LANGUAGE=en_US.UTF-8
-    export LANG=en_US.UTF-8
-    export LC_ALL=en_US.UTF-8
-    locale-gen en_US.UTF-8
-    dpkg-reconfigure locales
+    apt-get install -y language-pack-UTF-8 language-pack-en python3
+    ln -s /usr/bin/python3 /usr/bin/python
+
+    curl "https://bootstrap.pypa.io/get-pip.py" -o "/tmp/get-pip.py"
+    python /tmp/get-pip.py
 
     mkdir -p /opt/mesosphere/dcos-cli
     mkdir -p /opt/smack/state
@@ -209,8 +209,9 @@ function install_smack {
     dcos package install --yes chronos
     dcos package install --yes cassandra
     dcos package install --yes kafka
-    dcos package install --yes --cli kafka
+    dcos package install --cli kafka
     dcos package install --yes spark
+    dcos package install --cli spark
     waited_until_kafka_is_running
     dcos kafka topic create killrweather.raw
     dcos package install --yes zeppelin

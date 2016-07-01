@@ -178,15 +178,15 @@ variable "vpn_amis" {
 variable "ubuntu_amis" {
   description = "Ubuntu AMIs for regions"
   default = {
-    us-west-1       = "ami-972959f7"
-    ap-northeast-1  = "ami-80696aee"
-    us-west-2       = "ami-6b2cce0b"
-    us-east-1       = "ami-d55b69bf"
-    sa-east-1       = "ami-ffe46693"
-    ap-southeast-2  = "ami-6831170b"
-    eu-west-1       = "ami-36c97545"
-    eu-central-1    = "ami-2ae1fb46"
-    ap-southeast-1  = "ami-7902cb1a"
+    us-west-1       = "ami-1dec736e"
+    ap-northeast-1  = "ami-1707ec76"
+    us-west-2       = "ami-e97d8789"
+    us-east-1       = "ami-304b8e5d"
+    sa-east-1       = "ami-8d9913e1"
+    ap-southeast-2  = "ami-62e3ca01"
+    eu-west-1       = "ami-564e0b36"
+    eu-central-1    = "ami-e3f0198c"
+    ap-southeast-1  = "ami-eda0738e"
   }
 }
 
