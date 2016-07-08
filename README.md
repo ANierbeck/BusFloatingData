@@ -20,6 +20,9 @@ The project is a multi project with cross compilation due to incompatabilities w
 `so ingest/run`
 
 select the 1st entry as the simple does all steps at once
+or better 
+
+`sbt runIngest`
 
 
 **digest akka:** 
@@ -29,6 +32,11 @@ select the 1st entry as the simple does all steps at once
 **digest spark:** 
 
 `so sparkDigest/run`
+`sbt runDigest` select the second Application
+
+**akka frontend:**
+`so service/run`
+`sbt runService`
 
 
 ## Pre-conditions to run those, have 
