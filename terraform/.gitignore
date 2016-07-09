@@ -1,0 +1,7 @@
+dcos/
+.idea/
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.plan
+*.tfvars
