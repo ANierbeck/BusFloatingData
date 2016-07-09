@@ -137,6 +137,7 @@ lazy val commons = (project in file("commons")).
   )
 
 lazy val ingest = (project in file("akka-ingest")).
+  enablePlugins(JavaAppPackaging).
   enablePlugins(AutomateHeaderPlugin).
   settings(commonSettings: _*).
   settings(
@@ -152,6 +153,7 @@ lazy val ingest = (project in file("akka-ingest")).
   ).dependsOn(commons)
 
 lazy val akkaDigest = (project in file("akka-digest")).
+  enablePlugins(JavaAppPackaging).
   enablePlugins(AutomateHeaderPlugin).
   settings(commonSettings: _*).
   settings(
