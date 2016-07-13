@@ -151,3 +151,27 @@ dependency-reduced-pom.xml
 buildNumber.properties
 .mvn/timing.properties
 
+### more intellij ignores ####
+.cache-main
+
+.idea/compiler.xml
+.idea/copyright/
+.idea/encodings.xml
+.idea/misc.xml
+.idea/modules.xml
+.idea/modules/akkaDigest-build.iml
+.idea/modules/akkaDigest.iml
+.idea/modules/common-build.iml
+.idea/modules/common.iml
+.idea/modules/commons-build.iml
+.idea/modules/commons.iml
+.idea/modules/ingest-build.iml
+.idea/modules/ingest.iml
+.idea/modules/root-build.iml
+.idea/modules/root.iml
+.idea/modules/sparkDigest-build.iml
+.idea/modules/sparkDigest.iml
+.idea/sbt.xml
+.idea/scala_compiler.xml
+.idea/scratchpad.txt
+.idea/modules/*
