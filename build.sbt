@@ -184,6 +184,7 @@ lazy val sparkDigest = (project in file("spark-digest")).
   ).dependsOn(commons)
 
 lazy val akkaServer = (project in file("akka-server")).
+  enablePlugins(JavaAppPackaging).
   enablePlugins(AutomateHeaderPlugin).
   settings(
     name := "akka-server",

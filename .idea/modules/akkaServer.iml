@@ -22,5 +22,6 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="commons" exported="" />
+    <orderEntry type="library" name="scala-sdk-2.11.8" level="application" />
   </component>
 </module>

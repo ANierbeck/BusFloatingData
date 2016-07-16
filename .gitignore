@@ -151,4 +151,7 @@ dependency-reduced-pom.xml
 buildNumber.properties
 .mvn/timing.properties
 
+*.iml
 .idea/
+logs/
+project/project/
