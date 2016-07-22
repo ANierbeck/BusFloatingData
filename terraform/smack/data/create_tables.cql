@@ -1,0 +1,1 @@
+../../../commons/src/main/resources/create_tables.cql
