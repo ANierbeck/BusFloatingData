@@ -67,5 +67,5 @@ CREATE TABLE vehicleclusterdetails (
     time_stamp bigint,
     longitude double,
     latitude double,
-    PRIMARY KEY (id, pos_id, timestamp)
+    PRIMARY KEY (id, pos_id, time_stamp)
 );
