@@ -1,12 +1,12 @@
-CREATE KEYSPACE streaming WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '1'};
+CREATE KEYSPACE IF NOT EXISTS streaming WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '1'};
 
-CREATE TABLE routeInfos (
+CREATE TABLE IF NOT EXISTS streaming.routeInfos (
     id text,
     display_name text,
     PRIMARY KEY (id)
 );
 
-CREATE TABLE vehicles (
+CREATE TABLE IF NOT EXISTS streaming.vehicles (
     id text,
     time timestamp,
     longitude double,
@@ -18,7 +18,7 @@ CREATE TABLE vehicles (
     PRIMARY KEY (id, time)
 );
 
-CREATE TABLE routes (
+CREATE TABLE IF NOT EXISTS streaming.routes (
     id text,
     order_id int,
     route_id text,
@@ -28,7 +28,7 @@ CREATE TABLE routes (
     PRIMARY KEY (route_id, order_id, id)
 ) WITH CLUSTERING ORDER BY (order_id ASC);
 
-CREATE TABLE vehicles_by_tileid (
+CREATE TABLE IF NOT EXISTS streaming.vehicles_by_tileid (
     tile_id text,
     time_id bigint,
     id text,
@@ -42,7 +42,7 @@ CREATE TABLE vehicles_by_tileid (
     PRIMARY KEY ((tile_id, time_id), time, id)
 ) WITH CLUSTERING ORDER BY (time DESC);
 
-CREATE TABLE vehiclecluster (
+CREATE TABLE IF NOT EXISTS streaming.vehiclecluster (
     id int,
     time_stamp bigint,
     longitude double,
@@ -51,7 +51,7 @@ CREATE TABLE vehiclecluster (
     PRIMARY KEY (id, time_stamp)
 );
 
-CREATE TABLE vehiclecluster_by_tileid (
+CREATE TABLE IF NOT EXISTS streaming.vehiclecluster_by_tileid (
     tile_id text,
     id int,
     time_stamp bigint,
@@ -61,11 +61,11 @@ CREATE TABLE vehiclecluster_by_tileid (
     PRIMARY KEY (tile_id, id, time_stamp)
 );
 
-CREATE TABLE vehicleclusterdetails (
+CREATE TABLE IF NOT EXISTS streaming.vehicleclusterdetails (
     id bigint,
     pos_id int,
     time_stamp bigint,
     longitude double,
     latitude double,
-    PRIMARY KEY (id, pos_id, timestamp)
+    PRIMARY KEY (id, pos_id, time_stamp)
 );

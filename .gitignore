@@ -140,7 +140,7 @@ project/boot/
 .cache
 
 
-### Maven ###
+### Maven ##
 target/
 pom.xml.tag
 pom.xml.releaseBackup
@@ -151,4 +151,7 @@ dependency-reduced-pom.xml
 buildNumber.properties
 .mvn/timing.properties
 
-.idea
+*.iml
+.idea/
+logs/
+project/project/
