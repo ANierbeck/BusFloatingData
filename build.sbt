@@ -124,7 +124,7 @@ lazy val root = (project in file(".")).
 
 lazy val commons = (project in file("commons")).
   enablePlugins(AutomateHeaderPlugin).
-  settings(commonSettings: _*).
+    settings(commonSettings: _*).
   settings(
     name := "commons",
     scalaVersion := scalaVer,
@@ -137,6 +137,7 @@ lazy val commons = (project in file("commons")).
   )
 
 lazy val ingest = (project in file("akka-ingest")).
+  enablePlugins(JavaAppPackaging).
   enablePlugins(AutomateHeaderPlugin).
   settings(commonSettings: _*).
   settings(
@@ -152,6 +153,7 @@ lazy val ingest = (project in file("akka-ingest")).
   ).dependsOn(commons)
 
 lazy val akkaDigest = (project in file("akka-digest")).
+  enablePlugins(JavaAppPackaging).
   enablePlugins(AutomateHeaderPlugin).
   settings(commonSettings: _*).
   settings(
@@ -182,6 +184,7 @@ lazy val sparkDigest = (project in file("spark-digest")).
   ).dependsOn(commons)
 
 lazy val akkaServer = (project in file("akka-server")).
+  enablePlugins(JavaAppPackaging).
   enablePlugins(AutomateHeaderPlugin).
   settings(
     name := "akka-server",
