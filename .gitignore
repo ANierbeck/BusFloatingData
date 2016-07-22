@@ -154,4 +154,3 @@ buildNumber.properties
 *.iml
 .idea/
 logs/
-project/project/
