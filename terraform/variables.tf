@@ -33,7 +33,7 @@ variable "stack_name" {
 
 variable "slave_instance_count" {
   description = "Number of slave nodes to launch"
-  default = 6
+  default = 7
 }
 
 variable "public_slave_instance_count" {

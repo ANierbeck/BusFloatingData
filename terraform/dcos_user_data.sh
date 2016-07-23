@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 function init {
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+    echo "export LC_ALL=C.UTF-8" >> ~/.bashrc
+    echo "export LANG=C.UTF-8" >> ~/.bashrc
+
     apt-get install -y language-pack-UTF-8 language-pack-en python3
     ln -s /usr/bin/python3 /usr/bin/python
 
@@ -18,11 +24,12 @@ function install_dcos_cli {
     pip install virtualenv
     curl -s --output /tmp/dcos_cli_install.sh https://downloads.mesosphere.com/dcos-cli/install.sh
     chmod +x /tmp/dcos_cli_install.sh
-    yes | /tmp/dcos_cli_install.sh /opt/mesosphere/dcos-cli http://${internal_master_lb_dns_name}
-    ln -s /opt/mesosphere/dcos-cli/bin/dcos /usr/local/bin/dcos
+    yes | /tmp/dcos_cli_install.sh /opt/mesosphere/dcos-cli http://master.mesos
+    source /opt/mesosphere/dcos-cli/bin/env-setup
+    ln -s /opt/mesosphere/dcos-cli/bin/dcos /usr/sbin/dcos
     dcos config set core.email johndoe@mesosphere.com
     dcos config set core.token john_doe_token
-    dcos config set core.dcos_url http://leader.mesos
+    dcos config set core.dcos_url http://master.mesos
     rm /opt/smack/state/install_dcos_cli
 }
 
@@ -54,7 +61,8 @@ function set_dns_nameserver {
 
 function waited_until_marathon_is_running {
     touch /opt/smack/state/waited_for_marathon_is_running
-    until $(curl --output /dev/null --silent --head --fail http://${internal_master_lb_dns_name}:8080/ping); do
+    until $(curl --output /dev/null --silent --head --fail http://${internal_master_lb_dns_name}:8080/v2/info); do
+        echo "waiting for marathon"
         sleep 5
     done
     rm /opt/smack/state/waited_for_marathon_is_running
@@ -63,6 +71,7 @@ function waited_until_marathon_is_running {
 function waited_until_chronos_is_running {
     touch /opt/smack/state/waited_for_chronos_is_running
     until $(curl --output /dev/null --silent --head --fail http://leader.mesos/service/chronos/scheduler/jobs); do
+        echo "waiting for chronos"
         sleep 5
     done
     rm /opt/smack/state/waited_for_chronos_is_running
@@ -71,29 +80,39 @@ function waited_until_chronos_is_running {
 function waited_until_kafka_is_running {
     touch /opt/smack/state/waited_for_kafka_is_running
     until dcos service | grep kafka | awk '{print $3};' | grep True; do
+        echo "waiting for kafka"
         sleep 5
     done
     rm /opt/smack/state/waited_for_kafka_is_running
 }
 
 function export_kafka_connection {
-    export KAFKA_CONNECTION=$(dcos kafka connection | jq .dns[0] | sed -r 's/[\"]+//g' | tr ":" "\n")
-    export KAFKA_HOST=$KAFKA_CONNECTION[0]
-    export KAFKA_PORT=$KAFKA_CONNECTION[1]
+    export KAFKA_CONNECTION=$(dcos kafka connection | jq .dns[0] | sed -r 's/[\"]+//g' | tr ":" " ")
+    IFS=" "
+    set -- $KAFKA_CONNECTION
+    export KAFKA_HOST=$1
+    echo "KAFKA_HOST: $KAFKA_HOST"
+    export KAFKA_PORT=$2
+    echo "KAFKA_PORT: $KAFKA_PORT"
 }
 
 function waited_until_cassandra_is_running {
     touch /opt/smack/state/waited_for_cassandra_is_running
     until dcos service | grep cassandra | awk '{print $3};' | grep True; do
+        echo "waiting for cassandra"
         sleep 5
     done
     rm /opt/smack/state/waited_for_cassandra_is_running
 }
 
 function export_cassandra_connection {
-    export CASSANDRA_CONNECTION=$(dcos cassandra connection | jq .dns[0] | sed -r 's/[\"]+//g' | tr ":" "\n")
-    export CASSANDRA_HOST=$CASSANDRA_CONNECTION[0]
-    export CASSANDRA_PORT=$CASSANDRA_CONNECTION[1]
+    export CASSANDRA_CONNECTION=$(dcos cassandra connection | jq .dns[0] | sed -r 's/[\"]+//g' | tr ":" " ")
+    IFS=" "
+    set -- $CASSANDRA_CONNECTION
+    export CASSANDRA_HOST=$1
+    echo "CASSANDRA_HOST: $CASSANDRA_HOST"
+    export CASSANDRA_PORT=$2
+    echo "CASSANDRA_PORT: $CASSANDRA_PORT"
 }
 
 function init_cassandra_schema {
@@ -147,6 +166,27 @@ EOF
     dcos marathon app add /opt/smack/conf/ingest.json
 }
 
+function waited_until_spark_is_running {
+    touch /opt/smack/state/waited_for_spark_is_running
+    until dcos service | grep spark | awk '{print $3};' | grep True; do
+        echo "waiting for spark"
+        sleep 5
+    done
+    rm /opt/smack/state/waited_for_spark_is_running
+}
+
+
+function init_spark_jobs {
+    cat > /usr/sbin/run-pi << EOF
+dcos spark run --submit-args='-Dspark.mesos.coarse=true --driver-cores 1 --driver-memory 1024M --class org.apache.spark.examples.SparkPi https://downloads.mesosphere.com/spark/assets/spark-examples_2.10-1.4.0-SNAPSHOT.jar 30'
+EOF
+    cat &> /usr/sbin/run-digest << EOF
+dcos spark run --submit-args='--supervise -Dspark.mesos.coarse=true --driver-cores 1 --driver-memory 1024M --class de.nierbeck.floating.data.stream.spark.KafkaToCassandraSparkApp https://s3.eu-central-1.amazonaws.com/codecentric/big-data/bus-demo/bus-demo-digest-assembly-0.1.0.jar METRO-Vehicles $CASSANDRA_HOST $CASSANDRA_PORT $KAFKA_HOST $KAFKA_PORT'
+EOF
+    chmod 744 /usr/sbin/run-pi /usr/sbin/run-digest
+    /usr/sbin/run-digest
+}
+
 function init_dasboard {
     cat > /opt/smack/conf/dashboard.json << EOF
 {
@@ -179,7 +219,10 @@ function init_dasboard {
         }
     ],
     "cpus": 1,
-    "mem": 2048.0
+    "mem": 2048.0,
+    "ports": [
+        8000
+    ]
 }
 EOF
     dcos marathon app add /opt/smack/conf/dashboard.json
@@ -214,5 +257,7 @@ export_cassandra_connection
 waited_until_chronos_is_running
 init_cassandra_schema
 init_ingest_app
+waited_until_spark_is_running
+init_spark_jobs
 init_dasboard
 init_complete
