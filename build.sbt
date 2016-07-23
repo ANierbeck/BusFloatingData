@@ -18,8 +18,6 @@
 import de.heikoseeberger.sbtheader.license.Apache2_0
 import de.heikoseeberger.sbtheader.{AutomateHeaderPlugin, HeaderPlugin}
 import sbt.Keys._
-import sbtassembly.AssemblyPlugin._
-import sbtassembly.PathList
 
 /**
  * root build.sbt
@@ -168,19 +166,33 @@ lazy val akkaDigest = (project in file("akka-digest")).
   ).dependsOn(commons)
 
 lazy val sparkDigest = (project in file("spark-digest")).
-  enablePlugins(JavaAppPackaging, AutomateHeaderPlugin).
+  enablePlugins(AutomateHeaderPlugin, JavaAppPackaging, UniversalPlugin).
   settings(commonSettings: _*).
   settings(
     name := "spark-digest",
     libraryDependencies ++= sparkDependencies,
-    libraryDependencies += "org.apache.kafka" %% "kafka" % "0.8.2.2",
     scalaVersion := "2.10.5",
     crossScalaVersions := Seq("2.10.5"),
     mainClass in (run) := Some("de.nierbeck.floating.data.stream.spark.KafkaToCassandraSparkApp"),
     headers := Map(
       "scala" -> Apache2_0("2016", "Achim Nierbeck"),
       "conf" -> Apache2_0("2016", "Achim Nierbeck", "#")
-    )
+    ),
+    assemblyMergeStrategy in assembly <<= (assemblyMergeStrategy in assembly) {
+      (old) => {
+        case PathList("META-INF", "MANIFEST.MF") => MergeStrategy.discard
+        case PathList("META-INF", xs @ _*) => MergeStrategy.last
+        case PathList("com", "google", xs @ _*) => MergeStrategy.last
+        case PathList("com", "esotericsoftware", "minlog", xs @ _ *) => MergeStrategy.last
+        case PathList("io", "netty", xs @ _*) => MergeStrategy.last
+        case PathList("javax", "xml", xs @ _*) => MergeStrategy.last
+        case PathList("org", "apache", "commons", xs @ _ *) => MergeStrategy.last
+        case PathList("org", "apache", "hadoop", "yarn", xs @ _ *) => MergeStrategy.last
+        case PathList("org", "apache", "spark", xs @ _ *) => MergeStrategy.last
+        case PathList("org", "fusesource", xs @ _ *) => MergeStrategy.last
+        case x => old(x)
+      }
+    }
   ).dependsOn(commons)
 
 lazy val akkaServer = (project in file("akka-server")).

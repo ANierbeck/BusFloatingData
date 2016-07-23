@@ -9,7 +9,6 @@ function init {
     mkdir -p /opt/mesosphere/dcos-cli
     mkdir -p /opt/smack/state
     mkdir -p /opt/smack/conf
-    mkdir -p /opt/elk/conf
 }
 
 function install_dcos_cli {
@@ -77,6 +76,26 @@ function waited_until_kafka_is_running {
     rm /opt/smack/state/waited_for_kafka_is_running
 }
 
+function export_kafka_connection {
+    export KAFKA_CONNECTION=$(dcos kafka connection | jq .dns[0] | sed -r 's/[\"]+//g' | tr ":" "\n")
+    export KAFKA_HOST=$KAFKA_CONNECTION[0]
+    export KAFKA_PORT=$KAFKA_CONNECTION[1]
+}
+
+function waited_until_cassandra_is_running {
+    touch /opt/smack/state/waited_for_cassandra_is_running
+    until dcos service | grep cassandra | awk '{print $3};' | grep True; do
+        sleep 5
+    done
+    rm /opt/smack/state/waited_for_cassandra_is_running
+}
+
+function export_cassandra_connection {
+    export CASSANDRA_CONNECTION=$(dcos cassandra connection | jq .dns[0] | sed -r 's/[\"]+//g' | tr ":" "\n")
+    export CASSANDRA_HOST=$CASSANDRA_CONNECTION[0]
+    export CASSANDRA_PORT=$CASSANDRA_CONNECTION[1]
+}
+
 function init_cassandra_schema {
     cat > /opt/smack/conf/init_cassandra_schema_job.json << EOF
 {
@@ -90,7 +109,7 @@ function init_cassandra_schema {
     },
     "cpus": "0.5",
     "mem": "512",
-    "command": "/opt/bus-demo/import_data.sh node-0.cassandra.mesos",
+    "command": "/opt/bus-demo/import_data.sh $CASSANDRA_HOST",
     "uris": []
 }
 EOF
@@ -111,7 +130,7 @@ function init_ingest_app {
     "type": "DOCKER",
     "volumes": [],
     "docker": {
-      "image": "zutherb/bus-demo-ingest",
+      "image": "codecentric/bus-demo-ingest",
       "network": "HOST",
       "privileged": false,
       "parameters": [],
@@ -119,9 +138,9 @@ function init_ingest_app {
     }
   },
   "env": {
-    "CASSANDRA_HOST": "node-0.cassandra.mesos",
-    "KAFKA_HOST": "broker-0.kafka.mesos",
-    "KAFKA_PORT": "10065"
+    "CASSANDRA_HOST": "$CASSANDRA_HOST",
+    "KAFKA_HOST": "$KAFKA_HOST",
+    "KAFKA_PORT": "$KAFKA_PORT"
   }
 }
 EOF
@@ -135,7 +154,7 @@ function init_dasboard {
     "container": {
         "type": "DOCKER",
         "docker": {
-            "image": "zutherb/bus-demo-dashboard",
+            "image": "codecentric/bus-demo-dashboard",
             "network": "HOST",
             "forcePullImage": true
         }
@@ -144,7 +163,7 @@ function init_dasboard {
         "slave_public"
     ],
     "env": {
-        "CASSANDRA_HOST": "node-0.cassandra.mesos",
+        "CASSANDRA_HOST": "$CASSANDRA_HOST",
         "CASSANDRA_PORT": "9042"
     },
     "healthChecks": [
@@ -174,7 +193,6 @@ function install_smack {
     dcos package install --cli kafka
     dcos package install --yes spark
     dcos package install --cli spark
-    waited_until_kafka_is_running
     dcos package install --yes zeppelin
     rm /opt/smack/state/waited_for_install_smack
 }
@@ -189,6 +207,10 @@ waited_until_marathon_is_running
 set_dns_nameserver
 install_dcos_cli
 install_smack
+waited_until_kafka_is_running
+export_kafka_connection
+waited_until_cassandra_is_running
+export_cassandra_connection
 waited_until_chronos_is_running
 init_cassandra_schema
 init_ingest_app
