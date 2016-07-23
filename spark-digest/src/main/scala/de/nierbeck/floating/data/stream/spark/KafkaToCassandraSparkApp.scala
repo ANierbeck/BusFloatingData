@@ -35,21 +35,28 @@ object KafkaToCassandraSparkApp {
 
   import scala.language.implicitConversions
 
+  /**
+    * Executable main method of RawEventApp.
+    *
+    * @param args - args(0): topicName, args(1): cassandra host name, args(2): cassandra port, arg(3): kafka host, args(4): kafka port
+    */
   def main(args: Array[String]) {
 
-    val kafkaHost = System.getenv.getOrDefault("KAFKA_HOST", "localhost")
-    val kafkaPort = System.getenv.getOrDefault("KAFKA_PORT", "9092")
-    val cassandraHost = System.getenv.getOrDefault("CASSANDRA_HOST", "localhost")
-    val cassandraPort = System.getenv.getOrDefault("CASSANDRA_PORT", "9042")
+    assert(args.size == 5, "Please provide the following params: topicname cassandrahost cassandraport kafkahost kafkaport")
 
-    val consumerTopic = "METRO-Vehicles" //args(0)
+    val kafkaHost = args(3)
+    val kafkaPort = args(4)
+    val cassandraHost = args(1)
+    val cassandraPort = args(2)
+    val consumerTopic = args(0)
+
     val sparkConf = new SparkConf()
       .setMaster("local[2]")
       .setAppName(getClass.getName)
-      .set("spark.cassandra.connection.host", cassandraHost /*s"${args(1)}"*/ )
-      .set("spark.cassandra.connection.port", cassandraPort /*"${args(2)}"*/ )
+      .set("spark.cassandra.connection.host", cassandraHost )
+      .set("spark.cassandra.connection.port", cassandraPort )
       .set("spark.cassandra.connection.keep_alive_ms", "30000")
-    val consumerProperties = Map("group.id" -> "group1", "bootstrap.servers" -> s"""$kafkaHost:$kafkaPort""" /*args(3)*/ , "auto.offset.reset" -> "smallest")
+    val consumerProperties = Map("group.id" -> "group1", "bootstrap.servers" -> s"""$kafkaHost:$kafkaPort""", "auto.offset.reset" -> "smallest")
 
     val producerConf = new Properties()
     producerConf.put("value.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer")
