@@ -163,15 +163,15 @@ variable "dns_domainnames" {
 variable "vpn_amis" {
   description = "VPN AMIs for regions"
   default = {
-    us-west-1       = "ami-20423a40"
-    ap-northeast-1  = "ami-f33bda92"
-    us-west-2       = "ami-a1b847c1"
-    us-east-1       = "ami-7ab25917"
-    sa-east-1       = "ami-1356de7f"
-    ap-southeast-2  = "ami-f3331c90"
-    eu-west-1       = "ami-c61185b5"
-    eu-central-1    = "ami-51e30f3e"
-    ap-southeast-1  = "ami-47518724"
+    us-east-1       = "ami-ede82a80"
+    us-west-1       = "ami-976125f7"
+    us-west-2       = "ami-cc9e59ac"
+    sa-east-1       = "ami-31cd585d"
+    ap-northeast-1  = "ami-73fc0b12"
+    ap-southeast-1  = "ami-a98c5eca"
+    ap-southeast-2  = "ami-4a052d29"
+    eu-west-1       = "ami-f9e77f8a"
+    eu-central-1    = "ami-d609e1b9"
   }
 }
 

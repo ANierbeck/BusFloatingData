@@ -151,6 +151,7 @@ dependency-reduced-pom.xml
 buildNumber.properties
 .mvn/timing.properties
 
+.DS_Store
 *.iml
 .idea/
 logs/

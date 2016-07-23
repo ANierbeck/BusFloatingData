@@ -43,19 +43,24 @@ object CalcClusterSparkApp {
 
   def main(args: Array[String]) {
 
+    val kafkaHost = System.getenv.getOrDefault("KAFKA_HOST", "localhost")
+    val kafkaPort = System.getenv.getOrDefault("KAFKA_PORT", "9092")
+    val cassandraHost = System.getenv.getOrDefault("CASSANDRA_HOST", "localhost")
+    val cassandraPort = System.getenv.getOrDefault("CASSANDRA_PORT", "9042")
+
     val consumerTopic = "METRO-Vehicles" //args(0)
     val sparkConf = new SparkConf()
       .setMaster("local[4]")
       .setAppName(getClass.getName)
-      .set("spark.cassandra.connection.host", "localhost" /*s"${args(1)}"*/ )
-      .set("spark.cassandra.connection.port", "9042" /*"${args(2)}"*/ )
+      .set("spark.cassandra.connection.host", cassandraHost /*s"${args(1)}"*/ )
+      .set("spark.cassandra.connection.port", cassandraPort /*"${args(2)}"*/ )
       .set("spark.cassandra.connection.keep_alive_ms", "30000")
-    val consumerProperties = Map("group.id" -> "group1", "bootstrap.servers" -> "localhost:9092" /*args(3)*/ , "auto.offset.reset" -> "smallest")
+    val consumerProperties = Map("group.id" -> "group1", "bootstrap.servers" -> s"""$kafkaHost:$kafkaPort""" /*args(3)*/ , "auto.offset.reset" -> "smallest")
 
     val producerConf = new Properties()
     producerConf.put("value.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer")
     producerConf.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer")
-    producerConf.put("bootstrap.servers", "localhost:9092")
+    producerConf.put("bootstrap.servers", s"""$kafkaHost:$kafkaPort""")
 
     val sc = new SparkContext(sparkConf)
 

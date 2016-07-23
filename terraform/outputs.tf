@@ -1,8 +1,12 @@
+output "vpn_ssh" {
+  value = "ssh openvpnas@${aws_instance.vpn.public_ip}"
+}
+
 output "dcos_cli" {
   value = "ssh ubuntu@${aws_instance.dcos.private_ip}"
 }
 
-output "vpn" {
+output "vpn_http" {
   value = "https://${aws_elb.vpn.dns_name}"
 }
 

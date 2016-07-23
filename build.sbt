@@ -18,6 +18,8 @@
 import de.heikoseeberger.sbtheader.license.Apache2_0
 import de.heikoseeberger.sbtheader.{AutomateHeaderPlugin, HeaderPlugin}
 import sbt.Keys._
+import sbtassembly.AssemblyPlugin._
+import sbtassembly.PathList
 
 /**
  * root build.sbt
@@ -81,13 +83,13 @@ lazy val akkaDependencies = Seq(
 //noinspection ScalaStyle
 lazy val sparkDependencies = Seq(
   "com.datastax.spark"              %% "spark-cassandra-connector"  % sparkConnector,
-  "org.apache.spark"                %% "spark-streaming-kafka"      % spark,
-  "org.apache.spark"                %% "spark-core"                 % spark,
-  "org.apache.spark"                %% "spark-streaming"            % spark,
-  "org.apache.spark"                %% "spark-streaming-kafka"      % spark,
-  "org.apache.spark"                %% "spark-catalyst"             % spark,
-  "org.apache.spark"                %% "spark-sql"                  % spark,
-  "org.apache.spark"                %% "spark-mllib"                % spark,
+  "org.apache.spark"                %% "spark-streaming-kafka"      % spark           % "provided",
+  "org.apache.spark"                %% "spark-core"                 % spark           % "provided",
+  "org.apache.spark"                %% "spark-streaming"            % spark           % "provided",
+  "org.apache.spark"                %% "spark-streaming-kafka"      % spark           % "provided",
+  "org.apache.spark"                %% "spark-catalyst"             % spark           % "provided",
+  "org.apache.spark"                %% "spark-sql"                  % spark           % "provided",
+  "org.apache.spark"                %% "spark-mllib"                % spark           % "provided",
   "org.scalanlp"                    %%  "nak"                       % "1.3"
 )
 
@@ -137,8 +139,7 @@ lazy val commons = (project in file("commons")).
   )
 
 lazy val ingest = (project in file("akka-ingest")).
-  enablePlugins(JavaAppPackaging).
-  enablePlugins(AutomateHeaderPlugin).
+  enablePlugins(JavaAppPackaging, AutomateHeaderPlugin).
   settings(commonSettings: _*).
   settings(
     name := "akka-ingest",
@@ -153,8 +154,7 @@ lazy val ingest = (project in file("akka-ingest")).
   ).dependsOn(commons)
 
 lazy val akkaDigest = (project in file("akka-digest")).
-  enablePlugins(JavaAppPackaging).
-  enablePlugins(AutomateHeaderPlugin).
+  enablePlugins(JavaAppPackaging, AutomateHeaderPlugin).
   settings(commonSettings: _*).
   settings(
     name := "akka-digest",
@@ -168,7 +168,7 @@ lazy val akkaDigest = (project in file("akka-digest")).
   ).dependsOn(commons)
 
 lazy val sparkDigest = (project in file("spark-digest")).
-  enablePlugins(AutomateHeaderPlugin).
+  enablePlugins(JavaAppPackaging, AutomateHeaderPlugin).
   settings(commonSettings: _*).
   settings(
     name := "spark-digest",
@@ -176,7 +176,7 @@ lazy val sparkDigest = (project in file("spark-digest")).
     libraryDependencies += "org.apache.kafka" %% "kafka" % "0.8.2.2",
     scalaVersion := "2.10.5",
     crossScalaVersions := Seq("2.10.5"),
-    mainClass in (run) := Some("de.nierbeck.floating.data.stream.spark.KafkaToCassandraSparkAppgit "),
+    mainClass in (run) := Some("de.nierbeck.floating.data.stream.spark.KafkaToCassandraSparkApp"),
     headers := Map(
       "scala" -> Apache2_0("2016", "Achim Nierbeck"),
       "conf" -> Apache2_0("2016", "Achim Nierbeck", "#")
@@ -201,5 +201,8 @@ lazy val akkaServer = (project in file("akka-server")).
   ).dependsOn(commons)
 
 addCommandAlias("runIngest", "so ingest/run")
+addCommandAlias("createIngestContainer", "so ingest/docker:publishLocal")
 addCommandAlias("runSpark", "so sparkDigest/run")
+addCommandAlias("createDigestUberJar", "so sparkDigest/assembly")
 addCommandAlias("runServer", "so akkaServer/run")
+addCommandAlias("createServerContainer", "so akkaServer/docker:publishLocal")

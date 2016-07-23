@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-if [ -z "$1" ];
+HOSTNAME=$1
+HOSTPORT=$2
+if [ -z "$HOSTNAME" ];
 then
     echo "**************************************************";
-    echo "please specify hostname:";
+    echo "please specify hostname + port (optional):";
     echo "";
-    echo "cassandra-dcos-node.cassandra.dcos.mesos";
+    echo "cassandra-dcos-node.cassandra.dcos.mesos 9042";
     echo "";
     echo "**************************************************";
     exit 1
 fi
 cd /opt/bus-demo/commons/src/main/resources
-HOSTNAME=$1
-HOSTPORT=$2
-/opt/cassandra/bin/cqlsh $HOSTNAME $HOSTPORT < create_tables.cql
+cqlsh $HOSTNAME $HOSTPORT < create_tables.cql

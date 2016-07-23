@@ -78,130 +78,92 @@ function waited_until_kafka_is_running {
 }
 
 function init_cassandra_schema {
-    cat > /opt/smack/conf/init_killrweather_cassandra_job.json << EOF
+    cat > /opt/smack/conf/init_cassandra_schema_job.json << EOF
 {
     "schedule": "R0/2014-03-08T20:00:00.000Z/PT1M",
-    "name": "init_killrweather_cassandra_job",
+    "name": "init_cassandra_schema_job",
     "container": {
         "type": "DOCKER",
-        "image": "zutherb/mesos-killrweather-data",
+        "image": "zutherb/bus-demo-schema",
         "network": "BRIDGE",
         "forcePullImage": true
     },
     "cpus": "0.5",
     "mem": "512",
-    "command": "/opt/killrweather/import_data.sh cassandra-dcos-node.cassandra.dcos.mesos",
+    "command": "/opt/bus-demo/import_data.sh node-0.cassandra.mesos",
     "uris": []
 }
 EOF
     curl -L -H 'Content-Type: application/json' \
-            -X POST -d @/opt/smack/conf/init_killrweather_cassandra_job.json \
+            -X POST -d @/opt/smack/conf/init_cassandra_schema_job.json \
             http://leader.mesos/service/chronos/scheduler/iso8601
 }
 
 function init_ingest_app {
-    cat > /opt/smack/conf/killrweather_ingest.json << EOF
+    cat > /opt/smack/conf/ingest.json << EOF
 {
-    "id": "/ingest",
+  "id": "/ingest",
+  "cpus": 1,
+  "mem": 2048,
+  "disk": 0,
+  "instances": 1,
+  "container": {
+    "type": "DOCKER",
+    "volumes": [],
+    "docker": {
+      "image": "zutherb/bus-demo-ingest",
+      "network": "HOST",
+      "privileged": false,
+      "parameters": [],
+      "forcePullImage": true
+    }
+  },
+  "env": {
+    "CASSANDRA_HOST": "node-0.cassandra.mesos",
+    "KAFKA_HOST": "broker-0.kafka.mesos",
+    "KAFKA_PORT": "10065"
+  }
+}
+EOF
+    dcos marathon app add /opt/smack/conf/ingest.json
+}
+
+function init_dasboard {
+    cat > /opt/smack/conf/dashboard.json << EOF
+{
+    "id": "/dashboard",
     "container": {
         "type": "DOCKER",
         "docker": {
-            "image": "zutherb/mesos-killrweather-app",
+            "image": "zutherb/bus-demo-dashboard",
             "network": "HOST",
             "forcePullImage": true
         }
     },
-    "cmd": "./ingest.sh -Dcassandra.connection.host=cassandra-dcos-node.cassandra.dcos.mesos -Dkafka.hosts.0=broker-0.kafka.mesos:1025 -Dkafka.zookeeper.connection=leader.mesos",
+    "acceptedResourceRoles": [
+        "slave_public"
+    ],
+    "env": {
+        "CASSANDRA_HOST": "node-0.cassandra.mesos",
+        "CASSANDRA_PORT": "9042"
+    },
+    "healthChecks": [
+        {
+          "path": "/",
+          "protocol": "HTTP",
+          "gracePeriodSeconds": 300,
+          "intervalSeconds": 60,
+          "timeoutSeconds": 20,
+          "maxConsecutiveFailures": 3,
+          "ignoreHttp1xx": false,
+          "port": 8000
+        }
+    ],
     "cpus": 1,
     "mem": 2048.0
 }
 EOF
-    dcos marathon app add /opt/smack/conf/killrweather_ingest.json
-}
-
-function init_client_app {
-    cat > /opt/smack/conf/killrweather_client_app.json << EOF
-{
-    "id": "/client-app",
-    "container": {
-        "type": "DOCKER",
-        "docker": {
-            "image": "zutherb/mesos-killrweather-app",
-            "network": "HOST",
-            "forcePullImage": true
-        }
-    },
-    "cmd": "./client_app.sh -Dcassandra.connection.host=cassandra-dcos-node.cassandra.dcos.mesos -Dkafka.hosts.0=broker-0.kafka.mesos:1025 -Dkafka.zookeeper.connection=leader.mesos",
-    "cpus": 1,
-    "mem": 4096.0
-}
-EOF
-    dcos marathon app add /opt/smack/conf/killrweather_client_app.json
-}
-
-function init_app {
-    cat > /opt/smack/conf/killrweather_app.json << EOF
-{
-    "id": "/app",
-    "container": {
-        "type": "DOCKER",
-        "docker": {
-            "image": "zutherb/mesos-killrweather-app",
-            "network": "HOST",
-            "forcePullImage": true
-        }
-    },
-    "cmd": "./app.sh -Dcassandra.connection.host=cassandra-dcos-node.cassandra.dcos.mesos -Dkafka.hosts.0=broker-0.kafka.mesos:1025 -Dkafka.zookeeper.connection=leader.mesos",
-    "cpus": 1,
-    "mem": 4096.0
-}
-EOF
-    dcos marathon app add /opt/smack/conf/killrweather_app.json
-}
-
-function install_elk {
-    touch /opt/smack/state/waited_for_install_elk
-    dcos package install --yes elasticsearch
-cat > /opt/elk/conf/logstash.json << EOF
-{
-    "id": "/logstash",
-    "container": {
-        "type": "DOCKER",
-        "docker": {
-            "image": "logstash",
-            "network": "HOST",
-            "forcePullImage": true
-        }
-    },
-    "cmd": "logstash -e 'input { beats { port => 5044 } } output { elasticsearch { hosts => \"elasticsearch-executor.elasticsearch.mesos:9200\" } }'",
-    "cpus": 1,
-    "mem": 4096.0
-}
-EOF
-    dcos marathon app add /opt/elk/conf/logstash.json
-cat > /opt/elk/conf/kibana.json << EOF
-{
-    "id": "/kibana",
-    "container": {
-        "type": "DOCKER",
-        "docker": {
-            "image": "kibana",
-            "network": "HOST",
-            "parameters": [
-              {
-                "key": "ELASTICSEARCH_URL",
-                "value": "elasticsearch-executor.elasticsearch.mesos:9200"
-              }
-            ],
-            "forcePullImage": true
-        }
-    },
-    "cpus": 1,
-    "mem": 512.0
-}
-EOF
-    dcos marathon app add /opt/elk/conf/kibana.json
-    rm /opt/smack/state/waited_for_install_elk
+    dcos marathon app add /opt/smack/conf/dashboard.json
 }
 
 function install_smack {
@@ -213,7 +175,6 @@ function install_smack {
     dcos package install --yes spark
     dcos package install --cli spark
     waited_until_kafka_is_running
-    dcos kafka topic create killrweather.raw
     dcos package install --yes zeppelin
     rm /opt/smack/state/waited_for_install_smack
 }
@@ -227,11 +188,9 @@ install_oracle_java                 #need for same commandline extension like ka
 waited_until_marathon_is_running
 set_dns_nameserver
 install_dcos_cli
-install_elk
 install_smack
 waited_until_chronos_is_running
 init_cassandra_schema
 init_ingest_app
-init_client_app
-init_app
+init_dasboard
 init_complete
