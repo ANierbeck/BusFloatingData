@@ -18,17 +18,18 @@
 import de.heikoseeberger.sbtheader.license.Apache2_0
 import de.heikoseeberger.sbtheader.{AutomateHeaderPlugin, HeaderPlugin}
 import sbt.Keys._
+import sbtassembly.MergeStrategy
 
 /**
  * root build.sbt
  */
 
 val akkaVer        = "2.4.3"
-val logbackVer     = "1.1.3"
 val scalaVer       = "2.11.8"
 val scalaParsersVer= "1.0.4"
 val scalaTestVer   = "2.2.6"
 val cassandraVer   = "3.0.1"
+val Log4j2         = "2.5"
 val Slf4j          = "1.7.18"
 val spark          = "1.6.0"
 val sparkConnector = "1.5.0"
@@ -52,7 +53,6 @@ resolvers += Resolver.bintrayRepo("hseeberger", "maven")
 
 //noinspection ScalaStyle
 lazy val commonDependencies = Seq(
-  "ch.qos.logback"           %  "logback-classic"            % logbackVer,
   "org.scalatest"            %% "scalatest"                  % scalaTestVer       % "test",
   "joda-time"                %  "joda-time"                  % "2.9.3",
   "com.twitter"              %% "chill-akka"                 % "0.8.0",
@@ -60,7 +60,13 @@ lazy val commonDependencies = Seq(
   // datastax cassandra driver
   "com.datastax.cassandra"   % "cassandra-driver-core"       % cassandraVer,
   "de.ruedigermoeller"       %  "fst"                        % "2.45"
-)
+
+).map(_. excludeAll(
+  ExclusionRule(organization = "org.slf4j", artifact = "slf4j-log4j12"),
+  ExclusionRule(organization = "com.sun.jdmk"),
+  ExclusionRule(organization = "com.sun.jmx"),
+  ExclusionRule(organization = "javax.jms")
+))
 
 //noinspection ScalaStyle
 lazy val akkaDependencies = Seq(
@@ -76,26 +82,42 @@ lazy val akkaDependencies = Seq(
   "joda-time"                       %  "joda-time"                  % "2.9.3",
   "de.heikoseeberger"               %% "akka-http-json4s"           % "1.6.0",
   "org.json4s"                      %% "json4s-jackson"             % "3.2.11"
-)
+).map(_. excludeAll(
+  ExclusionRule(organization = "org.slf4j", artifact = "slf4j-log4j12"),
+  ExclusionRule(organization = "com.sun.jdmk"),
+  ExclusionRule(organization = "com.sun.jmx"),
+  ExclusionRule(organization = "log4j"),
+  ExclusionRule(organization = "javax.jms")
+))
 
 //noinspection ScalaStyle
 lazy val sparkDependencies = Seq(
   "com.datastax.spark"              %% "spark-cassandra-connector"  % sparkConnector,
-  "org.apache.spark"                %% "spark-streaming-kafka"      % spark           % "provided",
+  "org.apache.spark"                %% "spark-streaming-kafka"      % spark,
   "org.apache.spark"                %% "spark-core"                 % spark           % "provided",
   "org.apache.spark"                %% "spark-streaming"            % spark           % "provided",
-  "org.apache.spark"                %% "spark-streaming-kafka"      % spark           % "provided",
   "org.apache.spark"                %% "spark-catalyst"             % spark           % "provided",
   "org.apache.spark"                %% "spark-sql"                  % spark           % "provided",
   "org.apache.spark"                %% "spark-mllib"                % spark           % "provided",
   "org.scalanlp"                    %%  "nak"                       % "1.3"
-)
+).map(_.excludeAll(
+  ExclusionRule(organization = "org.slf4j", artifact = "slf4j-log4j12"),
+  ExclusionRule(organization = "com.sun.jdmk"),
+  ExclusionRule(organization = "com.sun.jmx"),
+  ExclusionRule(organization = "log4j"),
+  ExclusionRule(organization = "org.spark-project"),
+  ExclusionRule(organization = "javax.jms")
+))
 
 //noinspection ScalaStyle
 lazy val logDependencies = Seq(
-  "org.slf4j"                       % "slf4j-api"                   % Slf4j,
-  "org.slf4j"                       % "jcl-over-slf4j"              % Slf4j,
-  "org.slf4j"                       % "jul-to-slf4j"                % Slf4j
+  "org.slf4j"                       % "slf4j-api"                           % Slf4j,
+  "org.apache.logging.log4j"        % "log4j-1.2-api"                       % Log4j2,
+  "org.apache.logging.log4j"        % "log4j-slf4j-impl"                    % Log4j2,
+  "org.apache.logging.log4j"        % "log4j-api"                           % Log4j2,
+  "org.apache.logging.log4j"        % "log4j-core"                          % Log4j2,
+  "org.slf4j"                       % "jcl-over-slf4j"                      % Slf4j,
+  "org.slf4j"                       % "jul-to-slf4j"                        % Slf4j
 )
 
 lazy val akkaHttpDependencies = Seq(
@@ -128,7 +150,13 @@ lazy val commons = (project in file("commons")).
   settings(
     name := "commons",
     scalaVersion := scalaVer,
-    libraryDependencies += "org.apache.kafka" %% "kafka" % "0.9.0.1" % "provided",
+    libraryDependencies += "org.apache.kafka" %% "kafka" % "0.9.0.1" % "provided" excludeAll(
+                                                        ExclusionRule(organization = "org.slf4j", artifact = "slf4j-log4j12"),
+                                                        ExclusionRule(organization = "com.sun.jdmk"),
+                                                        ExclusionRule(organization = "com.sun.jmx"),
+                                                        ExclusionRule(organization = "log4j"),
+                                                        ExclusionRule(organization = "javax.jms")
+                                                      ),
     crossScalaVersions := Seq("2.10.5", scalaVer),
     headers := Map(
       "scala" -> Apache2_0("2016", "Achim Nierbeck"),
@@ -171,6 +199,13 @@ lazy val sparkDigest = (project in file("spark-digest")).
   settings(
     name := "spark-digest",
     libraryDependencies ++= sparkDependencies,
+    libraryDependencies += "org.apache.kafka" %% "kafka" % "0.8.2.2" excludeAll(
+                                                            ExclusionRule(organization = "org.slf4j", artifact = "slf4j-log4j12"),
+                                                            ExclusionRule(organization = "com.sun.jdmk"),
+                                                            ExclusionRule(organization = "com.sun.jmx"),
+                                                            ExclusionRule(organization = "log4j"),
+                                                            ExclusionRule(organization = "javax.jms")
+                                                          ),
     scalaVersion := "2.10.5",
     crossScalaVersions := Seq("2.10.5"),
     mainClass in (run) := Some("de.nierbeck.floating.data.stream.spark.KafkaToCassandraSparkApp"),
@@ -178,20 +213,18 @@ lazy val sparkDigest = (project in file("spark-digest")).
       "scala" -> Apache2_0("2016", "Achim Nierbeck"),
       "conf" -> Apache2_0("2016", "Achim Nierbeck", "#")
     ),
-    assemblyMergeStrategy in assembly <<= (assemblyMergeStrategy in assembly) {
-      (old) => {
-        case PathList("META-INF", "MANIFEST.MF") => MergeStrategy.discard
-        case PathList("META-INF", xs @ _*) => MergeStrategy.last
-        case PathList("com", "google", xs @ _*) => MergeStrategy.last
-        case PathList("com", "esotericsoftware", "minlog", xs @ _ *) => MergeStrategy.last
-        case PathList("io", "netty", xs @ _*) => MergeStrategy.last
-        case PathList("javax", "xml", xs @ _*) => MergeStrategy.last
-        case PathList("org", "apache", "commons", xs @ _ *) => MergeStrategy.last
-        case PathList("org", "apache", "hadoop", "yarn", xs @ _ *) => MergeStrategy.last
-        //case PathList("org", "apache", "spark", xs @ _ *) => MergeStrategy.last
-        case PathList("org", "fusesource", xs @ _ *) => MergeStrategy.last
-        case x => old(x)
-      }
+    assemblyExcludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
+      cp.filter(_.data.getName == "slf4j-log4j12-1.6.1.jar")
+    },
+    assemblyMergeStrategy in assembly := {
+      case PathList("META-INF", "MANIFEST.MF") => MergeStrategy.discard
+      case PathList("", "create_table.cql") => MergeStrategy.discard
+      case PathList("META-INF", xs @ _*) => MergeStrategy.last
+      case PathList("org", "apache", "spark", xs @ _ *) => MergeStrategy.first
+      case PathList("META-INF", "io.netty.versions.properties") => MergeStrategy.last
+      case x =>
+        val oldStrategy = (assemblyMergeStrategy in assembly).value
+        oldStrategy(x)
     }
   ).dependsOn(commons)
 
