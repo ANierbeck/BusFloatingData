@@ -45,7 +45,7 @@ object CalcClusterSparkApp {
     * Executable main method of CalcClusterSparkApp.
     *
     * @param args - args(0): topicName, args(1): cassandra host name, args(2): cassandra port, arg(3): kafka host, args(4): kafka port, args(5): timeLimit_1, args(6): timeLimit_2
-    *             where timelimit_1 must be smaller then timelimit_2
+    *             where timelimit_1 must be smaller then timelimit_2, for example: "2016-06-05 18:00:00" and "2016-06-05 19:00:00"
     *
     */
   def main(args: Array[String]) {
@@ -62,7 +62,6 @@ object CalcClusterSparkApp {
     val timeLimit_2 = args(6)
 
     val sparkConf = new SparkConf()
-      .setMaster("local[4]")
       .setAppName(getClass.getName)
       .set("spark.cassandra.connection.host", cassandraHost )
       .set("spark.cassandra.connection.port", cassandraPort )

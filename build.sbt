@@ -221,6 +221,7 @@ lazy val sparkDigest = (project in file("spark-digest")).
       case PathList("", "create_table.cql") => MergeStrategy.discard
       case PathList("META-INF", xs @ _*) => MergeStrategy.last
       case PathList("org", "apache", "spark", xs @ _ *) => MergeStrategy.first
+      case PathList("org", "apache", "commons", xs @_ *) => MergeStrategy.last
       case PathList("META-INF", "io.netty.versions.properties") => MergeStrategy.last
       case x =>
         val oldStrategy = (assemblyMergeStrategy in assembly).value
@@ -247,7 +248,8 @@ lazy val akkaServer = (project in file("akka-server")).
 
 addCommandAlias("runIngest", "so ingest/run")
 addCommandAlias("createIngestContainer", "so ingest/docker:publishLocal")
-addCommandAlias("runSpark", "so sparkDigest/run METRO-Vehicles localhost 9042 localhost 9092")
+addCommandAlias("runSpark", "so sparkDigest/run-main de.nierbeck.floating.data.stream.spark.KafkaToCassandraSparkApp METRO-Vehicles localhost 9042 localhost 9092")
+addCommandAlias("runClusterSpark", "so sparkDigest/run-main de.nierbeck.floating.data.stream.spark.CalcClusterSparkApp METRO-Vehicles localhost 9042 localhost 9092")
 addCommandAlias("createDigestUberJar", "so sparkDigest/assembly")
 addCommandAlias("runServer", "so akkaServer/run")
 addCommandAlias("createServerContainer", "so akkaServer/docker:publishLocal")

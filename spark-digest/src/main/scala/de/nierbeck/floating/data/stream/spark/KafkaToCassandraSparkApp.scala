@@ -51,7 +51,6 @@ object KafkaToCassandraSparkApp {
     val consumerTopic = args(0)
 
     val sparkConf = new SparkConf()
-      .setMaster("local[2]")
       .setAppName(getClass.getName)
       .set("spark.cassandra.connection.host", cassandraHost )
       .set("spark.cassandra.connection.port", cassandraPort )
