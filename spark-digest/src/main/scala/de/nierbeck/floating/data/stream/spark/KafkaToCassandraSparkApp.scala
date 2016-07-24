@@ -36,7 +36,7 @@ object KafkaToCassandraSparkApp {
   import scala.language.implicitConversions
 
   /**
-    * Executable main method of RawEventApp.
+    * Executable main method of KafkaToCassandraSparkApp.
     *
     * @param args - args(0): topicName, args(1): cassandra host name, args(2): cassandra port, arg(3): kafka host, args(4): kafka port
     */
