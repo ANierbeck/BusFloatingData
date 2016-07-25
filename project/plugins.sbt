@@ -7,5 +7,6 @@ addSbtPlugin("org.typelevel"            % "sbt-typelevel"           % "0.3.1")
 addSbtPlugin("org.scalastyle"           %% "scalastyle-sbt-plugin"  % "0.8.0")
 addSbtPlugin("net.virtual-void"         % "sbt-dependency-graph"    % "0.8.2")
 addSbtPlugin("com.typesafe.sbt"         % "sbt-native-packager"     % "1.0.6")
+addSbtPlugin("de.heikoseeberger"        % "sbt-header"              % "1.5.1")
 //adds spark submit to sbt
 addSbtPlugin("com.github.saurfang"      % "sbt-spark-submit"        % "0.0.4")
