@@ -204,7 +204,9 @@ function init_dasboard {
     ],
     "env": {
         "CASSANDRA_HOST": "$CASSANDRA_HOST",
-        "CASSANDRA_PORT": "9042"
+        "CASSANDRA_PORT": "9042",
+        "KAFKA_HOST": "$KAFKA_HOST",
+        "KAFA_PORT" : "9092"
     },
     "healthChecks": [
         {
