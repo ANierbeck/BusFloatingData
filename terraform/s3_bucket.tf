@@ -1,5 +1,5 @@
 resource "aws_s3_bucket" "exhibitor" {
-  bucket = "netflix-exhibitor-23"
+  bucket = "netflix-exhibitor-${var.exhibitor_uid}"
   force_destroy = true
 
   lifecycle {

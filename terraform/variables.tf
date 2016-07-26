@@ -22,6 +22,10 @@ variable "openvpn_admin_pw" {
   description = "Password of the open VPN Admin User"
 }
 
+variable "exhibitor_uid" {
+  description = "Unique Intentifier"
+}
+
 ###############################
 ### CONFIGURABLE PARAMETERS ###
 ###############################
@@ -114,17 +118,17 @@ variable "fallback_dns" {
 variable "coreos_amis" {
   description = "AMI for CoreOS machine"
   default = {
-    us-west-1       = "ami-d8770bb8"
-    ap-northeast-1  = "ami-e304148d"
-    ap-northeast-2  = "ami-131dd47d"
-    us-gov-west-1   = "ami-cf19a5ae"
-    us-west-2       = "ami-4f7f8a2f"
-    us-east-1       = "ami-7a627510"
-    sa-east-1       = "ami-d75bd4bb"
-    ap-southeast-2  = "ami-a184a7c2"
-    eu-west-1       = "ami-3b941448"
-    eu-central-1    = "ami-e13fde8e"
-    ap-southeast-1  = "ami-52a07531"
+    us-west-1       = "ami-bc2465dc"
+    ap-northeast-1  = "ami-fcd9209d"
+    ap-northeast-2  = "ami-91de14ff"
+    us-gov-west-1   = "ami-1d66d87c"
+    us-west-2       = "ami-cfef22af"
+    us-east-1       = "ami-cbb5d5b8"
+    sa-east-1       = "ami-ef43d783"
+    ap-southeast-2  = "ami-e8e4ce8b"
+    eu-west-1       = "ami-cbb5d5b8"
+    eu-central-1    = "ami-7b7a8f14"
+    ap-southeast-1  = "ami-9b00dcf8"
   }
 }
 
@@ -163,15 +167,15 @@ variable "dns_domainnames" {
 variable "vpn_amis" {
   description = "VPN AMIs for regions"
   default = {
-    us-east-1       = "ami-ede82a80"
-    us-west-1       = "ami-976125f7"
-    us-west-2       = "ami-cc9e59ac"
-    sa-east-1       = "ami-31cd585d"
-    ap-northeast-1  = "ami-73fc0b12"
-    ap-southeast-1  = "ami-a98c5eca"
-    ap-southeast-2  = "ami-4a052d29"
-    eu-west-1       = "ami-f9e77f8a"
-    eu-central-1    = "ami-d609e1b9"
+    us-east-1       = "ami-5d4ec54a"
+    us-west-1       = "ami-b7418dd7"
+    us-west-2       = "ami-33b5f453"
+    sa-east-1       = "ami-b33aaedf"
+    ap-northeast-1  = "ami-7fc2391e"
+    ap-southeast-1  = "ami-dfbe61bc"
+    ap-southeast-2  = "ami-d37540b0"
+    eu-west-1       = "ami-3c95f74f"
+    eu-central-1    = "ami-6bc33704"
   }
 }
 

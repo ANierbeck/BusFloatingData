@@ -18,7 +18,6 @@ function init {
 }
 
 function install_dcos_cli {
-    touch /opt/smack/state/install_dcos_cli
     curl -s --output /tmp/get-pip.py https://bootstrap.pypa.io/get-pip.py
     python /tmp/get-pip.py
     pip install virtualenv
@@ -28,13 +27,10 @@ function install_dcos_cli {
     source /opt/mesosphere/dcos-cli/bin/env-setup
     ln -s /opt/mesosphere/dcos-cli/bin/dcos /usr/sbin/dcos
     dcos config set core.email johndoe@mesosphere.com
-    dcos config set core.token john_doe_token
     dcos config set core.dcos_url http://master.mesos
-    rm /opt/smack/state/install_dcos_cli
 }
 
 function install_oracle_java {
-    touch /opt/smack/state/install_oracle_java
     wget --no-cookies \
          --no-check-certificate \
          --header "Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com%2F; oraclelicense=accept-securebackup-cookie" \
@@ -47,43 +43,35 @@ function install_oracle_java {
     update-alternatives --set "java" "/usr/local/jdk1.8.0_25/bin/java"
     update-alternatives --set "javac" "/usr/local/jdk1.8.0_25/bin/javac"
     update-alternatives --set "javaws" "/usr/local/jdk1.8.0_25/bin/javaws"
-    rm /opt/smack/state/install_oracle_java
 }
 
 function set_dns_nameserver {
-    touch /opt/smack/state/set_dns_nameserver
     apt-get install -y jq
     echo nameserver $(curl -s http://${internal_master_lb_dns_name}:8080/v2/info | jq '.leader' | \
          sed 's/\"//' | sed 's/\:8080"//') &> /etc/resolvconf/resolv.conf.d/head
     resolvconf -u
-    rm /opt/smack/state/set_dns_nameserver
 }
 
 function waited_until_marathon_is_running {
-    touch /opt/smack/state/waited_for_marathon_is_running
     until $(curl --output /dev/null --silent --head --fail http://${internal_master_lb_dns_name}:8080/v2/info); do
         echo "waiting for marathon"
         sleep 5
     done
-    rm /opt/smack/state/waited_for_marathon_is_running
 }
 
 function waited_until_chronos_is_running {
-    touch /opt/smack/state/waited_for_chronos_is_running
     until $(curl --output /dev/null --silent --head --fail http://leader.mesos/service/chronos/scheduler/jobs); do
         echo "waiting for chronos"
         sleep 5
     done
-    rm /opt/smack/state/waited_for_chronos_is_running
 }
 
 function waited_until_kafka_is_running {
-    touch /opt/smack/state/waited_for_kafka_is_running
-    until dcos service | grep kafka | awk '{print $3};' | grep True; do
+    until dcos kafka connection; do
         echo "waiting for kafka"
         sleep 5
     done
-    rm /opt/smack/state/waited_for_kafka_is_running
+    sleep 5
 }
 
 function export_kafka_connection {
@@ -97,12 +85,11 @@ function export_kafka_connection {
 }
 
 function waited_until_cassandra_is_running {
-    touch /opt/smack/state/waited_for_cassandra_is_running
-    until dcos service | grep cassandra | awk '{print $3};' | grep True; do
+    until dcos cassandra connection; do
         echo "waiting for cassandra"
         sleep 5
     done
-    rm /opt/smack/state/waited_for_cassandra_is_running
+    sleep 5
 }
 
 function export_cassandra_connection {
@@ -122,7 +109,7 @@ function init_cassandra_schema {
     "name": "init_cassandra_schema_job",
     "container": {
         "type": "DOCKER",
-        "image": "zutherb/bus-demo-schema",
+        "image": "codecentric/bus-demo-schema",
         "network": "BRIDGE",
         "forcePullImage": true
     },
@@ -158,6 +145,7 @@ function init_ingest_app {
   },
   "env": {
     "CASSANDRA_HOST": "$CASSANDRA_HOST",
+    "CASSANDRA_PORT": "$CASSANDRA_PORT",
     "KAFKA_HOST": "$KAFKA_HOST",
     "KAFKA_PORT": "$KAFKA_PORT"
   }
@@ -167,12 +155,10 @@ EOF
 }
 
 function waited_until_spark_is_running {
-    touch /opt/smack/state/waited_for_spark_is_running
     until dcos service | grep spark | awk '{print $3};' | grep True; do
         echo "waiting for spark"
         sleep 5
     done
-    rm /opt/smack/state/waited_for_spark_is_running
 }
 
 
@@ -206,7 +192,7 @@ function init_dasboard {
         "CASSANDRA_HOST": "$CASSANDRA_HOST",
         "CASSANDRA_PORT": "9042",
         "KAFKA_HOST": "$KAFKA_HOST",
-        "KAFA_PORT" : "9092"
+        "KAFKA_PORT": "$KAFKA_PORT"
     },
     "healthChecks": [
         {
@@ -231,19 +217,14 @@ EOF
 }
 
 function install_smack {
-    touch /opt/smack/state/waited_for_install_smack
     dcos package install --yes chronos
     dcos package install --yes cassandra
+    dcos package install --cli cassandra
     dcos package install --yes kafka
     dcos package install --cli kafka
     dcos package install --yes spark
     dcos package install --cli spark
     dcos package install --yes zeppelin
-    rm /opt/smack/state/waited_for_install_smack
-}
-
-function init_complete {
-    touch /opt/smack/state/init_complete
 }
 
 init
@@ -262,4 +243,3 @@ init_ingest_app
 waited_until_spark_is_running
 init_spark_jobs
 init_dasboard
-init_complete
