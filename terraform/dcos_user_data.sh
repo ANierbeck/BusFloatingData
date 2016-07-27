@@ -45,7 +45,7 @@ function install_oracle_java {
     update-alternatives --set "javaws" "/usr/local/jdk1.8.0_25/bin/javaws"
 }
 
-function set_dns_nameserver {
+function update_dns_nameserver {
     apt-get install -y jq
     echo nameserver $(curl -s http://${internal_master_lb_dns_name}:8080/v2/info | jq '.leader' | \
          sed 's/\"//' | sed 's/\:8080"//') &> /etc/resolvconf/resolv.conf.d/head
@@ -71,7 +71,8 @@ function waited_until_kafka_is_running {
         echo "waiting for kafka"
         sleep 5
     done
-    sleep 5
+    update_dns_nameserver
+    sleep 10
 }
 
 function export_kafka_connection {
@@ -89,7 +90,8 @@ function waited_until_cassandra_is_running {
         echo "waiting for cassandra"
         sleep 5
     done
-    sleep 5
+    update_dns_nameserver
+    sleep 10
 }
 
 function export_cassandra_connection {
@@ -103,9 +105,9 @@ function export_cassandra_connection {
 }
 
 function init_cassandra_schema {
-    cat > /opt/smack/conf/init_cassandra_schema_job.json << EOF
+    cat &> /opt/smack/conf/init_cassandra_schema_job.json << EOF
 {
-    "schedule": "R0/2014-03-08T20:00:00.000Z/PT1M",
+    "schedule": "R/2014-03-08T20:00:00Z/PT1M",
     "name": "init_cassandra_schema_job",
     "container": {
         "type": "DOCKER",
@@ -125,7 +127,7 @@ EOF
 }
 
 function init_ingest_app {
-    cat > /opt/smack/conf/ingest.json << EOF
+    cat &> /opt/smack/conf/ingest.json << EOF
 {
   "id": "/ingest",
   "cpus": 1,
@@ -159,22 +161,27 @@ function waited_until_spark_is_running {
         echo "waiting for spark"
         sleep 5
     done
+    update_dns_nameserver
+    sleep 10
 }
 
 
 function init_spark_jobs {
-    cat > /usr/sbin/run-pi << EOF
+    cat &> /usr/sbin/run-pi << EOF
 dcos spark run --submit-args='-Dspark.mesos.coarse=true --driver-cores 1 --driver-memory 1024M --class org.apache.spark.examples.SparkPi https://downloads.mesosphere.com/spark/assets/spark-examples_2.10-1.4.0-SNAPSHOT.jar 30'
 EOF
     cat &> /usr/sbin/run-digest << EOF
 dcos spark run --submit-args='--supervise -Dspark.mesos.coarse=true --driver-cores 1 --driver-memory 1024M --class de.nierbeck.floating.data.stream.spark.KafkaToCassandraSparkApp https://s3.eu-central-1.amazonaws.com/codecentric/big-data/bus-demo/bus-demo-digest-assembly-0.1.0.jar METRO-Vehicles $CASSANDRA_HOST $CASSANDRA_PORT $KAFKA_HOST $KAFKA_PORT'
 EOF
-    chmod 744 /usr/sbin/run-pi /usr/sbin/run-digest
+    cat &> /usr/sbin/run-digest-hotspot << EOF
+dcos spark run --submit-args='--supervise -Dspark.mesos.coarse=true --driver-cores 1 --driver-memory 1024M --class de.nierbeck.floating.data.stream.spark.CalcClusterSparkApp https://s3.eu-central-1.amazonaws.com/codecentric/big-data/bus-demo/bus-demo-digest-assembly-0.1.0.jar METRO-Vehicles $CASSANDRA_HOST $CASSANDRA_PORT $KAFKA_HOST $KAFKA_PORT @$'
+EOF
+    chmod 744 /usr/sbin/run-pi /usr/sbin/run-digest /usr/sbin/run-digest-hotspot
     /usr/sbin/run-digest
 }
 
 function init_dasboard {
-    cat > /opt/smack/conf/dashboard.json << EOF
+    cat &> /opt/smack/conf/dashboard.json << EOF
 {
     "id": "/dashboard",
     "container": {
@@ -230,7 +237,7 @@ function install_smack {
 init
 install_oracle_java                 #need for same commandline extension like kafka
 waited_until_marathon_is_running
-set_dns_nameserver
+update_dns_nameserver
 install_dcos_cli
 install_smack
 waited_until_kafka_is_running
