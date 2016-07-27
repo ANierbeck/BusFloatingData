@@ -43,13 +43,14 @@ object TiledVehiclesFromKafkaActor {
 class TiledVehiclesFromKafkaActor(router: ActorRef) extends Actor with ActorLogging {
 
   import scala.concurrent.ExecutionContext.Implicits.global
+  import de.nierbeck.floating.data.server.ServiceConfig._
   implicit val materializer = ActorMaterializer()
 
 
   //Kafka
   val consumerSettings = ConsumerSettings(context.system, new ByteArrayDeserializer, new TiledVehicleFstDeserializer,
     Set("tiledVehicles"))
-    .withBootstrapServers("localhost:9092")
+    .withBootstrapServers(s"${kafkaHostName}:$kafkaPort")
     .withGroupId("group1")
 
   val source = Consumer.atMostOnceSource(consumerSettings.withClientId("Akka-Client"))

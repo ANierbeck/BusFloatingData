@@ -2,7 +2,7 @@ var self = this;
 
 
 self.getWebsocket = function() {
-    var path = "ws://localhost:8001/ws/vehicles";
+    var path = "ws://"+ window.location.hostname +":8001/ws/vehicles";
     return new WebSocket(path);
 };
 
@@ -59,10 +59,10 @@ var map = new ol.Map({
     })
 });
 
-self.akkaServiceBasis = 'http://localhost:8000/vehicles/boundingBox?bbox='
-self.akkaHotSpotBasis = 'http://localhost:8000/hotspots/boundingBox?bbox='
-self.akkaRouteInfoService = 'http://localhost:8000/routeInfo/'
-self.akkaRouteService = 'http://localhost:8000/route/'
+self.akkaServiceBasis = 'http://'+ window.location.hostname +':8000/vehicles/boundingBox?bbox='
+self.akkaHotSpotBasis = 'http://'+ window.location.hostname +':8000/hotspots/boundingBox?bbox='
+self.akkaRouteInfoService = 'http://'+ window.location.hostname +':8000/routeInfo/'
+self.akkaRouteService = 'http://'+ window.location.hostname +':8000/route/'
 
 self.ajax = function(uri) {
   var request = {

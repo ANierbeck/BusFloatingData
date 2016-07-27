@@ -41,25 +41,41 @@ object CalcClusterSparkApp {
 
   import scala.language.implicitConversions
 
+  /**
+    * Executable main method of CalcClusterSparkApp.
+    *
+    * @param args - args(0): topicName, args(1): cassandra host name, args(2): cassandra port, arg(3): kafka host, args(4): kafka port, args(5): timeLimit_1, args(6): timeLimit_2
+    *             where timelimit_1 must be smaller then timelimit_2, for example: "2016-06-05 18:00:00" and "2016-06-05 19:00:00"
+    *
+    */
   def main(args: Array[String]) {
 
-    val consumerTopic = "METRO-Vehicles" //args(0)
+    assert(args.size == 7, "Please provide the following params: topicname cassandrahost cassandraport kafkahost kafkaport timeLimit_1 timeLimit_2")
+
+    val kafkaHost = args(3)
+    val kafkaPort = args(4)
+    val cassandraHost = args(1)
+    val cassandraPort = args(2)
+    val consumerTopic = args(0)
+
+    val timeLimit_1 = args(5)
+    val timeLimit_2 = args(6)
+
     val sparkConf = new SparkConf()
-      .setMaster("local[4]")
       .setAppName(getClass.getName)
-      .set("spark.cassandra.connection.host", "localhost" /*s"${args(1)}"*/ )
-      .set("spark.cassandra.connection.port", "9042" /*"${args(2)}"*/ )
+      .set("spark.cassandra.connection.host", cassandraHost )
+      .set("spark.cassandra.connection.port", cassandraPort )
       .set("spark.cassandra.connection.keep_alive_ms", "30000")
-    val consumerProperties = Map("group.id" -> "group1", "bootstrap.servers" -> "localhost:9092" /*args(3)*/ , "auto.offset.reset" -> "smallest")
+    val consumerProperties = Map("group.id" -> "group1", "bootstrap.servers" -> s"""$kafkaHost:$kafkaPort""", "auto.offset.reset" -> "smallest")
 
     val producerConf = new Properties()
     producerConf.put("value.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer")
     producerConf.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer")
-    producerConf.put("bootstrap.servers", "localhost:9092")
+    producerConf.put("bootstrap.servers", s"""$kafkaHost:$kafkaPort""")
 
     val sc = new SparkContext(sparkConf)
 
-    val vehiclesRdd:RDD[Vehicle] = sc.cassandraTable[Vehicle]("streaming", "vehicles").where("time > '2016-06-05 18:00:00' and time < '2016-06-05 19:00:00'")
+    val vehiclesRdd:RDD[Vehicle] = sc.cassandraTable[Vehicle]("streaming", "vehicles").where("time > ? and time < ?", timeLimit_1, timeLimit_2)
 
     val vehiclesPos:Array[Double] = vehiclesRdd
       .flatMap(vehicle => Seq[(String, (Double,Double))]((s"${vehicle.id}_${vehicle.latitude}_${vehicle.longitude}",(vehicle.latitude, vehicle.longitude))))

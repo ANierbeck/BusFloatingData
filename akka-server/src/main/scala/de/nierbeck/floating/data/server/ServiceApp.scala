@@ -63,9 +63,9 @@ object ServiceApp extends RestService {
       }
 
     Http()
-      .bindAndHandleSync(requestHandler, "localhost", 8001)
+      .bindAndHandleSync(requestHandler, serviceInterface, 8001)
       .onComplete {
-        case Success(_) => logger.info(s"Successfully started Server")
+        case Success(_) => logger.info(s"Successfully started Server to $serviceInterface:8001")
         case Failure(e) => logger.error(s"Failed !!!! ${e.getMessage}")
       }
 
