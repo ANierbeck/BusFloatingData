@@ -40,6 +40,9 @@ autoCompilerPlugins := true
 
 fork in run := true
 
+//local dependency for sbt itself
+libraryDependencies += "org.apache.spark" %% "spark-core" % spark % "provided"
+
 lazy val compileOptions = Seq(
   "-unchecked",
   "-deprecation",
@@ -246,10 +249,18 @@ lazy val akkaServer = (project in file("akka-server")).
     )
   ).dependsOn(commons)
 
-addCommandAlias("runIngest", "so ingest/run")
+//create project
+addCommandAlias("create", "; so clean ;so test; very publishLocal")
+
+//create deployment artefacts for DC/OS system
 addCommandAlias("createIngestContainer", "so ingest/docker:publishLocal")
-addCommandAlias("runSpark", "so sparkDigest/run-main de.nierbeck.floating.data.stream.spark.KafkaToCassandraSparkApp METRO-Vehicles localhost 9042 localhost 9092")
-addCommandAlias("runClusterSpark", "so sparkDigest/run-main de.nierbeck.floating.data.stream.spark.CalcClusterSparkApp METRO-Vehicles localhost 9042 localhost 9092")
 addCommandAlias("createDigestUberJar", "so sparkDigest/assembly")
-addCommandAlias("runServer", "so akkaServer/run")
 addCommandAlias("createServerContainer", "so akkaServer/docker:publishLocal")
+
+//localy run
+addCommandAlias("runIngest", "so ingest/run")
+addCommandAlias("runServer", "so akkaServer/run")
+
+//localy run spark
+addCommandAlias("submitKafkaCassandra", "so sparkDigest/sparkSubmit --master local[2] --class de.nierbeck.floating.data.stream.spark.KafkaToCassandraSparkApp -- METRO-Vehicles localhost 9042 localhost 9092")
+addCommandAlias("submitClusterSpark", "so sparkDigest/sparkSubmit --master local[2] --class de.nierbeck.floating.data.stream.spark.CalcClusterSparkApp -- METRO-Vehicles localhost 9042 localhost 9092")

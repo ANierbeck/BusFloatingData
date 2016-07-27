@@ -9,6 +9,10 @@ The project is a multi project with cross compilation due to incompatabilities w
 
 `sbt "; so clean ;so test; very publishLocal"`
 
+or simply call 
+
+`sbt create`
+
 ### To compile it run:
 
 `;so test; very publishLocal`
@@ -24,20 +28,29 @@ or better
 
 `sbt runIngest`
 
+to prepare the ingest container call: 
 
-**digest akka:** 
-
-`so akkaDigest/run`
-
-**digest spark:** 
-
-`so sparkDigest/run`
-`sbt runDigest` select the second Application
+`sbt createIngestContainer`
 
 **akka frontend:**
 `so service/run`
 `sbt runService`
 
+to prepare the service container: 
+
+`sbt createServerContainer`
+
+**spark digest:**
+The spark digest starts a local spark master. 
+As a spark job requires a fat jar first create that one: 
+
+`sbt createDigestUberJar`
+
+to run the kafka->cassandra spark job:
+`sbt submitKafkaCassandra`
+
+to run the cluster spark job: 
+`sbt submitClusterSpark`
 
 ## Pre-conditions to run those, have 
 
