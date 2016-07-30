@@ -25,6 +25,7 @@ function install_dcos_cli {
     chmod +x /tmp/dcos_cli_install.sh
     yes | /tmp/dcos_cli_install.sh /opt/mesosphere/dcos-cli http://master.mesos
     source /opt/mesosphere/dcos-cli/bin/env-setup
+    echo "source /opt/mesosphere/dcos-cli/bin/env-setup" >> ~/.bashrc
     ln -s /opt/mesosphere/dcos-cli/bin/dcos /usr/sbin/dcos
     dcos config set core.email johndoe@mesosphere.com
     dcos config set core.dcos_url http://master.mesos
@@ -59,6 +60,14 @@ function waited_until_marathon_is_running {
     done
 }
 
+function waited_until_dns_is_ready {
+    until $(curl --output /dev/null --silent --head --fail http://master.mesos); do
+        echo "waiting for dns"
+        sleep 5
+        update_dns_nameserver
+    done
+}
+
 function waited_until_chronos_is_running {
     until $(curl --output /dev/null --silent --head --fail http://leader.mesos/service/chronos/scheduler/jobs); do
         echo "waiting for chronos"
@@ -67,7 +76,7 @@ function waited_until_chronos_is_running {
 }
 
 function waited_until_kafka_is_running {
-    until dcos kafka connection; do
+    until dcos service | grep kafka | awk '{print $3};' | grep True; do
         echo "waiting for kafka"
         sleep 5
     done
@@ -76,17 +85,15 @@ function waited_until_kafka_is_running {
 }
 
 function export_kafka_connection {
-    export KAFKA_CONNECTION=$(dcos kafka connection | jq .dns[0] | sed -r 's/[\"]+//g' | tr ":" " ")
-    IFS=" "
-    set -- $KAFKA_CONNECTION
-    export KAFKA_HOST=$1
+    export KAFKA_CONNECTION=($(dcos kafka connection | jq .dns[0] | sed -r 's/[\"]+//g' | tr ":" " "))
+    export KAFKA_HOST=$${KAFKA_CONNECTION[0]}
     echo "KAFKA_HOST: $KAFKA_HOST"
-    export KAFKA_PORT=$2
+    export KAFKA_PORT=$${KAFKA_CONNECTION[1]}
     echo "KAFKA_PORT: $KAFKA_PORT"
 }
 
 function waited_until_cassandra_is_running {
-    until dcos cassandra connection; do
+    until dcos service | grep cassandra | awk '{print $3};' | grep True; do
         echo "waiting for cassandra"
         sleep 5
     done
@@ -95,12 +102,10 @@ function waited_until_cassandra_is_running {
 }
 
 function export_cassandra_connection {
-    export CASSANDRA_CONNECTION=$(dcos cassandra connection | jq .dns[0] | sed -r 's/[\"]+//g' | tr ":" " ")
-    IFS=" "
-    set -- $CASSANDRA_CONNECTION
-    export CASSANDRA_HOST=$1
+    export CASSANDRA_CONNECTION=($(dcos cassandra connection | jq .dns[0] | sed -r 's/[\"]+//g' | tr ":" " "))
+    export CASSANDRA_HOST=$${CASSANDRA_CONNECTION[0]}
     echo "CASSANDRA_HOST: $CASSANDRA_HOST"
-    export CASSANDRA_PORT=$2
+    export CASSANDRA_PORT=$${CASSANDRA_CONNECTION[1]}
     echo "CASSANDRA_PORT: $CASSANDRA_PORT"
 }
 
@@ -124,6 +129,9 @@ EOF
     curl -L -H 'Content-Type: application/json' \
             -X POST -d @/opt/smack/conf/init_cassandra_schema_job.json \
             http://leader.mesos/service/chronos/scheduler/iso8601
+
+    curl -L -H 'Content-Type: application/json' \
+            -X PUT http://leader.mesos/service/chronos/scheduler/job/init_cassandra_schema_job
 }
 
 function init_ingest_app {
@@ -197,7 +205,7 @@ function init_dasboard {
     ],
     "env": {
         "CASSANDRA_HOST": "$CASSANDRA_HOST",
-        "CASSANDRA_PORT": "9042",
+        "CASSANDRA_PORT": "$CASSANDRA_PORT",
         "KAFKA_HOST": "$KAFKA_HOST",
         "KAFKA_PORT": "$KAFKA_PORT"
     },
@@ -237,7 +245,7 @@ function install_smack {
 init
 install_oracle_java                 #need for same commandline extension like kafka
 waited_until_marathon_is_running
-update_dns_nameserver
+waited_until_dns_is_ready
 install_dcos_cli
 install_smack
 waited_until_kafka_is_running
