@@ -15,7 +15,7 @@ or simply call
 
 ### To compile it run:
 
-`;so test; very publishLocal`
+`sbt ;so test; very publishLocal`
  
 ### To run the applications 
 
