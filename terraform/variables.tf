@@ -188,7 +188,7 @@ variable "ubuntu_amis" {
     us-east-1       = "ami-304b8e5d"
     sa-east-1       = "ami-8d9913e1"
     ap-southeast-2  = "ami-62e3ca01"
-    eu-west-1       = "ami-564e0b36"
+    eu-west-1       = "ami-1dec736e"
     eu-central-1    = "ami-e3f0198c"
     ap-southeast-1  = "ami-eda0738e"
   }
