@@ -8,6 +8,6 @@ resource "aws_route_table" "private" {
 
   tags {
     Application = "${var.stack_name}"
-    Network = "Public"
+    Network = "Private"
   }
 }
