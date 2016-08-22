@@ -264,3 +264,5 @@ addCommandAlias("runServer", "so akkaServer/run")
 //localy run spark
 addCommandAlias("submitKafkaCassandra", "so sparkDigest/sparkSubmit --master local[2] --class de.nierbeck.floating.data.stream.spark.KafkaToCassandraSparkApp -- METRO-Vehicles localhost 9042 localhost 9092")
 addCommandAlias("submitClusterSpark", "so sparkDigest/sparkSubmit --master local[2] --class de.nierbeck.floating.data.stream.spark.CalcClusterSparkApp -- METRO-Vehicles localhost 9042 localhost 9092")
+
+addCommandAlias("createAWS", "; so clean ;so test; very publishLocal; so ingest/docker:publishLocal; so sparkDigest/assembly; so akkaServer/docker:publishLocal")
