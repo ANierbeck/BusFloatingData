@@ -61,7 +61,7 @@ variable "aws_availability_zone" {
 
 variable "dcos_gateway_instance_type" {
   description = "Default instance type for masters"
-  default = "t2.medium"
+  default = "m3.medium"
 }
 
 variable "vpn_instance_type" {
