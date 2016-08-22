@@ -179,10 +179,10 @@ function init_spark_jobs {
 dcos spark run --submit-args='-Dspark.mesos.coarse=true --driver-cores 1 --driver-memory 1024M --class org.apache.spark.examples.SparkPi https://downloads.mesosphere.com/spark/assets/spark-examples_2.10-1.4.0-SNAPSHOT.jar 30'
 EOF
     cat &> /usr/sbin/run-digest << EOF
-dcos spark run --submit-args='--supervise -Dspark.mesos.coarse=true --driver-cores 1 --driver-memory 1024M --class de.nierbeck.floating.data.stream.spark.KafkaToCassandraSparkApp https://s3.eu-central-1.amazonaws.com/codecentric/big-data/bus-demo/bus-demo-digest-assembly-0.1.0.jar METRO-Vehicles $CASSANDRA_HOST $CASSANDRA_PORT $KAFKA_HOST $KAFKA_PORT'
+dcos spark run --submit-args='--supervise -Dspark.mesos.coarse=true --driver-cores 1 --driver-memory 1024M --executor-memory 2G --total-executor-cores 4 --class de.nierbeck.floating.data.stream.spark.KafkaToCassandraSparkApp https://s3.eu-central-1.amazonaws.com/codecentric/big-data/bus-demo/bus-demo-digest-assembly-0.1.0.jar METRO-Vehicles $CASSANDRA_HOST $CASSANDRA_PORT $KAFKA_HOST $KAFKA_PORT'
 EOF
     cat &> /usr/sbin/run-digest-hotspot << EOF
-dcos spark run --submit-args='-Dspark.mesos.coarse=true --driver-cores 1 --driver-memory 1024M --class de.nierbeck.floating.data.stream.spark.CalcClusterSparkApp https://s3.eu-central-1.amazonaws.com/codecentric/big-data/bus-demo/bus-demo-digest-assembly-0.1.0.jar METRO-Vehicles $CASSANDRA_HOST $CASSANDRA_PORT $KAFKA_HOST $KAFKA_PORT @$'
+dcos spark run --submit-args='-Dspark.mesos.coarse=true --driver-cores 1 --driver-memory 1024M --executor-memory 2G --total-executor-cores 4 --class de.nierbeck.floating.data.stream.spark.CalcClusterSparkApp https://s3.eu-central-1.amazonaws.com/codecentric/big-data/bus-demo/bus-demo-digest-assembly-0.1.0.jar METRO-Vehicles $CASSANDRA_HOST $CASSANDRA_PORT $KAFKA_HOST $KAFKA_PORT @$'
 EOF
     chmod 744 /usr/sbin/run-pi /usr/sbin/run-digest /usr/sbin/run-digest-hotspot
     /usr/sbin/run-digest
