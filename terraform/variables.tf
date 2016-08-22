@@ -61,17 +61,17 @@ variable "aws_availability_zone" {
 
 variable "dcos_gateway_instance_type" {
   description = "Default instance type for masters"
-  default = "m3.medium"
+  default = "t2.medium"
 }
 
 variable "vpn_instance_type" {
   description = "Default instance type for masters"
-  default = "m3.medium"
+  default = "t2.medium"
 }
 
 variable "master_instance_type" {
   description = "Default instance type for masters"
-  default = "m3.xlarge"
+  default = "m4.xlarge"
 }
 
 variable "slave_instance_type" {
@@ -87,6 +87,11 @@ variable "public_slave_instance_type" {
 variable "vpc_subnet_range" {
   descpiption = "The IP range of the VPC subnet"
   default = "10.0.0.0/16"
+}
+
+variable "nat_instance_type" {
+  description = "Default Instance type for nat instances"
+  default = "m3.medium"
 }
 
 variable "master_instance_count" {

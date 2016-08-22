@@ -1,6 +1,6 @@
 resource "aws_instance" "nat" {
   ami = "${lookup(var.nat_amis, var.aws_region)}"
-  instance_type = "m3.medium"
+  instance_type = "${var.nat_instance_type}"
   subnet_id = "${aws_subnet.public.id}"
   source_dest_check = false
   associate_public_ip_address = true
