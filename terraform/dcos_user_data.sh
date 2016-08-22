@@ -138,7 +138,7 @@ function init_ingest_app {
     cat &> /opt/smack/conf/ingest.json << EOF
 {
   "id": "/ingest",
-  "cpus": 1,
+  "cpus": 0.5,
   "mem": 2048,
   "disk": 0,
   "instances": 1,
