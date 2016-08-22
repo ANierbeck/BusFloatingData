@@ -238,8 +238,8 @@ function install_smack {
     dcos package install --yes kafka
     dcos package install --cli kafka
     dcos package install --yes spark
-    dcos package install --yes spark --package-version 1.0.1-1.6.2
-    dcos package install --cli spark --package-version 1.0.1-1.6.2
+    dcos package install --yes --package-version=1.0.1-1.6.2 spark
+    dcos package install --cli --package-version=1.0.1-1.6.2 spark
     dcos package install --yes zeppelin
 }
 
