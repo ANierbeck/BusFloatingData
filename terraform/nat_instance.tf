@@ -12,4 +12,9 @@ resource "aws_instance" "nat" {
     "${aws_security_group.vpn.id}",
     "${aws_security_group.admin.id}"
   ]
+
+  tags {
+    Application = "${var.stack_name}"
+    Role = "nat"
+  }
 }

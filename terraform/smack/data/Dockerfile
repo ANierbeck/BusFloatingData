@@ -1,4 +1,4 @@
-FROM cassandra:2.2.5
+FROM cassandra:3.0.7
 
 RUN apt-get update && \
     apt-get install -y git && \

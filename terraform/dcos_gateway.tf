@@ -9,7 +9,7 @@ resource "aws_instance" "dcos" {
   ami = "${lookup(var.ubuntu_amis, var.aws_region)}"
   instance_type = "${var.dcos_gateway_instance_type}"
   key_name = "${aws_key_pair.dcos.key_name}"
-  user_data = "${template_file.dcos_user_data.rendered}"
+  user_data = "${data.template_file.dcos_user_data.rendered}"
   associate_public_ip_address = false
 
   tags {
@@ -22,7 +22,7 @@ resource "aws_instance" "dcos" {
   }
 }
 
-resource "template_file" "dcos_user_data" {
+data "template_file" "dcos_user_data" {
   template = "${file("${path.module}/dcos_user_data.sh")}"
 
   vars {

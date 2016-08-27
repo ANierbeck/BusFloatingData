@@ -1,11 +1,3 @@
-variable "aws_access_key" {
-  description = "AWS Access Key"
-}
-
-variable "aws_secret_key" {
-  description = "AWS Secret Key"
-}
-
 variable "aws_region" {
   description = "AWS Region to launch configuration in"
 }
@@ -37,7 +29,7 @@ variable "stack_name" {
 
 variable "slave_instance_count" {
   description = "Number of slave nodes to launch"
-  default = 7
+  default = 8
 }
 
 variable "public_slave_instance_count" {
@@ -169,21 +161,6 @@ variable "dns_domainnames" {
   }
 }
 
-variable "vpn_amis" {
-  description = "VPN AMIs for regions"
-  default = {
-    us-east-1       = "ami-5d4ec54a"
-    us-west-1       = "ami-b7418dd7"
-    us-west-2       = "ami-33b5f453"
-    sa-east-1       = "ami-b33aaedf"
-    ap-northeast-1  = "ami-7fc2391e"
-    ap-southeast-1  = "ami-dfbe61bc"
-    ap-southeast-2  = "ami-d37540b0"
-    eu-west-1       = "ami-3c95f74f"
-    eu-central-1    = "ami-6bc33704"
-  }
-}
-
 variable "ubuntu_amis" {
   description = "Ubuntu AMIs for regions"
   default = {
@@ -199,27 +176,6 @@ variable "ubuntu_amis" {
   }
 }
 
-variable "filebeat_download_url" {
-  description = "filebeats download url"
-  default = "https://download.elastic.co/beats/filebeat/filebeat-1.2.1-x86_64.tar.gz"
-}
-
-variable "filebeats_configuration" {
-  description = "filebeats configuration file"
-  default = <<EOF
-filebeat:
-  prospectors:
-    - paths:
-        - "/var/lib/mesos/slave/slaves/*/frameworks/*/executors/*/runs/latest/stdout"
-        - "/var/lib/mesos/slave/slaves/*/frameworks/*/executors/*/runs/latest/stderr"
-      fields:
-        node: "###NODE_TYPE###"
-output:
-  logstash:
-    hosts: ["logstash.marathon.mesos:5044"]
-EOF
-}
-
 variable "authentication_enabled" {
   description = "authentication_enabled"
   default = true
@@ -229,7 +185,6 @@ variable "bootstrap_id" {
   description = "bootstrap id that is used to download the bootstrap files"
   default = "3a2b7e03c45cd615da8dfb1b103943894652cd71"
 }
-
 
 variable "cluster_packages" {
   description = "cluster packages for single master setup"

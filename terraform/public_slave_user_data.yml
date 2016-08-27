@@ -104,39 +104,6 @@
       true
     "name": |-
       dcos-setup.service
-  - "content": |
-      [Unit]
-      Description=ELK: Download Filebeat
-      After=network-online.target
-      Wants=network-online.target
-      ConditionPathExists=!/opt/filebeat/filebeat
-      [Service]
-      Type=oneshot
-      StandardOutput=journal+console
-      StandardError=journal+console
-      ExecStartPre=/usr/bin/curl --fail --retry 20 --continue-at - --location --silent --show-error --verbose --output /tmp/filebeat.tar.xz ${filebeat_download_url}
-      ExecStartPre=/usr/bin/mkdir -p /opt/filebeat /tmp/filebeat /etc/filebeat/
-      ExecStartPre=/usr/bin/tar -axf /tmp/filebeat.tar.xz -C /tmp/filebeat --strip-components=1
-      ExecStart=-/bin/mv /tmp/filebeat/filebeat /opt/filebeat/filebeat
-      ExecStartPost=-/usr/bin/rm -rf /tmp/filebeat.tar.xz /tmp/filebeat
-    "name": |-
-      filebeat-download.service
-  - "command": |-
-      start
-    "content": |
-      [Unit]
-      Description=ELK: Filebeat collectes log file and send them to logstash
-      Requires=filebeat-download.service
-      After=filebeat-download.service
-      [Service]
-      Type=simple
-      StandardOutput=journal+console
-      StandardError=journal+console
-      ExecStart=/opt/filebeat/filebeat -e -c /etc/filebeat/filebeat.yml -d "publish"
-    "enable": !!bool |-
-      true
-    "name": |-
-      filebeat.service
   "update":
     "reboot-strategy": |-
       off
@@ -219,9 +186,3 @@ ${cluster_packages}
 - "content": ""
   "path": |-
     /etc/mesosphere/roles/aws
-- "content": |
-    ${filebeat_configuration}
-  "permissions": "0644"
-  "encoding": "base64"
-  "path": |-
-    /etc/filebeat/filebeat.yml

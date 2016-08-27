@@ -9,10 +9,10 @@ resource "aws_instance" "vpn" {
 
   subnet_id = "${aws_subnet.public.id}"
 
-  ami = "${lookup(var.vpn_amis, var.aws_region)}"
+  ami = "${lookup(var.ubuntu_amis, var.aws_region)}"
   instance_type = "${var.vpn_instance_type}"
   key_name = "${aws_key_pair.dcos.key_name}"
-  user_data = "${template_file.vpn_user_data.rendered}"
+  user_data = "${data.template_file.vpn_user_data.rendered}"
   associate_public_ip_address = true
 
   tags {
@@ -25,11 +25,13 @@ resource "aws_instance" "vpn" {
   }
 }
 
-resource "template_file" "vpn_user_data" {
-  template = "${file("${path.module}/vpn_user_data.yml")}"
+data "template_file" "vpn_user_data" {
+  template = "${file("${path.module}/vpn_user_data.sh")}"
 
   vars {
     admin_user  = "${var.openvpn_admin_user}"
     admin_pw    = "${var.openvpn_admin_pw}"
+    vpc_subnet_range    = "${var.vpc_subnet_range}"
+    internal_master_lb_dns_name = "${aws_elb.internal_master.dns_name}"
   }
 }

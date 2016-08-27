@@ -1,5 +1,5 @@
 output "vpn_ssh" {
-  value = "ssh openvpnas@${aws_instance.vpn.public_ip}"
+  value = "ssh ubuntu@${aws_instance.vpn.public_ip}"
 }
 
 output "dcos_cli" {

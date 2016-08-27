@@ -3,7 +3,7 @@ resource "aws_launch_configuration" "public_slave" {
   image_id = "${lookup(var.coreos_amis, var.aws_region)}"
   instance_type = "${var.public_slave_instance_type}"
   key_name = "${aws_key_pair.dcos.key_name}"
-  user_data = "${template_file.public_slave_user_data.rendered}"
+  user_data = "${data.template_file.public_slave_user_data.rendered}"
   associate_public_ip_address = true
 
   lifecycle {
@@ -11,14 +11,12 @@ resource "aws_launch_configuration" "public_slave" {
   }
 }
 
-resource "template_file" "public_slave_user_data" {
+data "template_file" "public_slave_user_data" {
   template = "${file("${path.module}/public_slave_user_data.yml")}"
 
   vars {
     authentication_enabled      = "${var.authentication_enabled}"
     bootstrap_id                = "${var.bootstrap_id}"
-    filebeat_configuration      = "${base64encode(replace(var.filebeats_configuration, "###NODE_TYPE###", "public_slave"))}"
-    filebeat_download_url       = "${var.filebeat_download_url}"
     stack_name                  = "${var.stack_name}"
     aws_region                  = "${var.aws_region}"
     cluster_packages            = "${var.cluster_packages}"
