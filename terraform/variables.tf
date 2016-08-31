@@ -1,3 +1,11 @@
+variable "aws_access_key" {
+  description = "AWS Access Key"
+}
+
+variable "aws_secret_key" {
+  description = "AWS Secret Key"
+}
+
 variable "aws_region" {
   description = "AWS Region to launch configuration in"
 }
@@ -58,7 +66,7 @@ variable "dcos_gateway_instance_type" {
 
 variable "vpn_instance_type" {
   description = "Default instance type for masters"
-  default = "t2.medium"
+  default = "m3.medium"
 }
 
 variable "master_instance_type" {
