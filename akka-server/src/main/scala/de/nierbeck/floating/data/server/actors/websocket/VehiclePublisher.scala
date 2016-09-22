@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package de.nierbeck.floating.data.server.actors
+package de.nierbeck.floating.data.server.actors.websocket
 
-import akka.actor.Actor.Receive
 import akka.actor.{ActorLogging, ActorRef, Props, Stash}
 import akka.routing.{ActorRefRoutee, AddRoutee, RemoveRoutee}
 import akka.stream.actor.ActorPublisher
@@ -36,10 +35,9 @@ class VehiclePublisher(router: ActorRef) extends ActorPublisher[String] with Act
   case class QueueUpdated()
 
   import akka.stream.actor.ActorPublisherMessage._
+  import context._
 
   import scala.collection.mutable
-
-  import context._
 
   val MaxBufferSize = 50
   val queue = mutable.Queue[Vehicle]()

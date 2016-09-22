@@ -23,7 +23,7 @@ import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.ws.UpgradeToWebSocket
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, Uri}
 import akka.stream.ActorMaterializer
-import de.nierbeck.floating.data.server.actors.{RouterActor, TiledVehiclesFromKafkaActor}
+import de.nierbeck.floating.data.server.actors.websocket.{RouterActor, TiledVehiclesFromKafkaActor}
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration

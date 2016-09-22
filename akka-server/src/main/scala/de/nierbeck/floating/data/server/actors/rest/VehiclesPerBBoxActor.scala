@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package de.nierbeck.floating.data.server.actors
+package de.nierbeck.floating.data.server.actors.rest
 
-import akka.actor.{Actor, ActorLogging, Props}
+import akka.actor.Props
 import akka.stream.ActorMaterializer
-import com.datastax.driver.core.{ResultSet, Session}
+import com.datastax.driver.core.ResultSet
 import de.nierbeck.floating.data.domain.{BoundingBox, Vehicle}
 import de.nierbeck.floating.data.server._
+import de.nierbeck.floating.data.server.actors.CassandraQuery
 import de.nierbeck.floating.data.tiler.TileCalc
 
 import scala.collection.JavaConverters._

@@ -21,9 +21,9 @@ import akka.http.scaladsl.model.ws.{Message, TextMessage}
 import akka.stream.FlowShape
 import akka.stream.scaladsl.{Flow, GraphDSL, Merge, Source}
 import de.nierbeck.floating.data.domain.Vehicle
-import de.nierbeck.floating.data.server.actors.VehiclePublisher
 import GraphDSL.Implicits._
 import de.nierbeck.floating.data.server._
+import de.nierbeck.floating.data.server.actors.websocket.VehiclePublisher
 
 /**
   */

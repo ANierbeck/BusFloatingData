@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package de.nierbeck.floating.data.server.actors
+package de.nierbeck.floating.data.server.actors.websocket
 
 import akka.actor.{Actor, ActorLogging}
 import akka.routing.{AddRoutee, RemoveRoutee, Routee}
-import de.nierbeck.floating.data.domain.TiledVehicle
 
 /**
   * Simple router where we can add and remove routee. This actor is not

@@ -14,18 +14,17 @@
  * limitations under the License.
  */
 
-package de.nierbeck.floating.data.server.actors
+package de.nierbeck.floating.data.server.actors.rest
 
-import akka.actor.Actor.Receive
-import akka.actor.{Actor, ActorLogging, Props}
+import akka.actor.Props
 import akka.stream.ActorMaterializer
-import com.datastax.driver.core.{ResultSet, Session}
+import com.datastax.driver.core.ResultSet
 import de.nierbeck.floating.data.domain.RouteInfo
 import de.nierbeck.floating.data.server._
-import de.nierbeck.floating.data.server.CassandraConnector
+import de.nierbeck.floating.data.server.actors.CassandraQuery
 
-import scala.concurrent.{ExecutionContext, Future}
 import scala.collection.JavaConverters._
+import scala.concurrent.{ExecutionContext, Future}
 
 object RouteInfoActor {
 

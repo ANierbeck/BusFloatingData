@@ -14,20 +14,14 @@
  * limitations under the License.
  */
 
-package de.nierbeck.floating.data.server.actors
+package de.nierbeck.floating.data.server.actors.rest
 
-
-import akka.actor.Actor.Receive
-import akka.actor.{Actor, ActorLogging, Props}
-import akka.stream.ActorMaterializer
+import akka.actor.Props
 import com.datastax.driver.core.ResultSet
 import de.nierbeck.floating.data.domain.VehicleClusterDetails
-import de.nierbeck.floating.data.server._
+import de.nierbeck.floating.data.server.actors.CassandraQuery
 
-import scala.collection.JavaConverters._
 import scala.collection.JavaConversions._
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Success
 
 object HotSpotDetailsActor {
   def props():Props = Props(new HotSpotDetailsActor())

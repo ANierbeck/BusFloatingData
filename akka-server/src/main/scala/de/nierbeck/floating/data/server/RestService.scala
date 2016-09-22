@@ -29,6 +29,7 @@ import com.fasterxml.jackson.databind.SerializationFeature
 import com.lambdaworks.jacks.JacksMapper
 import de.nierbeck.floating.data.domain._
 import de.nierbeck.floating.data.server.actors._
+import de.nierbeck.floating.data.server.actors.rest._
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._

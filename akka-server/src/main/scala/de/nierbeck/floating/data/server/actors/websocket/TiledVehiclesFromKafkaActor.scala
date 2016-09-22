@@ -14,19 +14,14 @@
  * limitations under the License.
  */
 
-package de.nierbeck.floating.data.server.actors
-
-import java.io.File
+package de.nierbeck.floating.data.server.actors.websocket
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.kafka.ConsumerSettings
 import akka.kafka.scaladsl.Consumer
-import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.ActorMaterializer
 import de.nierbeck.floating.data.serializer.TiledVehicleFstDeserializer
-import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.common.serialization.ByteArrayDeserializer
-
-import scala.concurrent.duration.FiniteDuration
 
 
 /**
@@ -42,7 +37,6 @@ object TiledVehiclesFromKafkaActor {
 
 class TiledVehiclesFromKafkaActor(router: ActorRef) extends Actor with ActorLogging {
 
-  import scala.concurrent.ExecutionContext.Implicits.global
   import de.nierbeck.floating.data.server.ServiceConfig._
   implicit val materializer = ActorMaterializer()
 

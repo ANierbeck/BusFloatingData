@@ -149,7 +149,7 @@ lazy val root = (project in file(".")).
 
 lazy val commons = (project in file("commons")).
   enablePlugins(AutomateHeaderPlugin).
-    settings(commonSettings: _*).
+  settings(commonSettings: _*).
   settings(
     name := "commons",
     scalaVersion := scalaVer,
