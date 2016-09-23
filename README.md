@@ -7,21 +7,17 @@ The project is a multi project with cross compilation due to incompatabilities w
 
 ### for a clean build from commandline:
 
-`sbt "; so clean ;so test; very publishLocal"`
+`sbt ";clean ;test; publishLocal"`
 
 or simply call 
 
 `sbt create`
 
-### To compile it run:
-
-`sbt ;so test; very publishLocal`
- 
 ### To run the applications 
 
 **ingest:** 
 
-`so ingest/run`
+`sbt ingest/run`
 
 select the 1st entry as the simple does all steps at once
 or better 
@@ -85,3 +81,15 @@ after that you can configure back the time to about 2 days (more isn't worth whe
 to check the current setting do the following: 
 
 `kafka-configs --zookeeper localhost:2181 --entity-type topics --describe --entity-name METRO-Vehicles`
+
+
+### Preparations for running on AWS
+
+See also the terraform folder on how to run this on AWS. 
+But prior to using it on AWS with a DC/OS cluster, make sure to 
+create all required Docker images and deploy them to a place you have access to. 
+To create those artefacts just call
+
+`sbt createAWS`
+
+this will create all uber-jars and runnable Docker images. 
