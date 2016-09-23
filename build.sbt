@@ -31,8 +31,8 @@ val scalaTestVer   = "2.2.6"
 val cassandraVer   = "3.0.1"
 val Log4j2         = "2.5"
 val Slf4j          = "1.7.18"
-val spark          = "1.6.0"
-val sparkConnector = "1.5.0"
+val spark          = "2.0.0"
+val sparkConnector = "2.0.0-M3"
 val circeVersion   = "0.4.1"
 
 //needed for crosscompilation ...
@@ -61,7 +61,6 @@ lazy val commonDependencies = Seq(
   "com.twitter"              %% "chill-akka"                 % "0.8.0",
 
   // datastax cassandra driver
-  "com.datastax.cassandra"   % "cassandra-driver-core"       % cassandraVer,
   "de.ruedigermoeller"       %  "fst"                        % "2.45"
 
 ).map(_. excludeAll(
@@ -71,17 +70,21 @@ lazy val commonDependencies = Seq(
   ExclusionRule(organization = "javax.jms")
 ))
 
+lazy val kafkaDependencies = Seq(
+  "org.apache.kafka"                %% "kafka"                      % "0.10.0.1"
+)
+
 //noinspection ScalaStyle
 lazy val akkaDependencies = Seq(
   "org.scala-lang.modules"   %% "scala-parser-combinators"   % scalaParsersVer,
   "com.typesafe.akka"        %% "akka-actor"                 % akkaVer,
   "com.typesafe.akka"        %% "akka-slf4j"                 % akkaVer,
   "com.typesafe.akka"        %% "akka-testkit"               % akkaVer            % "test",
+  "com.datastax.cassandra"   % "cassandra-driver-core"       % cassandraVer,
 
   // these are to avoid sbt warnings about transitive dependency conflicts
   "com.typesafe.akka"               %  "akka-http-experimental_2.11" % "2.0.1",
   "com.typesafe.akka"               %% "akka-stream-kafka"          % "0.11-M2",
-  "org.apache.kafka"                %% "kafka"                      % "0.9.0.1",
   "joda-time"                       %  "joda-time"                  % "2.9.3",
   "de.heikoseeberger"               %% "akka-http-json4s"           % "1.6.0",
   "org.json4s"                      %% "json4s-jackson"             % "3.2.11"
@@ -96,7 +99,7 @@ lazy val akkaDependencies = Seq(
 //noinspection ScalaStyle
 lazy val sparkDependencies = Seq(
   "com.datastax.spark"              %% "spark-cassandra-connector"  % sparkConnector,
-  "org.apache.spark"                %% "spark-streaming-kafka"      % spark,
+  "org.apache.spark"                %% "spark-streaming-kafka-0-10"      % spark,
   "org.apache.spark"                %% "spark-core"                 % spark           % "provided",
   "org.apache.spark"                %% "spark-streaming"            % spark           % "provided",
   "org.apache.spark"                %% "spark-catalyst"             % spark           % "provided",
@@ -135,7 +138,8 @@ lazy val commonSettings = Seq(
   parallelExecution in Test := true,
   logBuffered in Test := false,
   libraryDependencies ++= commonDependencies,
-  libraryDependencies ++= logDependencies
+  libraryDependencies ++= logDependencies,
+  libraryDependencies ++= kafkaDependencies
 )
 
 lazy val root = (project in file(".")).
@@ -153,14 +157,6 @@ lazy val commons = (project in file("commons")).
   settings(
     name := "commons",
     scalaVersion := scalaVer,
-    libraryDependencies += "org.apache.kafka" %% "kafka" % "0.9.0.1" % "provided" excludeAll(
-                                                        ExclusionRule(organization = "org.slf4j", artifact = "slf4j-log4j12"),
-                                                        ExclusionRule(organization = "com.sun.jdmk"),
-                                                        ExclusionRule(organization = "com.sun.jmx"),
-                                                        ExclusionRule(organization = "log4j"),
-                                                        ExclusionRule(organization = "javax.jms")
-                                                      ),
-    crossScalaVersions := Seq("2.10.5", scalaVer),
     headers := Map(
       "scala" -> Apache2_0("2016", "Achim Nierbeck"),
       "conf" -> Apache2_0("2016", "Achim Nierbeck", "#")
@@ -174,7 +170,6 @@ lazy val ingest = (project in file("akka-ingest")).
     name := "akka-ingest",
     scalaVersion := scalaVer,
     libraryDependencies ++= akkaDependencies,
-    crossScalaVersions := Seq(scalaVer),
     mainClass in (Compile,run) := Some("de.nierbeck.floating.data.stream.StreamToKafkaApp"),
     headers := Map(
       "scala" -> Apache2_0("2016", "Achim Nierbeck"),
@@ -189,7 +184,6 @@ lazy val akkaDigest = (project in file("akka-digest")).
     name := "akka-digest",
     scalaVersion := scalaVer,
     libraryDependencies ++= akkaDependencies,
-    crossScalaVersions := Seq(scalaVer),
     headers := Map(
       "scala" -> Apache2_0("2016", "Achim Nierbeck"),
       "conf" -> Apache2_0("2016", "Achim Nierbeck", "#")
@@ -202,24 +196,19 @@ lazy val sparkDigest = (project in file("spark-digest")).
   settings(
     name := "spark-digest",
     libraryDependencies ++= sparkDependencies,
-    libraryDependencies += "org.apache.kafka" %% "kafka" % "0.8.2.2" excludeAll(
-                                                            ExclusionRule(organization = "org.slf4j", artifact = "slf4j-log4j12"),
-                                                            ExclusionRule(organization = "com.sun.jdmk"),
-                                                            ExclusionRule(organization = "com.sun.jmx"),
-                                                            ExclusionRule(organization = "log4j"),
-                                                            ExclusionRule(organization = "javax.jms")
-                                                          ),
-    scalaVersion := "2.10.5",
-    crossScalaVersions := Seq("2.10.5"),
+    scalaVersion := scalaVer,
     mainClass in (run) := Some("de.nierbeck.floating.data.stream.spark.KafkaToCassandraSparkApp"),
     headers := Map(
       "scala" -> Apache2_0("2016", "Achim Nierbeck"),
       "conf" -> Apache2_0("2016", "Achim Nierbeck", "#")
     ),
     assemblyExcludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
-      cp.filter(_.data.getName == "slf4j-log4j12-1.6.1.jar")
+      cp.filter(_.data.getName == "log4j-1.2.17.jar")
     },
     assemblyMergeStrategy in assembly := {
+      case PathList("org", "apache", "log4j", "spi", xs @_ * ) => MergeStrategy.first
+      case PathList("org", "apache", "log4j", "xml", xs @_ * ) => MergeStrategy.first
+      case PathList("org", "slf4j", "impl", xs @_ * ) => MergeStrategy.first
       case PathList("META-INF", "MANIFEST.MF") => MergeStrategy.discard
       case PathList("", "create_table.cql") => MergeStrategy.discard
       case PathList("META-INF", xs @ _*) => MergeStrategy.last
@@ -250,19 +239,19 @@ lazy val akkaServer = (project in file("akka-server")).
   ).dependsOn(commons)
 
 //create project
-addCommandAlias("create", "; so clean ;so test; very publishLocal")
+addCommandAlias("create", ";clean ;test;publishLocal")
 
 //create deployment artefacts for DC/OS system
-addCommandAlias("createIngestContainer", "so ingest/docker:publishLocal")
-addCommandAlias("createDigestUberJar", "so sparkDigest/assembly")
-addCommandAlias("createServerContainer", "so akkaServer/docker:publishLocal")
+addCommandAlias("createIngestContainer", "ingest/docker:publishLocal")
+addCommandAlias("createDigestUberJar", "sparkDigest/assembly")
+addCommandAlias("createServerContainer", "akkaServer/docker:publishLocal")
 
 //localy run
-addCommandAlias("runIngest", "so ingest/run")
-addCommandAlias("runServer", "so akkaServer/run")
+addCommandAlias("runIngest", "ingest/run")
+addCommandAlias("runServer", "akkaServer/run")
 
 //localy run spark
-addCommandAlias("submitKafkaCassandra", "so sparkDigest/sparkSubmit --master local[2] --class de.nierbeck.floating.data.stream.spark.KafkaToCassandraSparkApp -- METRO-Vehicles localhost 9042 localhost 9092")
-addCommandAlias("submitClusterSpark", "so sparkDigest/sparkSubmit --master local[2] --class de.nierbeck.floating.data.stream.spark.CalcClusterSparkApp -- METRO-Vehicles localhost 9042 localhost 9092")
+addCommandAlias("submitKafkaCassandra", "sparkDigest/sparkSubmit --master local[2] --class de.nierbeck.floating.data.stream.spark.KafkaToCassandraSparkApp -- METRO-Vehicles localhost 9042 localhost 9092")
+addCommandAlias("submitClusterSpark", "sparkDigest/sparkSubmit --master local[2] --class de.nierbeck.floating.data.stream.spark.CalcClusterSparkApp -- METRO-Vehicles localhost 9042 localhost 9092")
 
-addCommandAlias("createAWS", "; so clean ;so test; very publishLocal; so ingest/docker:publishLocal; so sparkDigest/assembly; so akkaServer/docker:publishLocal")
+addCommandAlias("createAWS", ";clean ;test ;publishLocal ;ingest/docker:publishLocal ;sparkDigest/assembly ;akkaServer/docker:publishLocal")

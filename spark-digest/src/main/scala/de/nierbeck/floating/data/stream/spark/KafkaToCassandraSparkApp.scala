@@ -18,18 +18,16 @@ package de.nierbeck.floating.data.stream.spark
 
 import java.util.Properties
 
-import breeze.linalg.DenseMatrix
 import com.datastax.spark.connector.streaming._
-import de.nierbeck.floating.data.domain.{TiledVehicle, Vehicle, VehicleCluster}
-import de.nierbeck.floating.data.serializer.{TiledVehicleEncoder, VehicleFstDecoder}
+import de.nierbeck.floating.data.domain.{TiledVehicle, Vehicle}
+import de.nierbeck.floating.data.serializer.{TiledVehicleFstDeserializer, TiledVehicleFstSerializer, VehicleFstDeserializer}
 import de.nierbeck.floating.data.tiler.TileCalc
 import kafka.serializer.StringDecoder
-import nak.cluster.{DBSCAN, GDBSCAN, Kmeans}
 import org.apache.kafka.clients.producer.{KafkaProducer, Producer, ProducerRecord}
-import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.{SparkConf, streaming}
-import org.apache.spark.streaming.kafka.KafkaUtils
-import org.apache.spark.streaming.{Duration, Seconds, StreamingContext}
+import org.apache.kafka.common.serialization.StringDeserializer
+import org.apache.spark.SparkConf
+import org.apache.spark.streaming.kafka010.{ConsumerStrategies, KafkaUtils, LocationStrategies}
+import org.apache.spark.streaming.{Seconds, StreamingContext}
 
 object KafkaToCassandraSparkApp {
 
@@ -55,23 +53,33 @@ object KafkaToCassandraSparkApp {
       .set("spark.cassandra.connection.host", cassandraHost )
       .set("spark.cassandra.connection.port", cassandraPort )
       .set("spark.cassandra.connection.keep_alive_ms", "30000")
-    val consumerProperties = Map("group.id" -> "group1", "bootstrap.servers" -> s"""$kafkaHost:$kafkaPort""", "auto.offset.reset" -> "smallest")
 
     val producerConf = new Properties()
-    producerConf.put("value.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer")
+    producerConf.put("value.serializer", "org.apache.kafka.common.serialization.TiledVehicleFstSerializer")
     producerConf.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer")
     producerConf.put("bootstrap.servers", s"""$kafkaHost:$kafkaPort""")
+
+    val kafkaParams = Map[String, String](
+      "bootstrap.servers" -> s"""$kafkaHost:$kafkaPort""",
+      "group.id" -> "group1",
+      "key.deserializer" -> classOf[StringDeserializer].getName,
+      "value.deserializer" -> classOf[VehicleFstDeserializer].getName,
+      "session.timeout.ms" -> s"${1 * 60 * 1000}",
+      "request.timeout.ms" -> s"${2 * 60 * 1000}",
+      "auto.offset.reset" -> "latest",
+      "enable.auto.commit" -> "false"
+    )
 
     //noinspection ScalaStyle
     val ssc = new StreamingContext(sparkConf, Seconds(10))
 
-    val kafkaStream = KafkaUtils.createDirectStream[String, Vehicle, StringDecoder, VehicleFstDecoder](
+    val kafkaStream = KafkaUtils.createDirectStream[String, Vehicle](
       ssc,
-      consumerProperties,
-      Set(consumerTopic)
+      LocationStrategies.PreferBrokers,
+      ConsumerStrategies.Subscribe[String, Vehicle](Set(consumerTopic),kafkaParams)
     )
 
-    val vehicle = kafkaStream.map { tuple => tuple._2 }.cache()
+    val vehicle = kafkaStream.map { consumerRecord => consumerRecord.value }.cache()
 
     vehicle.saveToCassandra("streaming", "vehicles")
 
@@ -96,10 +104,10 @@ object KafkaToCassandraSparkApp {
 
     tiledVehicle.foreachRDD(rdd => rdd.foreachPartition(f = tiledVehicles => {
 
-      val producer: Producer[String, Array[Byte]] = new KafkaProducer[String, Array[Byte]](producerConf)
+      val producer: Producer[String, TiledVehicle] = new KafkaProducer[String, TiledVehicle](producerConf)
 
       tiledVehicles.foreach { tiledVehicle =>
-        val message = new ProducerRecord[String, Array[Byte]]("tiledVehicles", new TiledVehicleEncoder().toBytes(tiledVehicle))
+        val message = new ProducerRecord[String, TiledVehicle]("tiledVehicles", tiledVehicle)
         producer.send(message)
       }
 

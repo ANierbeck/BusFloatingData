@@ -21,17 +21,10 @@ import java.util.{Date, Properties}
 import breeze.linalg.DenseMatrix
 import com.datastax.spark.connector._
 import de.nierbeck.floating.data.domain._
-import de.nierbeck.floating.data.serializer.{TiledVehicleEncoder, VehicleFstDecoder}
 import de.nierbeck.floating.data.tiler.TileCalc
-import kafka.serializer.StringDecoder
-import nak.cluster
 import nak.cluster.{DBSCAN, GDBSCAN, Kmeans}
-import org.apache.kafka.clients.producer.{KafkaProducer, Producer, ProducerRecord}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
-import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.streaming.kafka.KafkaUtils
-import org.apache.spark.streaming.{Seconds, StreamingContext}
 import org.slf4j.{Logger, LoggerFactory}
 
 //noinspection ScalaStyle
