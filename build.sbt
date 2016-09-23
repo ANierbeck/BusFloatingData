@@ -34,6 +34,7 @@ val Slf4j          = "1.7.18"
 val spark          = "2.0.0"
 val sparkConnector = "2.0.0-M3"
 val circeVersion   = "0.4.1"
+val kafkaVersion   = "0.10.0.1"
 
 //needed for crosscompilation ...
 autoCompilerPlugins := true
@@ -71,7 +72,8 @@ lazy val commonDependencies = Seq(
 ))
 
 lazy val kafkaDependencies = Seq(
-  "org.apache.kafka"                %% "kafka"                      % "0.10.0.1"
+  "org.apache.kafka"                %% "kafka"                      % kafkaVersion,
+  "org.apache.kafka"                % "kafka-clients"                % kafkaVersion
 )
 
 //noinspection ScalaStyle
@@ -84,7 +86,7 @@ lazy val akkaDependencies = Seq(
 
   // these are to avoid sbt warnings about transitive dependency conflicts
   "com.typesafe.akka"               %  "akka-http-experimental_2.11" % "2.0.1",
-  "com.typesafe.akka"               %% "akka-stream-kafka"          % "0.11-M2",
+  "com.typesafe.akka"               %% "akka-stream-kafka"          % "0.12",
   "joda-time"                       %  "joda-time"                  % "2.9.3",
   "de.heikoseeberger"               %% "akka-http-json4s"           % "1.6.0",
   "org.json4s"                      %% "json4s-jackson"             % "3.2.11"
@@ -138,8 +140,7 @@ lazy val commonSettings = Seq(
   parallelExecution in Test := true,
   logBuffered in Test := false,
   libraryDependencies ++= commonDependencies,
-  libraryDependencies ++= logDependencies,
-  libraryDependencies ++= kafkaDependencies
+  libraryDependencies ++= logDependencies
 )
 
 lazy val root = (project in file(".")).
@@ -149,7 +150,7 @@ lazy val root = (project in file(".")).
     name := "BusFloatingData",
     scalaVersion := scalaVer
   ).
-  aggregate(commons, ingest, akkaDigest, sparkDigest, akkaServer)
+  aggregate(commons, ingest, sparkDigest, akkaServer)
 
 lazy val commons = (project in file("commons")).
   enablePlugins(AutomateHeaderPlugin).
@@ -157,6 +158,7 @@ lazy val commons = (project in file("commons")).
   settings(
     name := "commons",
     scalaVersion := scalaVer,
+    libraryDependencies ++= kafkaDependencies,
     headers := Map(
       "scala" -> Apache2_0("2016", "Achim Nierbeck"),
       "conf" -> Apache2_0("2016", "Achim Nierbeck", "#")
@@ -170,20 +172,8 @@ lazy val ingest = (project in file("akka-ingest")).
     name := "akka-ingest",
     scalaVersion := scalaVer,
     libraryDependencies ++= akkaDependencies,
+    libraryDependencies ++= kafkaDependencies,
     mainClass in (Compile,run) := Some("de.nierbeck.floating.data.stream.StreamToKafkaApp"),
-    headers := Map(
-      "scala" -> Apache2_0("2016", "Achim Nierbeck"),
-      "conf" -> Apache2_0("2016", "Achim Nierbeck", "#")
-    )
-  ).dependsOn(commons)
-
-lazy val akkaDigest = (project in file("akka-digest")).
-  enablePlugins(JavaAppPackaging, AutomateHeaderPlugin).
-  settings(commonSettings: _*).
-  settings(
-    name := "akka-digest",
-    scalaVersion := scalaVer,
-    libraryDependencies ++= akkaDependencies,
     headers := Map(
       "scala" -> Apache2_0("2016", "Achim Nierbeck"),
       "conf" -> Apache2_0("2016", "Achim Nierbeck", "#")
@@ -196,6 +186,7 @@ lazy val sparkDigest = (project in file("spark-digest")).
   settings(
     name := "spark-digest",
     libraryDependencies ++= sparkDependencies,
+    libraryDependencies ++= kafkaDependencies,
     scalaVersion := scalaVer,
     mainClass in (run) := Some("de.nierbeck.floating.data.stream.spark.KafkaToCassandraSparkApp"),
     headers := Map(
@@ -229,8 +220,16 @@ lazy val akkaServer = (project in file("akka-server")).
     scalaVersion := scalaVer,
     libraryDependencies ++= akkaDependencies,
     libraryDependencies ++= akkaHttpDependencies,
+    libraryDependencies ++= kafkaDependencies,
     libraryDependencies += "org.scalatest" %% "scalatest" % scalaTestVer % "test",
     libraryDependencies += "com.lambdaworks" %% "jacks" % "2.5.2",
+//    libraryDependencies += "org.apache.kafka" %% "kafka" % "0.9.0.1" % "provided" excludeAll(
+//      ExclusionRule(organization = "org.slf4j", artifact = "slf4j-log4j12"),
+//      ExclusionRule(organization = "com.sun.jdmk"),
+//      ExclusionRule(organization = "com.sun.jmx"),
+//      ExclusionRule(organization = "log4j"),
+//      ExclusionRule(organization = "javax.jms")
+//      ),
     crossScalaVersions := Seq(scalaVer),
     headers := Map(
       "scala" -> Apache2_0("2016", "Achim Nierbeck"),

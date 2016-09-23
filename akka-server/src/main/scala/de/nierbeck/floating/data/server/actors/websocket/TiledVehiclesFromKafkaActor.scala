@@ -17,7 +17,7 @@
 package de.nierbeck.floating.data.server.actors.websocket
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import akka.kafka.ConsumerSettings
+import akka.kafka.{ConsumerSettings, Subscriptions}
 import akka.kafka.scaladsl.Consumer
 import akka.stream.ActorMaterializer
 import de.nierbeck.floating.data.serializer.TiledVehicleFstDeserializer
@@ -42,12 +42,12 @@ class TiledVehiclesFromKafkaActor(router: ActorRef) extends Actor with ActorLogg
 
 
   //Kafka
-  val consumerSettings = ConsumerSettings(context.system, new ByteArrayDeserializer, new TiledVehicleFstDeserializer,
-    Set("tiledVehicles"))
+  val consumerSettings = ConsumerSettings(context.system, new ByteArrayDeserializer, new TiledVehicleFstDeserializer)
     .withBootstrapServers(s"${kafkaHostName}:$kafkaPort")
     .withGroupId("group1")
 
-  val source = Consumer.atMostOnceSource(consumerSettings.withClientId("Akka-Client"))
+
+  val source = Consumer.atMostOnceSource(consumerSettings.withClientId("Akka-Client"), Subscriptions.topics("tiledVehicles"))
   source.map(message => message.value).runForeach(vehicle => router ! vehicle)
 
   override def receive: Actor.Receive = {

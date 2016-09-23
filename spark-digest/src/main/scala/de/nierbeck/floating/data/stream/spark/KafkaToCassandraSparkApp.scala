@@ -20,7 +20,7 @@ import java.util.Properties
 
 import com.datastax.spark.connector.streaming._
 import de.nierbeck.floating.data.domain.{TiledVehicle, Vehicle}
-import de.nierbeck.floating.data.serializer.{TiledVehicleFstDeserializer, TiledVehicleFstSerializer, VehicleFstDeserializer}
+import de.nierbeck.floating.data.serializer.{TiledVehicleFstSerializer, VehicleFstDeserializer}
 import de.nierbeck.floating.data.tiler.TileCalc
 import kafka.serializer.StringDecoder
 import org.apache.kafka.clients.producer.{KafkaProducer, Producer, ProducerRecord}
@@ -55,7 +55,7 @@ object KafkaToCassandraSparkApp {
       .set("spark.cassandra.connection.keep_alive_ms", "30000")
 
     val producerConf = new Properties()
-    producerConf.put("value.serializer", "org.apache.kafka.common.serialization.TiledVehicleFstSerializer")
+    producerConf.put("value.serializer", "de.nierbeck.floating.data.serializer.TiledVehicleFstSerializer")
     producerConf.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer")
     producerConf.put("bootstrap.servers", s"""$kafkaHost:$kafkaPort""")
 
