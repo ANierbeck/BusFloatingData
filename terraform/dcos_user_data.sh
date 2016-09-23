@@ -233,11 +233,11 @@ EOF
 
 function install_smack {
     dcos package install --yes chronos
-    dcos package install --yes cassandra --package-version=1.0.13-2.2.5
+    dcos package install --yes cassandra --package-version=1.0.15-3.0.7
     dcos package install --cli cassandra
-    dcos package install --yes kafka --package-version=1.0.7-0.9.0.1
+    dcos package install --yes kafka --package-version=1.1.11-0.10.0.0
     dcos package install --cli kafka
-    dcos package install --yes spark --package-version=1.0.1-1.6.1-2
+    dcos package install --yes spark --package-version=1.0.1-2.0.0
     dcos package install --cli spark
     dcos package install --yes zeppelin --package-version=0.6.0
 }
