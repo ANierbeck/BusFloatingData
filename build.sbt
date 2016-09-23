@@ -24,7 +24,7 @@ import sbtassembly.MergeStrategy
  * root build.sbt
  */
 
-val akkaVer        = "2.4.3"
+val akkaVer        = "2.4.10"
 val scalaVer       = "2.11.8"
 val scalaParsersVer= "1.0.4"
 val scalaTestVer   = "2.2.6"
