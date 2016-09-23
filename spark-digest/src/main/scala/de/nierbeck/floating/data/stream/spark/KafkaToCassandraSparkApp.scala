@@ -23,10 +23,12 @@ import de.nierbeck.floating.data.domain.{TiledVehicle, Vehicle}
 import de.nierbeck.floating.data.serializer.{TiledVehicleFstSerializer, VehicleFstDeserializer}
 import de.nierbeck.floating.data.tiler.TileCalc
 import kafka.serializer.StringDecoder
+import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.producer.{KafkaProducer, Producer, ProducerRecord}
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.apache.spark.SparkConf
-import org.apache.spark.streaming.kafka010.{ConsumerStrategies, KafkaUtils, LocationStrategies}
+import org.apache.spark.streaming.dstream.InputDStream
+import org.apache.spark.streaming.kafka010._
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 
 object KafkaToCassandraSparkApp {
@@ -115,9 +117,23 @@ object KafkaToCassandraSparkApp {
 
     }))
 
+    commitOffsets(kafkaStream)
+
     ssc.start()
     ssc.awaitTermination()
     ssc.stop()
   }
+
+  /**
+    * Commits the processed kafka offsets
+    * @param stream The DStream created by KafkaUtils#createDirectStream without any transformation!
+    */
+  def commitOffsets(stream: InputDStream[ConsumerRecord[String, Vehicle]]): Unit = {
+    stream.foreachRDD(rdd => {
+      val offsetRanges = rdd.asInstanceOf[HasOffsetRanges].offsetRanges
+      stream.asInstanceOf[CanCommitOffsets].commitAsync(offsetRanges)
+    })
+  }
+
 
 }
