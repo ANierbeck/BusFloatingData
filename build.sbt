@@ -300,7 +300,7 @@ addCommandAlias("publishAll", ";so publish-signed; so ingest/docker:publish; so 
 releaseProcess := Seq[ReleaseStep](
   checkSnapshotDependencies,
   inquireVersions,
-  releaseStepCommand(";so clean ;so test"),
+  ReleaseStep(releaseStepCommand(";so clean ;so test")),
   setReleaseVersion,
   commitReleaseVersion,
   tagRelease,
