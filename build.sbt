@@ -180,7 +180,6 @@ lazy val commons = (project in file("commons")).
                                                         ExclusionRule(organization = "javax.jms")
                                                       ),
     crossScalaVersions := Seq("2.10.5", scalaVer),
-    releaseCrossBuild := true,
     headers := Map(
       "scala" -> Apache2_0("2016", "Achim Nierbeck"),
       "conf" -> Apache2_0("2016", "Achim Nierbeck", "#")
@@ -256,27 +255,6 @@ lazy val akkaServer = (project in file("akka-server")).
     )
   ).dependsOn(commons)
 
-releaseCrossBuild := true
-releasePublishArtifactsAction := PgpKeys.publishSigned.value
-
-//lazy val publishLocalRelease: ReleaseStep = { st: State =>
-//  val extracted = Project.extract(st)
-//  val ref = extracted.get(thisProjectRef)
-//  extracted.runAggregated(publishLocal in this in ref, st)
-//}
-//
-//lazy val publishRelease: ReleaseStep = { st: State =>
-//  val extracted = Project.extract(st)
-//  val ref = extracted.get(thisProjectRef)
-//  extracted.runAggregated(publishArtifacts in this in ref, st)
-//}
-
-lazy val dockerRelease: ReleaseStep = { st: State =>
-  val extracted = Project.extract(st)
-  val ref = extracted.get(thisProjectRef)
-  extracted.runAggregated(publish in Docker in ref, st)
-}
-
 //create project
 addCommandAlias("create", "; so clean ;so test; very publishLocal")
 addCommandAlias("testAll", ";so clean ;so test")
@@ -297,20 +275,3 @@ addCommandAlias("submitClusterSpark", "so sparkDigest/sparkSubmit --master local
 addCommandAlias("createAWS", "; so clean ;so test; very publishLocal; so ingest/docker:publishLocal; so sparkDigest/assembly; so akkaServer/docker:publishLocal")
 
 addCommandAlias("publishAll", ";so publish-signed; so ingest/docker:publish; so akkaServer/docker:publish")
-
-releaseProcess := Seq[ReleaseStep](
-  checkSnapshotDependencies,
-  inquireVersions,
-  ReleaseStep(releaseStepCommand(";so clean ;so test")),
-  setReleaseVersion,
-  commitReleaseVersion,
-  tagRelease,
-  ReleaseStep(releaseStepTask(publishLocal)),
-  publishArtifacts,
-//  ReleaseStep(releaseStepCommand(";so compile; so publishLocal; so publish-signed; so ingest/docker:publish; so akkaServer/docker:publish")),
-  dockerRelease,
-//  releaseStepCommand("publishAll"),
-  setNextVersion,
-  commitNextVersion,
-  pushChanges
-)
