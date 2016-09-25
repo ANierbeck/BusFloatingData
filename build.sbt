@@ -293,7 +293,7 @@ releaseProcess := Seq[ReleaseStep](
   commitReleaseVersion,
   tagRelease,
 //  publishArtifacts,
-  ReleaseStep(releaseStepCommand("so publishLocal")),
+  ReleaseStep(releaseStepCommand(";so compile; so publishLocal")),
   ReleaseStep(releaseStepCommand("so publish-signed")),
   dockerRelease,
 //  releaseStepCommand("publishAll"),
