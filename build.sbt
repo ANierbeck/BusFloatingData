@@ -266,6 +266,7 @@ lazy val dockerRelease: ReleaseStep = { st: State =>
 
 //create project
 addCommandAlias("create", "; so clean ;so test; very publishLocal")
+addCommandAlias("testAll", ";so clean ;so test")
 
 //create deployment artefacts for DC/OS system
 addCommandAlias("createIngestContainer", "so ingest/docker:publishLocal")
@@ -287,7 +288,7 @@ addCommandAlias("publishAll", ";so publish-signed; so ingest/docker:publish; so 
 releaseProcess := Seq[ReleaseStep](
   checkSnapshotDependencies,
   inquireVersions,
-  releaseStepCommand("createAWS"),
+  releaseStepCommand("testAll"),
   setReleaseVersion,
   commitReleaseVersion,
   tagRelease,
