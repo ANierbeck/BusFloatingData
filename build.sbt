@@ -19,6 +19,7 @@ import de.heikoseeberger.sbtheader.license.Apache2_0
 import de.heikoseeberger.sbtheader.{AutomateHeaderPlugin, HeaderPlugin}
 import sbt.Keys._
 import sbtassembly.MergeStrategy
+import sbtrelease.ReleaseStateTransformations._
 
 /**
  * root build.sbt
@@ -54,6 +55,7 @@ lazy val compileOptions = Seq(
 )
 
 resolvers += Resolver.bintrayRepo("hseeberger", "maven")
+
 
 //noinspection ScalaStyle
 lazy val commonDependencies = Seq(
@@ -135,12 +137,41 @@ lazy val akkaHttpDependencies = Seq(
 
 lazy val commonSettings = Seq(
   organization := "de.nierbeck.floating.data",
-  version := "0.1.0-SNAPSHOT",
   scalacOptions ++= compileOptions,
   parallelExecution in Test := true,
   logBuffered in Test := false,
   libraryDependencies ++= commonDependencies,
-  libraryDependencies ++= logDependencies
+  libraryDependencies ++= logDependencies,
+
+  publishMavenStyle := true,
+  publishArtifact in Test := false,
+  pomIncludeRepository := { _ => false },
+  pomExtra := (
+      <scm>
+        <url>git@github.com:ANierbeck/BusFloatingData.git</url>
+        <connection>scm:git:git@github.com:ANierbeck/BusFloatingData.git</connection>
+      </scm>
+      <developers>
+        <developer>
+          <id>ANierbeck</id>
+          <name>Achim Nierbeck</name>
+        </developer>
+      </developers>
+    ),
+
+  licenses := Seq("Apache-2.0" -> url("https://opensource.org/licenses/Apache-2.0")),
+
+  homepage := Some(url("https://github.com/ANierbeck/BusFloatingData")),
+
+  dockerRepository := Some("anierbeck"),
+
+  publishTo := {
+    val nexus = "https://oss.sonatype.org/"
+    if (isSnapshot.value)
+      Some("snapshots" at nexus + "content/repositories/snapshots")
+    else
+      Some("releases"  at nexus + "service/local/staging/deploy/maven2")
+  }
 )
 
 lazy val root = (project in file(".")).
@@ -213,6 +244,7 @@ lazy val sparkDigest = (project in file("spark-digest")).
   ).dependsOn(commons)
 
 lazy val akkaServer = (project in file("akka-server")).
+  settings(commonSettings: _*).
   enablePlugins(JavaAppPackaging).
   enablePlugins(AutomateHeaderPlugin).
   settings(
@@ -223,13 +255,6 @@ lazy val akkaServer = (project in file("akka-server")).
     libraryDependencies ++= kafkaDependencies,
     libraryDependencies += "org.scalatest" %% "scalatest" % scalaTestVer % "test",
     libraryDependencies += "com.lambdaworks" %% "jacks" % "2.5.2",
-//    libraryDependencies += "org.apache.kafka" %% "kafka" % "0.9.0.1" % "provided" excludeAll(
-//      ExclusionRule(organization = "org.slf4j", artifact = "slf4j-log4j12"),
-//      ExclusionRule(organization = "com.sun.jdmk"),
-//      ExclusionRule(organization = "com.sun.jmx"),
-//      ExclusionRule(organization = "log4j"),
-//      ExclusionRule(organization = "javax.jms")
-//      ),
     crossScalaVersions := Seq(scalaVer),
     headers := Map(
       "scala" -> Apache2_0("2016", "Achim Nierbeck"),
@@ -254,3 +279,4 @@ addCommandAlias("submitKafkaCassandra", "sparkDigest/sparkSubmit --master local[
 addCommandAlias("submitClusterSpark", "sparkDigest/sparkSubmit --master local[2] --class de.nierbeck.floating.data.stream.spark.CalcClusterSparkApp -- METRO-Vehicles localhost 9042 localhost 9092")
 
 addCommandAlias("createAWS", ";clean ;test ;publishLocal ;ingest/docker:publishLocal ;sparkDigest/assembly ;akkaServer/docker:publishLocal")
+addCommandAlias("publishAll", ";publish-signed; ingest/docker:publish; akkaServer/docker:publish")
