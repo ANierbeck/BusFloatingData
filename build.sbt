@@ -180,6 +180,7 @@ lazy val commons = (project in file("commons")).
                                                         ExclusionRule(organization = "javax.jms")
                                                       ),
     crossScalaVersions := Seq("2.10.5", scalaVer),
+    releaseCrossBuild := true
     headers := Map(
       "scala" -> Apache2_0("2016", "Achim Nierbeck"),
       "conf" -> Apache2_0("2016", "Achim Nierbeck", "#")
