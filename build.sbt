@@ -141,6 +141,18 @@ lazy val commonSettings = Seq(
   publishMavenStyle := true,
   publishArtifact in Test := false,
   pomIncludeRepository := { _ => false },
+  pomExtra := (
+      <scm>
+        <url>git@github.com:ANierbeck/BusFloatingData.git</url>
+        <connection>scm:git:git@github.com:ANierbeck/BusFloatingData.git</connection>
+      </scm>
+      <developers>
+        <developer>
+          <id>ANierbeck</id>
+          <name>Achim Nierbeck</name>
+        </developer>
+      </developers>
+    ),
 
   licenses := Seq("Apache-2.0" -> url("https://opensource.org/licenses/Apache-2.0")),
 
