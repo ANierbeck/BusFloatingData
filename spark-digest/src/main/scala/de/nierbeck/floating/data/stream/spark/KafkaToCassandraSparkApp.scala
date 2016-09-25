@@ -18,18 +18,15 @@ package de.nierbeck.floating.data.stream.spark
 
 import java.util.Properties
 
-import breeze.linalg.DenseMatrix
 import com.datastax.spark.connector.streaming._
-import de.nierbeck.floating.data.domain.{TiledVehicle, Vehicle, VehicleCluster}
-import de.nierbeck.floating.data.serializer.{TiledVehicleEncoder, VehicleFstDecoder}
+import de.nierbeck.floating.data.domain.{TiledVehicle, Vehicle}
 import de.nierbeck.floating.data.tiler.TileCalc
 import kafka.serializer.StringDecoder
-import nak.cluster.{DBSCAN, GDBSCAN, Kmeans}
+import de.nierbeck.floating.data.serializer.{VehicleFstDecoder, TiledVehicleEncoder}
 import org.apache.kafka.clients.producer.{KafkaProducer, Producer, ProducerRecord}
-import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.{SparkConf, streaming}
+import org.apache.spark.SparkConf
 import org.apache.spark.streaming.kafka.KafkaUtils
-import org.apache.spark.streaming.{Duration, Seconds, StreamingContext}
+import org.apache.spark.streaming.{Seconds, StreamingContext}
 
 object KafkaToCassandraSparkApp {
 

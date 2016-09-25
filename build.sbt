@@ -54,6 +54,7 @@ lazy val compileOptions = Seq(
 
 resolvers += Resolver.bintrayRepo("hseeberger", "maven")
 
+
 //noinspection ScalaStyle
 lazy val commonDependencies = Seq(
   "org.scalatest"            %% "scalatest"                  % scalaTestVer       % "test",
@@ -135,7 +136,25 @@ lazy val commonSettings = Seq(
   parallelExecution in Test := true,
   logBuffered in Test := false,
   libraryDependencies ++= commonDependencies,
-  libraryDependencies ++= logDependencies
+  libraryDependencies ++= logDependencies,
+
+  publishMavenStyle := true,
+  publishArtifact in Test := false,
+  pomIncludeRepository := { _ => false },
+
+  licenses := Seq("Apache-2.0" -> url("https://opensource.org/licenses/Apache-2.0")),
+
+  homepage := Some(url("https://github.com/ANierbeck/BusFloatingData")),
+
+  dockerRepository := Some("anierbeck"),
+
+  publishTo := {
+    val nexus = "https://oss.sonatype.org/"
+    if (isSnapshot.value)
+      Some("snapshots" at nexus + "content/repositories/snapshots")
+    else
+      Some("releases"  at nexus + "service/local/staging/deploy/maven2")
+  }
 )
 
 lazy val root = (project in file(".")).
@@ -233,6 +252,7 @@ lazy val sparkDigest = (project in file("spark-digest")).
   ).dependsOn(commons)
 
 lazy val akkaServer = (project in file("akka-server")).
+  settings(commonSettings: _*).
   enablePlugins(JavaAppPackaging).
   enablePlugins(AutomateHeaderPlugin).
   settings(
@@ -266,3 +286,5 @@ addCommandAlias("submitKafkaCassandra", "so sparkDigest/sparkSubmit --master loc
 addCommandAlias("submitClusterSpark", "so sparkDigest/sparkSubmit --master local[2] --class de.nierbeck.floating.data.stream.spark.CalcClusterSparkApp -- METRO-Vehicles localhost 9042 localhost 9092")
 
 addCommandAlias("createAWS", "; so clean ;so test; very publishLocal; so ingest/docker:publishLocal; so sparkDigest/assembly; so akkaServer/docker:publishLocal")
+
+addCommandAlias("publishAll", ";so publish-signed; so ingest/docker:publish; so akkaServer/docker:publish")
