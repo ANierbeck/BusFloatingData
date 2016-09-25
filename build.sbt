@@ -334,5 +334,3 @@ addCommandAlias("submitClusterSpark", "so sparkDigest/sparkSubmit --master local
 addCommandAlias("createAWS", "; so clean ;so test; very publishLocal; so ingest/docker:publishLocal; so sparkDigest/assembly; so akkaServer/docker:publishLocal")
 
 addCommandAlias("publishAll", ";so publish-signed; so ingest/docker:publish; so akkaServer/docker:publish")
-
-addCommandAlias("releaseAll", "so release")
