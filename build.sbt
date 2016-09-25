@@ -256,7 +256,7 @@ lazy val akkaServer = (project in file("akka-server")).
   ).dependsOn(commons)
 
 releaseCrossBuild := true
-releasePublishArtifactsAction := PgpKeys.publishSigned.value
+//releasePublishArtifactsAction := PgpKeys.publishSigned.value
 
 lazy val dockerRelease: ReleaseStep = { st: State =>
   val extracted = Project.extract(st)
