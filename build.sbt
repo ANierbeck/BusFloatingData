@@ -258,11 +258,11 @@ lazy val akkaServer = (project in file("akka-server")).
 releaseCrossBuild := true
 releasePublishArtifactsAction := PgpKeys.publishSigned.value
 
-lazy val publishLocalRelease: ReleaseStep = { st: State =>
-  val extracted = Project.extract(st)
-  val ref = extracted.get(thisProjectRef)
-  extracted.runAggregated(publishLocal in this in ref, st)
-}
+//lazy val publishLocalRelease: ReleaseStep = { st: State =>
+//  val extracted = Project.extract(st)
+//  val ref = extracted.get(thisProjectRef)
+//  extracted.runAggregated(publishLocal in this in ref, st)
+//}
 //
 //lazy val publishRelease: ReleaseStep = { st: State =>
 //  val extracted = Project.extract(st)
@@ -304,7 +304,7 @@ releaseProcess := Seq[ReleaseStep](
   setReleaseVersion,
   commitReleaseVersion,
   tagRelease,
-  publishLocalRelease,
+  ReleaseStep(releaseStepTask(publishLocal)),
   publishArtifacts,
 //  ReleaseStep(releaseStepCommand(";so compile; so publishLocal; so publish-signed; so ingest/docker:publish; so akkaServer/docker:publish")),
   dockerRelease,
