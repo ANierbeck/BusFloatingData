@@ -19,6 +19,7 @@ import de.heikoseeberger.sbtheader.license.Apache2_0
 import de.heikoseeberger.sbtheader.{AutomateHeaderPlugin, HeaderPlugin}
 import sbt.Keys._
 import sbtassembly.MergeStrategy
+import sbtrelease.ReleaseStateTransformations._
 
 /**
  * root build.sbt
@@ -131,7 +132,6 @@ lazy val akkaHttpDependencies = Seq(
 
 lazy val commonSettings = Seq(
   organization := "de.nierbeck.floating.data",
-  version := "0.1.0-SNAPSHOT",
   scalacOptions ++= compileOptions,
   parallelExecution in Test := true,
   logBuffered in Test := false,
@@ -164,7 +164,7 @@ lazy val root = (project in file(".")).
     name := "BusFloatingData",
     scalaVersion := scalaVer
   ).
-  aggregate(commons, ingest, akkaDigest, sparkDigest, akkaServer)
+  aggregate(commons, ingest, sparkDigest, akkaServer)
 
 lazy val commons = (project in file("commons")).
   enablePlugins(AutomateHeaderPlugin).
@@ -183,6 +183,18 @@ lazy val commons = (project in file("commons")).
     headers := Map(
       "scala" -> Apache2_0("2016", "Achim Nierbeck"),
       "conf" -> Apache2_0("2016", "Achim Nierbeck", "#")
+    ),
+    releaseProcess := Seq[ReleaseStep](
+      checkSnapshotDependencies,
+      inquireVersions,
+      runTest,
+      setReleaseVersion,
+      commitReleaseVersion,
+      tagRelease,
+      publishArtifacts,
+      setNextVersion,
+      commitNextVersion,
+      pushChanges
     )
   )
 
@@ -198,21 +210,21 @@ lazy val ingest = (project in file("akka-ingest")).
     headers := Map(
       "scala" -> Apache2_0("2016", "Achim Nierbeck"),
       "conf" -> Apache2_0("2016", "Achim Nierbeck", "#")
+    ),
+    releaseProcess := Seq[ReleaseStep](
+      checkSnapshotDependencies,
+      inquireVersions,
+      runTest,
+      setReleaseVersion,
+      commitReleaseVersion,
+      tagRelease,
+      publishArtifacts,
+      dockerRelease,
+      setNextVersion,
+      commitNextVersion,
+      pushChanges
     )
-  ).dependsOn(commons)
 
-lazy val akkaDigest = (project in file("akka-digest")).
-  enablePlugins(JavaAppPackaging, AutomateHeaderPlugin).
-  settings(commonSettings: _*).
-  settings(
-    name := "akka-digest",
-    scalaVersion := scalaVer,
-    libraryDependencies ++= akkaDependencies,
-    crossScalaVersions := Seq(scalaVer),
-    headers := Map(
-      "scala" -> Apache2_0("2016", "Achim Nierbeck"),
-      "conf" -> Apache2_0("2016", "Achim Nierbeck", "#")
-    )
   ).dependsOn(commons)
 
 lazy val sparkDigest = (project in file("spark-digest")).
@@ -248,7 +260,19 @@ lazy val sparkDigest = (project in file("spark-digest")).
       case x =>
         val oldStrategy = (assemblyMergeStrategy in assembly).value
         oldStrategy(x)
-    }
+    },
+    releaseProcess := Seq[ReleaseStep](
+      checkSnapshotDependencies,
+      inquireVersions,
+      runTest,
+      setReleaseVersion,
+      commitReleaseVersion,
+      tagRelease,
+      publishArtifacts,
+      setNextVersion,
+      commitNextVersion,
+      pushChanges
+    )
   ).dependsOn(commons)
 
 lazy val akkaServer = (project in file("akka-server")).
@@ -266,8 +290,30 @@ lazy val akkaServer = (project in file("akka-server")).
     headers := Map(
       "scala" -> Apache2_0("2016", "Achim Nierbeck"),
       "conf" -> Apache2_0("2016", "Achim Nierbeck", "#")
+    ),
+    releaseProcess := Seq[ReleaseStep](
+      checkSnapshotDependencies,
+      inquireVersions,
+      runTest,
+      setReleaseVersion,
+      commitReleaseVersion,
+      tagRelease,
+      publishArtifacts,
+      dockerRelease,
+      setNextVersion,
+      commitNextVersion,
+      pushChanges
     )
   ).dependsOn(commons)
+
+releaseCrossBuild := true
+releasePublishArtifactsAction := PgpKeys.publishSigned.value
+
+lazy val dockerRelease: ReleaseStep = { st: State =>
+  val extracted = Project.extract(st)
+  val ref = extracted.get(thisProjectRef)
+  extracted.runAggregated(publish in Docker in ref, st)
+}
 
 //create project
 addCommandAlias("create", "; so clean ;so test; very publishLocal")
@@ -288,3 +334,5 @@ addCommandAlias("submitClusterSpark", "so sparkDigest/sparkSubmit --master local
 addCommandAlias("createAWS", "; so clean ;so test; very publishLocal; so ingest/docker:publishLocal; so sparkDigest/assembly; so akkaServer/docker:publishLocal")
 
 addCommandAlias("publishAll", ";so publish-signed; so ingest/docker:publish; so akkaServer/docker:publish")
+
+addCommandAlias("releaseAll", "so release")
