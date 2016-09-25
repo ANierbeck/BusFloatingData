@@ -183,18 +183,6 @@ lazy val commons = (project in file("commons")).
     headers := Map(
       "scala" -> Apache2_0("2016", "Achim Nierbeck"),
       "conf" -> Apache2_0("2016", "Achim Nierbeck", "#")
-    ),
-    releaseProcess := Seq[ReleaseStep](
-      checkSnapshotDependencies,
-      inquireVersions,
-      runTest,
-      setReleaseVersion,
-      commitReleaseVersion,
-      tagRelease,
-      publishArtifacts,
-      setNextVersion,
-      commitNextVersion,
-      pushChanges
     )
   )
 
@@ -210,21 +198,7 @@ lazy val ingest = (project in file("akka-ingest")).
     headers := Map(
       "scala" -> Apache2_0("2016", "Achim Nierbeck"),
       "conf" -> Apache2_0("2016", "Achim Nierbeck", "#")
-    ),
-    releaseProcess := Seq[ReleaseStep](
-      checkSnapshotDependencies,
-      inquireVersions,
-      runTest,
-      setReleaseVersion,
-      commitReleaseVersion,
-      tagRelease,
-      publishArtifacts,
-      dockerRelease,
-      setNextVersion,
-      commitNextVersion,
-      pushChanges
     )
-
   ).dependsOn(commons)
 
 lazy val sparkDigest = (project in file("spark-digest")).
@@ -260,19 +234,7 @@ lazy val sparkDigest = (project in file("spark-digest")).
       case x =>
         val oldStrategy = (assemblyMergeStrategy in assembly).value
         oldStrategy(x)
-    },
-    releaseProcess := Seq[ReleaseStep](
-      checkSnapshotDependencies,
-      inquireVersions,
-      runTest,
-      setReleaseVersion,
-      commitReleaseVersion,
-      tagRelease,
-      publishArtifacts,
-      setNextVersion,
-      commitNextVersion,
-      pushChanges
-    )
+    }
   ).dependsOn(commons)
 
 lazy val akkaServer = (project in file("akka-server")).
@@ -290,19 +252,6 @@ lazy val akkaServer = (project in file("akka-server")).
     headers := Map(
       "scala" -> Apache2_0("2016", "Achim Nierbeck"),
       "conf" -> Apache2_0("2016", "Achim Nierbeck", "#")
-    ),
-    releaseProcess := Seq[ReleaseStep](
-      checkSnapshotDependencies,
-      inquireVersions,
-      runTest,
-      setReleaseVersion,
-      commitReleaseVersion,
-      tagRelease,
-      publishArtifacts,
-      dockerRelease,
-      setNextVersion,
-      commitNextVersion,
-      pushChanges
     )
   ).dependsOn(commons)
 
@@ -334,3 +283,16 @@ addCommandAlias("submitClusterSpark", "so sparkDigest/sparkSubmit --master local
 addCommandAlias("createAWS", "; so clean ;so test; very publishLocal; so ingest/docker:publishLocal; so sparkDigest/assembly; so akkaServer/docker:publishLocal")
 
 addCommandAlias("publishAll", ";so publish-signed; so ingest/docker:publish; so akkaServer/docker:publish")
+
+releaseProcess := Seq[ReleaseStep](
+  checkSnapshotDependencies,
+  inquireVersions,
+  releaseStepCommand("createAWS"),
+  setReleaseVersion,
+  commitReleaseVersion,
+  tagRelease,
+  releaseStepCommand("publishAll"),
+  setNextVersion,
+  commitNextVersion,
+  pushChanges
+)
