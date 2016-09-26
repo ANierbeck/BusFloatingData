@@ -146,7 +146,7 @@ function init_ingest_app {
     "type": "DOCKER",
     "volumes": [],
     "docker": {
-      "image": "anierbeck/akka-ingest",
+      "image": "anierbeck/akka-ingest:0.2.0-SNAPSHOT",
       "network": "HOST",
       "privileged": false,
       "parameters": [],
@@ -195,7 +195,7 @@ function init_dasboard {
     "container": {
         "type": "DOCKER",
         "docker": {
-            "image": "anierbeck/akka-server",
+            "image": "anierbeck/akka-server:0.2.0-SNAPSHOT",
             "network": "HOST",
             "forcePullImage": true
         }
