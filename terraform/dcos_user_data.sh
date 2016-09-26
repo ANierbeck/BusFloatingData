@@ -146,7 +146,7 @@ function init_ingest_app {
     "type": "DOCKER",
     "volumes": [],
     "docker": {
-      "image": "codecentric/bus-demo-ingest",
+      "image": "anierbeck/akka-ingest",
       "network": "HOST",
       "privileged": false,
       "parameters": [],
@@ -179,10 +179,10 @@ function init_spark_jobs {
 dcos spark run --submit-args='-Dspark.mesos.coarse=true --driver-cores 1 --driver-memory 1024M --class org.apache.spark.examples.SparkPi https://downloads.mesosphere.com/spark/assets/spark-examples_2.10-1.4.0-SNAPSHOT.jar 30'
 EOF
     cat &> /usr/sbin/run-digest << EOF
-dcos spark run --submit-args='--supervise -Dspark.mesos.coarse=true --driver-cores 1 --driver-memory 1024M --class de.nierbeck.floating.data.stream.spark.KafkaToCassandraSparkApp https://s3.eu-central-1.amazonaws.com/big-data-muc/bus-demo-digest-assembly-0.1.0.jar METRO-Vehicles $CASSANDRA_HOST $CASSANDRA_PORT $KAFKA_HOST $KAFKA_PORT'
+dcos spark run --submit-args='--supervise -Dspark.mesos.coarse=true --driver-cores 1 --driver-memory 1024M --class de.nierbeck.floating.data.stream.spark.KafkaToCassandraSparkApp https://oss.sonatype.org/content/repositories/snapshots/de/nierbeck/floating/data/spark-digest_2.11/0.2.0-SNAPSHOT/spark-digest_2.11-0.2.0-SNAPSHOT-assembly.jar METRO-Vehicles $CASSANDRA_HOST $CASSANDRA_PORT $KAFKA_HOST $KAFKA_PORT'
 EOF
     cat &> /usr/sbin/run-digest-hotspot << EOF
-dcos spark run --submit-args='-Dspark.mesos.coarse=true --driver-cores 1 --driver-memory 1024M --class de.nierbeck.floating.data.stream.spark.CalcClusterSparkApp https://s3.eu-central-1.amazonaws.com/big-data-muc/bus-demo-digest-assembly-0.1.0.jar METRO-Vehicles $CASSANDRA_HOST $CASSANDRA_PORT $KAFKA_HOST $KAFKA_PORT @$'
+dcos spark run --submit-args='-Dspark.mesos.coarse=true --driver-cores 1 --driver-memory 1024M --class de.nierbeck.floating.data.stream.spark.CalcClusterSparkApp https://oss.sonatype.org/content/repositories/snapshots/de/nierbeck/floating/data/spark-digest_2.11/0.2.0-SNAPSHOT/spark-digest_2.11-0.2.0-SNAPSHOT-assembly.jar METRO-Vehicles $CASSANDRA_HOST $CASSANDRA_PORT $KAFKA_HOST $KAFKA_PORT @$'
 EOF
     chmod 744 /usr/sbin/run-pi /usr/sbin/run-digest /usr/sbin/run-digest-hotspot
     /usr/sbin/run-digest
@@ -195,7 +195,7 @@ function init_dasboard {
     "container": {
         "type": "DOCKER",
         "docker": {
-            "image": "codecentric/bus-demo-dashboard",
+            "image": "anierbeck/akka-server",
             "network": "HOST",
             "forcePullImage": true
         }

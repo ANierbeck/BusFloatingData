@@ -18,6 +18,7 @@
 import de.heikoseeberger.sbtheader.license.Apache2_0
 import de.heikoseeberger.sbtheader.{AutomateHeaderPlugin, HeaderPlugin}
 import sbt.Keys._
+import sbt._
 import sbtassembly.MergeStrategy
 import sbtrelease.ReleaseStateTransformations._
 
@@ -44,6 +45,11 @@ fork in run := true
 
 //local dependency for sbt itself
 libraryDependencies += "org.apache.spark" %% "spark-core" % spark % "provided"
+
+//used for aether-deploy
+overridePublishBothSettings
+enablePlugins(SignedAetherPlugin)
+overridePublishSignedSettings
 
 lazy val compileOptions = Seq(
   "-unchecked",
@@ -240,7 +246,12 @@ lazy val sparkDigest = (project in file("spark-digest")).
       case x =>
         val oldStrategy = (assemblyMergeStrategy in assembly).value
         oldStrategy(x)
-    }
+    },
+    artifact in (Compile, assembly) := {
+      val art = (artifact in (Compile, assembly)).value
+      art.copy(`classifier` = Some("assembly"))
+    },
+    addArtifact(artifact in (Compile, assembly), assembly)
   ).dependsOn(commons)
 
 lazy val akkaServer = (project in file("akka-server")).
@@ -279,4 +290,4 @@ addCommandAlias("submitKafkaCassandra", "sparkDigest/sparkSubmit --master local[
 addCommandAlias("submitClusterSpark", "sparkDigest/sparkSubmit --master local[2] --class de.nierbeck.floating.data.stream.spark.CalcClusterSparkApp -- METRO-Vehicles localhost 9042 localhost 9092")
 
 addCommandAlias("createAWS", ";clean ;test ;publishLocal ;ingest/docker:publishLocal ;sparkDigest/assembly ;akkaServer/docker:publishLocal")
-addCommandAlias("publishAll", ";publish-signed; ingest/docker:publish; akkaServer/docker:publish")
+addCommandAlias("publishAll", ";sparkDigest/assembly ;publish-signed; ingest/docker:publish; akkaServer/docker:publish")
