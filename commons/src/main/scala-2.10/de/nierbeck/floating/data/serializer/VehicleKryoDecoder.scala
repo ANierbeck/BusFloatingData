@@ -26,8 +26,13 @@ import kafka.serializer.Decoder
 import kafka.utils.VerifiableProperties
 import org.apache.kafka.common.serialization.Deserializer
 
-class VehicleKryoDecoder(props: VerifiableProperties) extends Decoder[Vehicle] {
+object VehicleKryoDecoder {
   val kryo = new ScalaKryoInstantiator().newKryo()
+}
+
+class VehicleKryoDecoder(props: VerifiableProperties) extends Decoder[Vehicle] {
+  import VehicleKryoDecoder._
+
   kryo.register(classOf[Vehicle], 1)
 
   override def fromBytes(bytes: Array[Byte]): Vehicle = {

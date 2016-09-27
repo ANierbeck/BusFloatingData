@@ -25,8 +25,12 @@ import de.nierbeck.floating.data.domain.Vehicle
 import org.apache.kafka.common.serialization.Deserializer
 import org.nustaq.serialization.FSTConfiguration
 
-class VehicleFstDeserializer() extends Deserializer[Vehicle] {
+object VehicleFstDeserializer {
   val fst = FSTConfiguration.createDefaultConfiguration()
+}
+
+class VehicleFstDeserializer() extends Deserializer[Vehicle] {
+  import VehicleFstDeserializer._
 
   override def deserialize(topic: String, data: Array[Byte]): Vehicle = {
     fst.asObject(data).asInstanceOf[Vehicle]

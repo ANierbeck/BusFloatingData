@@ -24,8 +24,13 @@ import com.twitter.chill.ScalaKryoInstantiator
 import de.nierbeck.floating.data.domain.Vehicle
 import org.apache.kafka.common.serialization.Deserializer
 
-class VehicleKryoDeserializer() extends Deserializer[Vehicle] {
+object VehicleKryoDeserializer {
   val kryo = new ScalaKryoInstantiator().newKryo()
+}
+
+class VehicleKryoDeserializer() extends Deserializer[Vehicle] {
+  import VehicleKryoDeserializer._
+
   kryo.register(classOf[Vehicle], 1)
 
   override def deserialize(topic: String, data: Array[Byte]): Vehicle = {

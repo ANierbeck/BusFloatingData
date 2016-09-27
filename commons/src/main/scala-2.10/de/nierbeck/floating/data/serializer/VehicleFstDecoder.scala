@@ -23,11 +23,12 @@ import kafka.serializer.Decoder
 import kafka.utils.VerifiableProperties
 import org.nustaq.serialization.FSTConfiguration
 
-/**
- * Created by anierbeck on 09.05.16.
- */
-class VehicleFstDecoder(props: VerifiableProperties) extends Decoder[Vehicle] {
+object VehicleFstDecoder {
   val fst = FSTConfiguration.createDefaultConfiguration()
+}
+
+class VehicleFstDecoder(props: VerifiableProperties) extends Decoder[Vehicle] {
+  import VehicleFstDecoder._
 
   override def fromBytes(bytes: Array[Byte]): Vehicle = {
     fst.asObject(bytes).asInstanceOf[Vehicle]

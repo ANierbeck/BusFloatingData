@@ -23,8 +23,12 @@ import org.nustaq.serialization.FSTConfiguration
 import kafka.serializer.Encoder
 import kafka.utils.VerifiableProperties
 
-class TiledVehicleEncoder(props: VerifiableProperties = null) extends Encoder[TiledVehicle] {
+object TiledVehicleEncoder {
   val fst = FSTConfiguration.createDefaultConfiguration()
+}
+
+class TiledVehicleEncoder(props: VerifiableProperties = null) extends Encoder[TiledVehicle] {
+  import TiledVehicleEncoder._
 
   override def toBytes(tiledVehicle: TiledVehicle): Array[Byte] = {
     fst.asByteArray(tiledVehicle)

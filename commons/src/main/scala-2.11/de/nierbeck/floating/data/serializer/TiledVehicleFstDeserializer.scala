@@ -22,8 +22,12 @@ import de.nierbeck.floating.data.domain.{TiledVehicle, Vehicle}
 import org.apache.kafka.common.serialization.Deserializer
 import org.nustaq.serialization.FSTConfiguration
 
-class TiledVehicleFstDeserializer() extends Deserializer[TiledVehicle] {
+object TiledVehicleFstDeserializer {
   val fst = FSTConfiguration.createDefaultConfiguration()
+}
+
+class TiledVehicleFstDeserializer() extends Deserializer[TiledVehicle] {
+  import TiledVehicleFstDeserializer._
 
   override def deserialize(topic: String, data: Array[Byte]): TiledVehicle = {
     fst.asObject(data).asInstanceOf[TiledVehicle]
