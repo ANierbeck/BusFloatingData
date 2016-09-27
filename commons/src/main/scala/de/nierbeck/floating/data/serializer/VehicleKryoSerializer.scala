@@ -24,8 +24,13 @@ import com.twitter.chill.ScalaKryoInstantiator
 import de.nierbeck.floating.data.domain.Vehicle
 import org.apache.kafka.common.serialization.Serializer
 
-class VehicleKryoSerializer() extends Serializer[Vehicle] {
+object VehicleKryoSerializer {
   val kryo = new ScalaKryoInstantiator().newKryo()
+}
+
+class VehicleKryoSerializer() extends Serializer[Vehicle] {
+  import VehicleKryoSerializer._
+
   kryo.register(classOf[Vehicle], 1)
 
   override def serialize(topic: String, r: Vehicle): Array[Byte] = {

@@ -22,8 +22,12 @@ import de.nierbeck.floating.data.domain.TiledVehicle
 import org.apache.kafka.common.serialization.Serializer
 import org.nustaq.serialization.FSTConfiguration
 
-class TiledVehicleFstSerializer() extends Serializer[TiledVehicle] {
+object TiledVehicleFstSerializer {
   val fst = FSTConfiguration.createDefaultConfiguration()
+}
+
+class TiledVehicleFstSerializer() extends Serializer[TiledVehicle] {
+  import TiledVehicleFstSerializer._
 
   override def serialize(topic: String, r: TiledVehicle): Array[Byte] = {
     fst.asByteArray(r)
