@@ -24,6 +24,8 @@ data "template_file" "slave_user_data" {
     aws_secret_access_key       = "${aws_iam_access_key.host_keys.secret}"
     fallback_dns                = "${var.fallback_dns}"
     internal_master_lb_dns_name = "${aws_elb.internal_master.dns_name}"
+    public_lb_dns_name          = "${aws_elb.public_slaves.dns_name}"
     exhibitor_s3_bucket         = "${aws_s3_bucket.exhibitor.id}"
+    dcos_base_download_url      = "${var.dcos_base_download_url}"
   }
 }

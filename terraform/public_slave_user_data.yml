@@ -79,7 +79,7 @@
       Type=oneshot
       StandardOutput=journal+console
       StandardError=journal+console
-      ExecStartPre=/usr/bin/curl -fLsSv --retry 20 -Y 100000 -y 60 -o /tmp/bootstrap.tar.xz https://downloads.dcos.io/dcos/EarlyAccess/bootstrap/$${BOOTSTRAP_ID}.bootstrap.tar.xz
+      ExecStartPre=/usr/bin/curl --keepalive-time 2 -fLsSv --retry 20 -Y 100000 -y 60 -o /tmp/bootstrap.tar.xz ${dcos_base_download_url}/bootstrap/$${BOOTSTRAP_ID}.bootstrap.tar.xz
       ExecStartPre=/usr/bin/mkdir -p /opt/mesosphere
       ExecStart=/usr/bin/tar -axf /tmp/bootstrap.tar.xz -C /opt/mesosphere
       ExecStartPost=-/usr/bin/rm -f /tmp/bootstrap.tar.xz
@@ -109,7 +109,7 @@
       off
 "write_files":
 - "content": |
-    https://downloads.dcos.io/dcos/EarlyAccess
+    ${dcos_base_download_url}
   "owner": |-
     root
   "path": |-
@@ -142,6 +142,21 @@ ${cluster_packages}
   "permissions": |-
     0644
 - "content": |
+    rexray:
+      loglevel: info
+      modules:
+        default-admin:
+          host: tcp://127.0.0.1:61003
+      storageDrivers:
+      - ec2
+      volume:
+        unmount:
+          ignoreusedcount: true
+  "path": |-
+    /etc/rexray/config.yml
+  "permissions": |-
+    0644
+- "content": |
     MESOS_CLUSTER=${stack_name}
   "path": |-
     /etc/mesosphere/setup-packages/dcos-provider-aws--setup/etc/mesos-master-provider
@@ -155,7 +170,8 @@ ${cluster_packages}
   "path": |-
     /etc/mesosphere/setup-packages/dcos-provider-aws--setup/etc/exhibitor.properties
 - "content": |
-    MASTER_SOURCE=exhibitor
+    MASTER_SOURCE=exhibitor_uri
+    EXHIBITOR_URI=http://${internal_master_lb_dns_name}:8181/exhibitor/v1/cluster/status
     EXHIBITOR_ADDRESS=${internal_master_lb_dns_name}
     RESOLVERS=${fallback_dns}
   "path": |-
@@ -169,13 +185,20 @@ ${cluster_packages}
     /etc/mesosphere/setup-packages/dcos-provider-aws--setup/etc/exhibitor
 - "content": |
     {"uiConfiguration":{"plugins":{"banner":{"enabled":false,"backgroundColor":"#1E232F","foregroundColor":"#FFFFFF","headerTitle":null,"headerContent":null,"footerContent":null,"imagePath":null,"dismissible":null},"branding":{"enabled":false},"external-links": {"enabled": false},
+
     "authentication":{"enabled":false},
 
     "oauth":{"enabled":${authentication_enabled},"authHost":"https://dcos.auth0.com"},
 
-    "networking":{"enabled":false},"organization":{"enabled":false},"tracking":{"enabled":true}}}}
+
+    "tracking":{"enabled":true}}}}
   "path": |-
     /etc/mesosphere/setup-packages/dcos-provider-aws--setup/etc/ui-config.json
+- "content": |
+    INTERNAL_MASTER_LB_DNSNAME=${internal_master_lb_dns_name}
+    MASTER_LB_DNSNAME=${public_lb_dns_name}
+  "path": |-
+    /etc/mesosphere/setup-packages/dcos-provider-aws--setup/etc/aws_dnsnames
 - "content": |-
     {}
   "path": |-

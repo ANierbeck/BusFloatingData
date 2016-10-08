@@ -1,5 +1,5 @@
 resource "aws_autoscaling_group" "public_slave_server_group" {
-  name = "Public Slaves"
+  name = "Public-Slaves-${var.stack_name}"
 
   min_size = "${var.public_slave_instance_count}"
   max_size = "${var.public_slave_instance_count}"

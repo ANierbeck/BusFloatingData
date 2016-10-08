@@ -37,7 +37,7 @@ function waited_until_marathon_is_running {
 
 function export_public_ip {
     echo "resolve public ip"
-    export PUBLIC_IP=$(curl -s http://ipecho.net/plain)
+    export PUBLIC_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-hostname)
     echo "Public IP is: $PUBLIC_IP"
 }
 
@@ -78,7 +78,12 @@ function setup_openvpnas {
     /usr/local/openvpn_as/scripts/sacli -k vpn.server.routing.gateway_access -v true ConfigPut
     /usr/local/openvpn_as/scripts/sacli -k vpn.client.routing.reroute_gw -v false ConfigPut
     /usr/local/openvpn_as/scripts/sacli -k vpn.server.routing.private_network.0 -v ${vpc_subnet_range} ConfigPut
+
+    waited_until_marathon_is_running
+    export_dns_nameserver
     /usr/local/openvpn_as/scripts/sacli -k vpn.server.dhcp_option.dns.0 -v $DNS_NAMESERVER ConfigPut
+
+    export_public_ip
     /usr/local/openvpn_as/scripts/sacli -k host.name -v $PUBLIC_IP ConfigPut
 
     service openvpnas restart
@@ -87,7 +92,4 @@ function setup_openvpnas {
 init
 install_oracle_java
 install_openvpnas
-export_public_ip
-waited_until_marathon_is_running
-export_dns_nameserver
 setup_openvpnas

@@ -18,6 +18,8 @@ resource "aws_instance" "vpn" {
   tags {
     Application = "${var.stack_name}"
     Role = "vpn"
+    Name = "vpn"
+    sshUser = "ec2-user"
   }
 
   lifecycle {

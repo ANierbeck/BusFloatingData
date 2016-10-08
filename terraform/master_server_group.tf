@@ -1,5 +1,5 @@
 resource "aws_autoscaling_group" "master_server_group" {
-  name = "Masters"
+  name = "Masters-${var.stack_name}"
 
   min_size = "${var.master_instance_count}"
   max_size = "${var.master_instance_count}"
