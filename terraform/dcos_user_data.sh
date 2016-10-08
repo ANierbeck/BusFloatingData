@@ -12,23 +12,22 @@ function init {
     curl "https://bootstrap.pypa.io/get-pip.py" -o "/tmp/get-pip.py"
     python /tmp/get-pip.py
 
-    mkdir -p /opt/mesosphere/dcos-cli
+    mkdir -p /opt/mesosphere/dcos-cli/bin/
     mkdir -p /opt/smack/state
     mkdir -p /opt/smack/conf
+    mkdir -p /opt/vamp/conf/
 }
 
 function install_dcos_cli {
     curl -s --output /tmp/get-pip.py https://bootstrap.pypa.io/get-pip.py
     python /tmp/get-pip.py
     pip install virtualenv
-    curl -s --output /tmp/dcos_cli_install.sh https://downloads.mesosphere.com/dcos-cli/install.sh
-    chmod +x /tmp/dcos_cli_install.sh
-    yes | /tmp/dcos_cli_install.sh /opt/mesosphere/dcos-cli http://master.mesos
-    source /opt/mesosphere/dcos-cli/bin/env-setup
-    echo "source /opt/mesosphere/dcos-cli/bin/env-setup" >> ~/.bashrc
+    wget https://downloads.dcos.io/binaries/cli/linux/x86-64/dcos-1.8/dcos -O /opt/mesosphere/dcos-cli/bin/dcos
+    chmod +x /opt/mesosphere/dcos-cli/bin/dcos
     ln -s /opt/mesosphere/dcos-cli/bin/dcos /usr/sbin/dcos
+    dcos config set core.dcos_url http://leader.mesos
     dcos config set core.email johndoe@mesosphere.com
-    dcos config core.dcos_acs_token 42
+    dcos config set core.dcos_acs_token abc
 }
 
 function install_oracle_java {
@@ -70,13 +69,6 @@ function waited_until_dns_is_ready {
     done
 }
 
-function waited_until_chronos_is_running {
-    until $(curl --output /dev/null --silent --head --fail http://leader.mesos/service/chronos/scheduler/jobs); do
-        echo "waiting for chronos"
-        sleep 5
-    done
-}
-
 function waited_until_kafka_is_running {
     until [ -n "$KAFKA_HOST" ] && [ -n "$KAFKA_PORT" ] ; do
         sleep 5
@@ -112,33 +104,28 @@ function export_cassandra_connection {
 function init_cassandra_schema {
     cat &> /opt/smack/conf/init_cassandra_schema_job.json << EOF
 {
-    "schedule": "R/2014-03-08T20:00:00Z/PT1M",
-    "name": "init_cassandra_schema_job",
-    "container": {
-        "type": "DOCKER",
-        "image": "codecentric/bus-demo-schema:2.2.5",
-        "network": "BRIDGE",
-        "forcePullImage": true
-    },
-    "cpus": "0.5",
-    "mem": "512",
-    "command": "/opt/bus-demo/import_data.sh $CASSANDRA_HOST",
-    "uris": []
+  "id": "init-cassandra-schema-job",
+  "description": "Initialize cassandra database",
+  "run": {
+    "cmd": "/opt/bus-demo/import_data.sh $CASSANDRA_HOST",
+    "cpus": 0.1,
+    "mem": 256,
+    "disk": 0,
+    "docker": {
+      "image": "codecentric/bus-demo-schema:3.0.7"
+    }
+  }
 }
 EOF
-    curl -L -H 'Content-Type: application/json' \
-            -X POST -d @/opt/smack/conf/init_cassandra_schema_job.json \
-            http://leader.mesos/service/chronos/scheduler/iso8601
-
-    curl -L -H 'Content-Type: application/json' \
-            -X PUT http://leader.mesos/service/chronos/scheduler/job/init_cassandra_schema_job
+    dcos job add /opt/smack/conf/init_cassandra_schema_job.json
+    dcos job run init-cassandra-schema-job
 }
 
 function init_ingest_app {
     cat &> /opt/smack/conf/ingest.json << EOF
 {
   "id": "/bus-demo/ingest",
-  "cpus": 0.5,
+  "cpus": 0.1,
   "mem": 2048,
   "disk": 0,
   "instances": 1,
@@ -146,7 +133,7 @@ function init_ingest_app {
     "type": "DOCKER",
     "volumes": [],
     "docker": {
-      "image": "anierbeck/akka-ingest:0.2.0-SNAPSHOT",
+      "image": "codecentric/bus-demo-ingest:0.2.0",
       "network": "HOST",
       "privileged": false,
       "parameters": [],
@@ -158,6 +145,9 @@ function init_ingest_app {
     "CASSANDRA_PORT": "$CASSANDRA_PORT",
     "KAFKA_HOST": "$KAFKA_HOST",
     "KAFKA_PORT": "$KAFKA_PORT"
+  },
+  "upgradeStrategy": {
+    "minimumHealthCapacity": 0
   }
 }
 EOF
@@ -176,13 +166,13 @@ function waited_until_spark_is_running {
 
 function init_spark_jobs {
     cat &> /usr/sbin/run-pi << EOF
-dcos spark run --submit-args='-Dspark.mesos.coarse=true --driver-cores 1 --driver-memory 1024M --class org.apache.spark.examples.SparkPi https://downloads.mesosphere.com/spark/assets/spark-examples_2.10-1.4.0-SNAPSHOT.jar 30'
+dcos spark run --submit-args='--driver-cores 0.1 --driver-memory 1024M --class org.apache.spark.examples.SparkPi https://downloads.mesosphere.com/spark/assets/spark-examples_2.10-1.4.0-SNAPSHOT.jar 10000000'
 EOF
     cat &> /usr/sbin/run-digest << EOF
-dcos spark run --submit-args='--supervise -Dspark.mesos.coarse=true --driver-cores 1 --driver-memory 1024M --class de.nierbeck.floating.data.stream.spark.KafkaToCassandraSparkApp https://oss.sonatype.org/content/repositories/snapshots/de/nierbeck/floating/data/spark-digest_2.11/0.2.0-SNAPSHOT/spark-digest_2.11-0.2.0-SNAPSHOT-assembly.jar METRO-Vehicles $CASSANDRA_HOST $CASSANDRA_PORT $KAFKA_HOST $KAFKA_PORT'
+dcos spark run --submit-args='--driver-cores 0.1 --driver-memory 1024M --class de.nierbeck.floating.data.stream.spark.KafkaToCassandraSparkApp https://s3.eu-central-1.amazonaws.com/big-data-muc/bus-demo-digest-assembly-0.2.0.jar METRO-Vehicles $CASSANDRA_HOST $CASSANDRA_PORT $KAFKA_HOST $KAFKA_PORT'
 EOF
     cat &> /usr/sbin/run-digest-hotspot << EOF
-dcos spark run --submit-args='-Dspark.mesos.coarse=true --driver-cores 1 --driver-memory 1024M --class de.nierbeck.floating.data.stream.spark.CalcClusterSparkApp https://oss.sonatype.org/content/repositories/snapshots/de/nierbeck/floating/data/spark-digest_2.11/0.2.0-SNAPSHOT/spark-digest_2.11-0.2.0-SNAPSHOT-assembly.jar METRO-Vehicles $CASSANDRA_HOST $CASSANDRA_PORT $KAFKA_HOST $KAFKA_PORT @$'
+dcos spark run --submit-args='--driver-cores 0.1 --driver-memory 1024M --class de.nierbeck.floating.data.stream.spark.CalcClusterSparkApp https://s3.eu-central-1.amazonaws.com/big-data-muc/bus-demo-digest-assembly-0.2.0.jar METRO-Vehicles $CASSANDRA_HOST $CASSANDRA_PORT $KAFKA_HOST $KAFKA_PORT @$'
 EOF
     chmod 744 /usr/sbin/run-pi /usr/sbin/run-digest /usr/sbin/run-digest-hotspot
     /usr/sbin/run-digest
@@ -195,7 +185,7 @@ function init_dasboard {
     "container": {
         "type": "DOCKER",
         "docker": {
-            "image": "anierbeck/akka-server:0.2.0-SNAPSHOT",
+            "image": "codecentric/bus-demo-dashboard:0.2.0",
             "network": "HOST",
             "forcePullImage": true
         }
@@ -209,6 +199,10 @@ function init_dasboard {
         "KAFKA_HOST": "$KAFKA_HOST",
         "KAFKA_PORT": "$KAFKA_PORT"
     },
+    "upgradeStrategy": {
+       "minimumHealthCapacity": 0
+    },
+    "dependencies": ["/bus-demo/ingest"],
     "healthChecks": [
         {
           "path": "/",
@@ -221,23 +215,19 @@ function init_dasboard {
           "port": 8000
         }
     ],
-    "cpus": 1,
-    "mem": 2048.0,
-    "ports": [
-        8000
-    ]
+    "cpus": 0.1,
+    "mem": 2048.0
 }
 EOF
     dcos marathon app add /opt/smack/conf/dashboard.json
 }
 
 function install_smack {
-    dcos package install --yes chronos
-    dcos package install --yes cassandra --package-version=1.0.15-3.0.7
+    dcos package install --yes cassandra --package-version=1.0.16-3.0.8
     dcos package install --cli cassandra
-    dcos package install --yes kafka --package-version=1.1.11-0.10.0.0
+    dcos package install --yes kafka --package-version=1.1.9-0.10.0.0
     dcos package install --cli kafka
-    dcos package install --yes spark --package-version=1.0.1-2.0.0
+    dcos package install --yes spark --package-version=1.0.2-2.0.0
     dcos package install --cli spark
     dcos package install --yes zeppelin --package-version=0.6.0
 }
@@ -252,9 +242,9 @@ waited_until_kafka_is_running
 export_kafka_connection
 waited_until_cassandra_is_running
 export_cassandra_connection
-waited_until_chronos_is_running
 init_cassandra_schema
 init_ingest_app
 waited_until_spark_is_running
 init_spark_jobs
 init_dasboard
+

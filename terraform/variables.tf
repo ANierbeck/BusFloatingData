@@ -35,6 +35,11 @@ variable "stack_name" {
   default = "DCOS"
 }
 
+variable "elb_version" {
+  description = "Loadbalancer Version"
+  default = ""
+}
+
 variable "slave_instance_count" {
   description = "Number of slave nodes to launch"
   default = 8
@@ -71,7 +76,7 @@ variable "vpn_instance_type" {
 
 variable "master_instance_type" {
   description = "Default instance type for masters"
-  default = "m4.xlarge"
+  default = "m3.xlarge"
 }
 
 variable "slave_instance_type" {
@@ -87,11 +92,6 @@ variable "public_slave_instance_type" {
 variable "vpc_subnet_range" {
   descpiption = "The IP range of the VPC subnet"
   default = "10.0.0.0/16"
-}
-
-variable "nat_instance_type" {
-  description = "Default Instance type for nat instances"
-  default = "m3.medium"
 }
 
 variable "master_instance_count" {
@@ -189,17 +189,22 @@ variable "authentication_enabled" {
   default = true
 }
 
+variable "dcos_base_download_url" {
+  description = "base url that is used to download the dcos"
+  default = "https://downloads.dcos.io/dcos/stable"
+}
+
 variable "bootstrap_id" {
   description = "bootstrap id that is used to download the bootstrap files"
-  default = "3a2b7e03c45cd615da8dfb1b103943894652cd71"
+  default = "5b4aa43610c57ee1d60b4aa0751a1fb75824c083"
 }
 
 variable "cluster_packages" {
   description = "cluster packages for single master setup"
   default = <<EOF
     [
-      "dcos-config--setup_537afa008db7ba8f99ce73f9c0ef425fa61d3454",
-      "dcos-metadata--setup_537afa008db7ba8f99ce73f9c0ef425fa61d3454"
+      "dcos-config--setup_fb65a9430d3fac1c00b3d578ff47a4969723e7ac",
+      "dcos-metadata--setup_fb65a9430d3fac1c00b3d578ff47a4969723e7ac"
     ]EOF
 }
 
@@ -207,7 +212,7 @@ variable "cluster_packages" {
 //  description = "cluster packages for multi master setup"
 //  default = <<EOF
 //    [
-//      "dcos-config--setup_b9372277c9fedaca077d7638e6e445af062d1d86",
-//      "dcos-metadata--setup_b9372277c9fedaca077d7638e6e445af062d1d86"
+//      "dcos-config--setup_59db72c6fef6fbca04d7dce3f8dd46a39e24da0f",
+//      "dcos-metadata--setup_59db72c6fef6fbca04d7dce3f8dd46a39e24da0f"
 //    ]EOF
 //}

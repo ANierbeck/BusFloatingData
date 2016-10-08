@@ -1,5 +1,5 @@
 resource "aws_elb" "vpn" {
-  name = "vpn-load-balancer"
+  name = "vpn-${var.elb_version}-load-balancer"
   subnets = ["${aws_subnet.public.id}"]
 
   instances = ["${aws_instance.vpn.id}"]

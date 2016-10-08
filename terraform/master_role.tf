@@ -1,5 +1,5 @@
 resource "aws_iam_role" "master" {
-    name = "master"
+    name = "master-${var.stack_name}"
     path = "/"
     assume_role_policy = <<EOF
 {

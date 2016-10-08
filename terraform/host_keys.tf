@@ -3,7 +3,7 @@ resource "aws_iam_access_key" "host_keys" {
 }
 
 resource "aws_iam_user" "dcos" {
-  name = "dcos"
+  name = "dcos-${var.stack_name}"
 }
 
 resource "aws_iam_user_policy" "dcos" {
