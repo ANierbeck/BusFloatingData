@@ -169,7 +169,7 @@ function init_spark_jobs {
 dcos spark run --submit-args='--driver-cores 0.1 --driver-memory 1024M --class org.apache.spark.examples.SparkPi https://downloads.mesosphere.com/spark/assets/spark-examples_2.10-1.4.0-SNAPSHOT.jar 10000000'
 EOF
     cat &> /usr/sbin/run-digest << EOF
-dcos spark run --submit-args='--driver-cores 0.1 --driver-memory 1024M --class de.nierbeck.floating.data.stream.spark.KafkaToCassandraSparkApp https://oss.sonatype.org/content/repositories/snapshots/de/nierbeck/floating/data/spark-digest_2.11/0.2.0-SNAPSHOT/spark-digest_2.11-0.2.0-SNAPSHOT-assembly.jar METRO-Vehicles $CASSANDRA_HOST $CASSANDRA_PORT $KAFKA_HOST $KAFKA_PORT'
+dcos spark run --submit-args='--driver-cores 0.1 --driver-memory 1024M --total-executor-cores 4 --class de.nierbeck.floating.data.stream.spark.KafkaToCassandraSparkApp https://oss.sonatype.org/content/repositories/snapshots/de/nierbeck/floating/data/spark-digest_2.11/0.2.0-SNAPSHOT/spark-digest_2.11-0.2.0-SNAPSHOT-assembly.jar METRO-Vehicles $CASSANDRA_HOST $CASSANDRA_PORT $KAFKA_HOST $KAFKA_PORT'
 EOF
     cat &> /usr/sbin/run-digest-hotspot << EOF
 dcos spark run --submit-args='--driver-cores 0.1 --driver-memory 1024M --class de.nierbeck.floating.data.stream.spark.CalcClusterSparkApp https://oss.sonatype.org/content/repositories/snapshots/de/nierbeck/floating/data/spark-digest_2.11/0.2.0-SNAPSHOT/spark-digest_2.11-0.2.0-SNAPSHOT-assembly.jar METRO-Vehicles $CASSANDRA_HOST $CASSANDRA_PORT $KAFKA_HOST $KAFKA_PORT @$'
@@ -232,12 +232,67 @@ function install_smack {
     dcos package install --yes zeppelin --package-version=0.6.0
 }
 
+function install_metering {
+    dcos package install --yes elasticsearch --package-version=1.0.1
+    dcos package install --yes kibana --package-version=4.5.3
+}
+
+function install_decanter_monitor {
+    connect_string=($(dcos cassandra connection | jq ".address[]" | sed 's/\"//g' | awk '{split($0,a,":"); print a[1]}' | awk '{split($0,a,"."); print "(.*"a[4]")"}' | tr '\r\n' '|'))
+    export CASSANDRA_CONNCET_LIKE=${connect_string::-1}
+
+    cat &> /opt/smack/conf/decanter.json <<EOF
+{
+  "id": "/decanter",
+  "cmd": "export PATH=\$(ls -d \$MESOS_SANDBOX/jdk1*/bin):\$PATH && export JAVA_HOME=\$(ls -d \$MESOS_SANDBOX/jdk1*) && ./Decanter-Runtime-0.1.0-SNAPSHOT/bin/karaf\n",
+  "cpus": 0.2,
+  "mem": 512,
+  "disk": 0,
+  "instances": 3,
+  "executor": null,
+  "fetch": [
+    {
+      "uri": "https://s3.eu-central-1.amazonaws.com/runtime-packages/jdk-8u102-linux-x64.tar.gz"
+    },
+    {
+      "uri": "https://oss.sonatype.org/content/repositories/snapshots/de/nierbeck/karaf/decanter/Decanter-Runtime/0.1.0-SNAPSHOT/Decanter-Runtime-0.1.0-20161007.143950-8.tar.gz"
+    }
+  ],
+  "constraints": [
+    [
+      "hostname",
+      "UNIQUE",
+      ""
+    ],
+    [
+      "hostname",
+      "LIKE",
+      "$CASSANDRA_CONNCET_LIKE"
+    ]
+  ],
+  "acceptedResourceRoles": null,
+  "user": null,
+  "container": null,
+  "labels": null,
+  "healthChecks": null,
+  "env": null,
+  "portDefinitions": [
+    {
+      "protocol": "tcp",
+      "port": 0
+    }
+  ]
+}
+EOF
+}
+
 init
 install_oracle_java                 #need for same commandline extension like kafka
 waited_until_marathon_is_running
 waited_until_dns_is_ready
 install_dcos_cli
 install_smack
+install_metering
 waited_until_kafka_is_running
 export_kafka_connection
 waited_until_cassandra_is_running
