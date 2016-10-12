@@ -238,7 +238,8 @@ function install_metering {
 }
 
 function install_decanter_monitor {
-    connect_string=($(dcos cassandra connection | jq ".address[]" | sed 's/\"//g' | awk '{split($0,a,":"); print a[1]}' | awk '{split($0,a,"."); print "(.*"a[4]")"}' | tr '\r\n' '|'))
+    connect_string=($(dcos cassandra connection | jq ".address[]" | sed 's/\"//g' | awk '{split($0,a,":"); print "("a[1]")"}' | sed -r 's/\./\\\\\./g' | tr '\r\n' '|'))
+#    connect_string=($(dcos cassandra connection | jq ".address[]" | sed 's/\"//g' | awk '{split($0,a,":"); print a[1]}' | awk '{split($0,a,"."); print "(.*"a[4]")"}' | tr '\r\n' '|'))
     export CASSANDRA_CONNCET_LIKE=${connect_string::-1}
 
     cat &> /opt/smack/conf/decanter.json <<EOF
