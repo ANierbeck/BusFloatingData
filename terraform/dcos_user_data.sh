@@ -256,7 +256,7 @@ function install_decanter_monitor {
       "uri": "https://s3.eu-central-1.amazonaws.com/runtime-packages/jdk-8u102-linux-x64.tar.gz"
     },
     {
-      "uri": "https://oss.sonatype.org/content/repositories/snapshots/de/nierbeck/karaf/decanter/Decanter-Runtime/0.1.0-SNAPSHOT/Decanter-Runtime-0.1.0-20161007.143950-8.tar.gz"
+      "uri": "https://oss.sonatype.org/content/repositories/snapshots/de/nierbeck/karaf/decanter/Decanter-Runtime/0.1.0-SNAPSHOT/Decanter-Runtime-0.1.0-20161013.145237-10.tar.gz"
     }
   ],
   "constraints": [
