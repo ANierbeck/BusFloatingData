@@ -239,7 +239,7 @@ function install_metering {
 
 function install_decanter_monitor {
     connect_string=($(dcos cassandra connection | jq ".address[]" | sed 's/\"//g' | awk '{split($0,a,":"); print "("a[1]")"}' | sed -r 's/\./\\\\\./g' | tr '\r\n' '|'))
-    export CASSANDRA_CONNCET_LIKE=$${{connect_string::-1}}
+    export CASSANDRA_CONNCET_LIKE=$${connect_string::-1}
 
     cat &> /opt/smack/conf/decanter.json <<EOF
 {
@@ -255,7 +255,7 @@ function install_decanter_monitor {
       "uri": "https://s3.eu-central-1.amazonaws.com/runtime-packages/jdk-8u102-linux-x64.tar.gz"
     },
     {
-      "uri": "https://oss.sonatype.org/content/repositories/snapshots/de/nierbeck/karaf/decanter/Decanter-Runtime/0.1.0-SNAPSHOT/Decanter-Runtime-0.1.0-20161013.145237-10.tar.gz"
+      "uri": "https://oss.sonatype.org/content/repositories/snapshots/de/nierbeck/karaf/decanter/Decanter-Runtime/0.1.0-SNAPSHOT/Decanter-Runtime-0.1.0-20161014.113802-11.tar.gz"
     }
   ],
   "constraints": [
@@ -274,7 +274,18 @@ function install_decanter_monitor {
   "user": null,
   "container": null,
   "labels": null,
-  "healthChecks": null,
+  "healthChecks": [
+    {
+      "protocol": "COMMAND",
+      "command": {
+        "value": "pgrep java && exit 0 || exit 1"
+      },
+      "gracePeriodSeconds": 300,
+      "intervalSeconds": 60,
+      "timeoutSeconds": 20,
+      "maxConsecutiveFailures": 3
+    }
+  ],
   "env": null,
   "portDefinitions": [
     {
