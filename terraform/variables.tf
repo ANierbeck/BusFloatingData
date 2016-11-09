@@ -196,15 +196,15 @@ variable "dcos_base_download_url" {
 
 variable "bootstrap_id" {
   description = "bootstrap id that is used to download the bootstrap files"
-  default = "5b4aa43610c57ee1d60b4aa0751a1fb75824c083"
+  default = "405172d16eaff8798d6b090dac99b51a8a9004d7"
 }
 
 variable "cluster_packages" {
   description = "cluster packages for single master setup"
   default = <<EOF
     [
-      "dcos-config--setup_fb65a9430d3fac1c00b3d578ff47a4969723e7ac",
-      "dcos-metadata--setup_fb65a9430d3fac1c00b3d578ff47a4969723e7ac"
+      "dcos-config--setup_e02052aac568c6296b312fae3ba05b2631406c9f",
+      "dcos-metadata--setup_e02052aac568c6296b312fae3ba05b2631406c9f"
     ]EOF
 }
 
