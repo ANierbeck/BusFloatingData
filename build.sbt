@@ -30,13 +30,14 @@ val akkaVer        = "2.4.10"
 val scalaVer       = "2.11.8"
 val scalaParsersVer= "1.0.4"
 val scalaTestVer   = "2.2.6"
-val cassandraVer   = "3.0.1"
+val cassandraVer   = "3.1.2"
 val Log4j2         = "2.5"
 val Slf4j          = "1.7.18"
 val spark          = "2.0.0"
 val sparkConnector = "2.0.0-M3"
 val circeVersion   = "0.4.1"
 val kafkaVersion   = "0.10.0.1"
+val flinkVersion   = "1.2-SNAPSHOT"
 
 //needed for crosscompilation ...
 autoCompilerPlugins := true
@@ -60,16 +61,19 @@ lazy val compileOptions = Seq(
   "-Xcheckinit"
 )
 
-resolvers += Resolver.bintrayRepo("hseeberger", "maven")
-
+resolvers in ThisBuild += "Apache Snapshots" at "https://repository.apache.org/snapshots/"
+resolvers in ThisBuild += Resolver.bintrayRepo("hseeberger", "maven")
+resolvers in ThisBuild += Resolver.mavenLocal
 
 //noinspection ScalaStyle
 lazy val commonDependencies = Seq(
   "org.scalatest"            %% "scalatest"                  % scalaTestVer       % "test",
   "joda-time"                %  "joda-time"                  % "2.9.3",
   "com.twitter"              %% "chill-akka"                 % "0.8.0",
+  "com.datastax.cassandra"   % "cassandra-driver-core"       % cassandraVer,
+  "com.datastax.cassandra"   % "cassandra-driver-mapping"    % cassandraVer,
 
-  // datastax cassandra driver
+  // Fast Java Serializer
   "de.ruedigermoeller"       %  "fst"                        % "2.45"
 
 ).map(_. excludeAll(
@@ -90,7 +94,6 @@ lazy val akkaDependencies = Seq(
   "com.typesafe.akka"        %% "akka-actor"                 % akkaVer,
   "com.typesafe.akka"        %% "akka-slf4j"                 % akkaVer,
   "com.typesafe.akka"        %% "akka-testkit"               % akkaVer            % "test",
-  "com.datastax.cassandra"   % "cassandra-driver-core"       % cassandraVer,
 
   // these are to avoid sbt warnings about transitive dependency conflicts
   "com.typesafe.akka"               %  "akka-http-experimental_2.11" % "2.0.1",
@@ -116,6 +119,21 @@ lazy val sparkDependencies = Seq(
   "org.apache.spark"                %% "spark-sql"                  % spark           % "provided",
   "org.apache.spark"                %% "spark-mllib"                % spark           % "provided",
   "org.scalanlp"                    %%  "nak"                       % "1.3"
+).map(_.excludeAll(
+  ExclusionRule(organization = "org.slf4j", artifact = "slf4j-log4j12"),
+  ExclusionRule(organization = "com.sun.jdmk"),
+  ExclusionRule(organization = "com.sun.jmx"),
+  ExclusionRule(organization = "log4j"),
+  ExclusionRule(organization = "org.spark-project"),
+  ExclusionRule(organization = "javax.jms")
+))
+
+val flinkDependencies = Seq(
+  "org.apache.flink" %% "flink-scala" % flinkVersion           % "provided",
+  "org.apache.flink" %% "flink-streaming-scala" % flinkVersion           % "provided",
+  "org.apache.flink" %% "flink-connector-kafka-0.10" % flinkVersion,
+  "org.apache.flink" %% "flink-connector-cassandra" % flinkVersion,
+  "org.apache.flink" %% "flink-clients" % flinkVersion           % "provided"
 ).map(_.excludeAll(
   ExclusionRule(organization = "org.slf4j", artifact = "slf4j-log4j12"),
   ExclusionRule(organization = "com.sun.jdmk"),
@@ -187,7 +205,7 @@ lazy val root = (project in file(".")).
     name := "BusFloatingData",
     scalaVersion := scalaVer
   ).
-  aggregate(commons, ingest, sparkDigest, akkaServer)
+  aggregate(commons, ingest, sparkDigest, akkaServer, flinkDigest)
 
 lazy val commons = (project in file("commons")).
   enablePlugins(AutomateHeaderPlugin).
@@ -273,6 +291,47 @@ lazy val akkaServer = (project in file("akka-server")).
     )
   ).dependsOn(commons)
 
+lazy val flinkDigest = (project in file("flink-digest")).
+  settings(commonSettings: _*).
+  enablePlugins(JavaAppPackaging).
+  enablePlugins(AutomateHeaderPlugin).
+  settings(
+    name := "flink-digest",
+    scalaVersion := scalaVer,
+    libraryDependencies ++= kafkaDependencies,
+    libraryDependencies ++= flinkDependencies,
+    libraryDependencies += "org.scalatest" %% "scalatest" % scalaTestVer % "test",
+    crossScalaVersions := Seq(scalaVer),
+    headers := Map(
+      "scala" -> Apache2_0("2016", "Achim Nierbeck"),
+      "conf" -> Apache2_0("2016", "Achim Nierbeck", "#")
+    ),
+    assemblyExcludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
+      cp.filter(_.data.getName == "log4j-1.2.17.jar")
+    },
+    assemblyMergeStrategy in assembly := {
+      case PathList("org", "apache", "log4j", "spi", xs @_ * ) => MergeStrategy.first
+      case PathList("org", "apache", "log4j", "xml", xs @_ * ) => MergeStrategy.first
+      case PathList("org", "slf4j", "impl", xs @_ * ) => MergeStrategy.first
+      case PathList("META-INF", "MANIFEST.MF") => MergeStrategy.discard
+      case PathList("", "create_table.cql") => MergeStrategy.discard
+      case PathList("META-INF", xs @ _*) => MergeStrategy.last
+      case PathList("com", "datastax", "driver", xs @ _ *) => MergeStrategy.first
+      case PathList("com", "datastax", "driver", "mapping", xs @ _ *) => MergeStrategy.first
+      case PathList("com", "datastax", "driver", "core", xs @ _ *) => MergeStrategy.first
+      case PathList("org", "apache", "commons", xs @_ *) => MergeStrategy.last
+      case PathList("META-INF", "io.netty.versions.properties") => MergeStrategy.last
+      case x =>
+        val oldStrategy = (assemblyMergeStrategy in assembly).value
+        oldStrategy(x)
+    },
+    artifact in (Compile, assembly) := {
+      val art = (artifact in (Compile, assembly)).value
+      art.copy(`classifier` = Some("assembly"))
+    },
+    addArtifact(artifact in (Compile, assembly), assembly)
+  ).dependsOn(commons)
+
 //create project
 addCommandAlias("create", ";clean ;test;publishLocal")
 
@@ -280,6 +339,7 @@ addCommandAlias("create", ";clean ;test;publishLocal")
 addCommandAlias("createIngestContainer", "ingest/docker:publishLocal")
 addCommandAlias("createDigestUberJar", "sparkDigest/assembly")
 addCommandAlias("createServerContainer", "akkaServer/docker:publishLocal")
+addCommandAlias("createFlinkUberJar", "flinkDigest/assembly")
 
 //localy run
 addCommandAlias("runIngest", "ingest/run")
@@ -287,7 +347,7 @@ addCommandAlias("runServer", "akkaServer/run")
 
 //localy run spark
 addCommandAlias("submitKafkaCassandra", "sparkDigest/sparkSubmit --master local[2] --class de.nierbeck.floating.data.stream.spark.KafkaToCassandraSparkApp -- METRO-Vehicles localhost 9042 localhost 9092")
-addCommandAlias("submitClusterSpark", "sparkDigest/sparkSubmit --master local[2] --class de.nierbeck.floating.data.stream.spark.CalcClusterSparkApp -- METRO-Vehicles localhost 9042 localhost 9092")
+addCommandAlias("submitClusterSpark", "sparkDigest/sparkSubmit --master local[2] --class de.nierbeck.floating.data.stream.spark.CalcClusterSparkApp -- localhost 9042 localhost 9092")
 
 addCommandAlias("createAWS", ";clean ;test ;publishLocal ;ingest/docker:publishLocal ;sparkDigest/assembly ;akkaServer/docker:publishLocal")
 addCommandAlias("publishAll", ";sparkDigest/assembly ;publish-signed; ingest/docker:publish; akkaServer/docker:publish")
