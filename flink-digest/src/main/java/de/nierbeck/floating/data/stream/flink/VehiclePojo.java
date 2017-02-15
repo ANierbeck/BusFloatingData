@@ -91,4 +91,18 @@ public class VehiclePojo {
     public void setSeconds_since_report(Integer seconds_since_report) {
         this.seconds_since_report = seconds_since_report;
     }
+
+    @Override
+    public String toString() {
+        return "VehiclePojo{" +
+                "id='" + id + '\'' +
+                ", time=" + time +
+                ", latitude=" + latitude +
+                ", longitude=" + longitude +
+                ", heading=" + heading +
+                ", route_id=" + route_id +
+                ", run_id='" + run_id + '\'' +
+                ", seconds_since_report=" + seconds_since_report +
+                '}';
+    }
 }

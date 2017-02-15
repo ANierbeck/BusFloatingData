@@ -19,7 +19,7 @@ package de.nierbeck.floating.data.stream.flink
 import de.nierbeck.floating.data.domain.Vehicle
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.java.typeutils.TypeExtractor
-import org.apache.flink.streaming.util.serialization.{AbstractDeserializationSchema, DeserializationSchema}
+import org.apache.flink.streaming.util.serialization.DeserializationSchema
 import org.nustaq.serialization.FSTConfiguration
 
 object VehicleFstDeserializationSchema {

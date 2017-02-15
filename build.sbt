@@ -37,7 +37,7 @@ val spark          = "2.0.0"
 val sparkConnector = "2.0.0-M3"
 val circeVersion   = "0.4.1"
 val kafkaVersion   = "0.10.0.1"
-val flinkVersion   = "1.2-SNAPSHOT"
+val flinkVersion   = "1.2.0"
 
 //needed for crosscompilation ...
 autoCompilerPlugins := true
@@ -130,6 +130,7 @@ lazy val sparkDependencies = Seq(
 
 val flinkDependencies = Seq(
   "org.apache.flink" %% "flink-scala" % flinkVersion           % "provided",
+  "org.apache.flink" %% "flink-streaming-java" % flinkVersion           % "provided",
   "org.apache.flink" %% "flink-streaming-scala" % flinkVersion           % "provided",
   "org.apache.flink" %% "flink-connector-kafka-0.10" % flinkVersion,
   "org.apache.flink" %% "flink-connector-cassandra" % flinkVersion,

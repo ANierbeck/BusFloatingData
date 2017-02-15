@@ -19,27 +19,35 @@ package de.nierbeck.floating.data.stream.flink
 import java.util.{Optional, Properties}
 
 import com.datastax.driver.core.Cluster.Builder
-import de.nierbeck.floating.data.domain.{TiledVehicle, Vehicle}
+import de.nierbeck.floating.data.domain.Vehicle
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
 import org.apache.flink.streaming.connectors.cassandra.{CassandraSink, ClusterBuilder}
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer010
-import org.apache.flink.streaming.util.serialization.DeserializationSchema
 import org.apache.flink.api.scala._
+import org.apache.flink.streaming.util.serialization.SimpleStringSchema
+import org.slf4j.Logger
 
 object KafkaToCassandraFlinkApp {
 
+
   def main(args: Array[String]) {
 
-    val env = StreamExecutionEnvironment.getExecutionEnvironment
+//    val env = StreamExecutionEnvironment.getExecutionEnvironment
+    val env = StreamExecutionEnvironment.createLocalEnvironment()
+//    env.enableCheckpointing(5000)
 
     val properties:Properties = new Properties()
 
     properties.setProperty("bootstrap.servers", "localhost:9092")
-    properties.setProperty("group.id", "test")
+    properties.setProperty("group.id", "flink")
 
-    val stream: DataStream[Vehicle] = env.addSource(new FlinkKafkaConsumer010[Vehicle]("METRO-Vehicles", new VehicleFstDeserializationSchema(), properties))
+    val kafkaConsumer = new FlinkKafkaConsumer010[Vehicle]("METRO-Vehicles", new VehicleFstDeserializationSchema(), properties)
 
-    val pojoStream: DataStream[VehiclePojo] = stream.map(scalaVehicle => {
+    println("Yeah wir leben noch")
+
+    val vehicleStream = env.addSource(kafkaConsumer)
+
+    val pojoStream: DataStream[VehiclePojo] = vehicleStream.map(scalaVehicle => {
       println(s"received a vehicle with id ${scalaVehicle.id}")
       val pojo = new VehiclePojo()
       pojo.setId(scalaVehicle.id)
@@ -56,6 +64,8 @@ object KafkaToCassandraFlinkApp {
       pojo
     })
 
+    pojoStream.print()
+
     CassandraSink.addSink(pojoStream.javaStream)
 //      .setQuery("INSERT INTO streaming.vehicle (id, time, latitude, longitude, heading, route_id, run_id, seconds_since_report) values (?,?,?,?,?,?,?,?);")
       .setClusterBuilder(new ClusterBuilder {
@@ -63,6 +73,8 @@ object KafkaToCassandraFlinkApp {
       }).build()
 
 
-//    val result = env.execute()
+    env.execute("KafkaToCassandraFlink")
+
+    println("gleich sin mer dod")
   }
 }
