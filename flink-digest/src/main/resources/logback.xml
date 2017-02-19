@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- http://logback.qos.ch/manual/configuration.html -->
+    <appender name="consoleAppender" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="sparkFileAppender"
+              class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>log/spark.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- rotate every day -->
+            <fileNamePattern>/spark.%d{yyyyMMdd}.log.zip</fileNamePattern>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="cassandraUnitFileAppender"
+              class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>log/cassandra.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- rotate every day -->
+            <fileNamePattern>/spark.%d{yyyyMMdd}.log.zip</fileNamePattern>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <root level="info">
+        <appender-ref ref="consoleAppender" />
+        <appender-ref ref="sparkFileAppender" />
+        <appender-ref ref="cassandraUnitFileAppender" />
+    </root>
+
+    <logger name="org.apache.hadoop.util.Shell" additivity="false">
+        <level value="info" />
+        <appender-ref ref="sparkFileAppender" />
+    </logger>
+
+    <logger name="com.datastax.driver.core" additivity="false">
+        <level value="info" />
+        <appender-ref ref="cassandraUnitFileAppender" />
+    </logger>
+
+    <logger name="org.apache.cassandra.db" additivity="false">
+        <level value="info" />
+        <appender-ref ref="cassandraUnitFileAppender" />
+    </logger>
+
+    <logger name="org.apache.cassandra.utils" additivity="false">
+        <level value="info" />
+        <appender-ref ref="cassandraUnitFileAppender" />
+    </logger>
+
+    <logger name="org.apache.cassandra.service" additivity="false">
+        <level value="info" />
+        <appender-ref ref="cassandraUnitFileAppender" />
+    </logger>
+
+    <logger name="org.apache.spark.executor" additivity="false">
+        <level value="info" />
+        <appender-ref ref="sparkFileAppender" />
+    </logger>
+
+    <logger name="org.apache.spark.storage" additivity="false">
+        <level value="info" />
+        <appender-ref ref="sparkFileAppender" />
+    </logger>
+
+    <logger name="org.apache.spark.scheduler" additivity="false">
+        <level value="info" />
+        <appender-ref ref="sparkFileAppender" />
+    </logger>
+
+    <logger name="org.apache.spark.SparkContext" additivity="false">
+        <level value="info" />
+        <appender-ref ref="sparkFileAppender" />
+    </logger>
+
+    <logger name="org.apache.spark.CacheManager" additivity="false">
+        <level value="info" />
+        <appender-ref ref="sparkFileAppender" />
+    </logger>
+
+    <logger name="org.apache.spark.MapOutputTracker" additivity="false">
+        <level value="info" />
+        <appender-ref ref="sparkFileAppender" />
+    </logger>
+
+    <logger name="org.apache.spark.MapOutputTrackerMaster"
+            additivity="false">
+        <level value="info" />
+        <appender-ref ref="sparkFileAppender" />
+    </logger>
+
+    <logger name="org.apache.spark.ContextCleaner" additivity="false">
+        <level value="info" />
+        <appender-ref ref="sparkFileAppender" />
+    </logger>
+
+    <logger name="org.apache.spark.rdd" additivity="false">
+        <level value="info" />
+        <appender-ref ref="sparkFileAppender" />
+    </logger>
+
+
+</configuration>

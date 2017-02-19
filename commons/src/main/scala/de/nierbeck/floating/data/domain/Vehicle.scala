@@ -18,6 +18,8 @@ package de.nierbeck.floating.data.domain
 
 import java.util.Date
 
+import com.datastax.driver.mapping.annotations.{ClusteringColumn, PartitionKey, Table}
+
 case class Vehicle(
   id: String,
   time: Option[Date] = None,
