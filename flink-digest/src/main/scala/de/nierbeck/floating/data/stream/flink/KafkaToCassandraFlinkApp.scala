@@ -108,7 +108,6 @@ object KafkaToCassandraFlinkApp {
       if (tiledVehicle.time.isDefined) {
         pojo.setTime(tiledVehicle.time.get)
       }
-
       pojo
     })
 
