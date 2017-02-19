@@ -70,7 +70,7 @@ lazy val commonDependencies = Seq(
   "org.scalatest"            %% "scalatest"                  % scalaTestVer       % "test",
   "joda-time"                %  "joda-time"                  % "2.9.3",
   "com.twitter"              %% "chill-akka"                 % "0.8.0",
-  "com.datastax.cassandra"   % "cassandra-driver-core"       % cassandraVer,
+  "com.datastax.cassandra"   % "cassandra-driver-core"       % cassandraVer       intransitive(),
   "com.datastax.cassandra"   % "cassandra-driver-mapping"    % cassandraVer,
 
   // Fast Java Serializer
@@ -80,7 +80,8 @@ lazy val commonDependencies = Seq(
   ExclusionRule(organization = "org.slf4j", artifact = "slf4j-log4j12"),
   ExclusionRule(organization = "com.sun.jdmk"),
   ExclusionRule(organization = "com.sun.jmx"),
-  ExclusionRule(organization = "javax.jms")
+  ExclusionRule(organization = "javax.jms"),
+  ExclusionRule(organization = "com.google.guava", artifact = "guava")
 ))
 
 lazy val kafkaDependencies = Seq(
@@ -141,7 +142,8 @@ val flinkDependencies = Seq(
   ExclusionRule(organization = "com.sun.jmx"),
   ExclusionRule(organization = "log4j"),
   ExclusionRule(organization = "org.spark-project"),
-  ExclusionRule(organization = "javax.jms")
+  ExclusionRule(organization = "javax.jms"),
+  ExclusionRule(organization = "com.google.guava", artifact = "guava")
 ))
 
 //noinspection ScalaStyle

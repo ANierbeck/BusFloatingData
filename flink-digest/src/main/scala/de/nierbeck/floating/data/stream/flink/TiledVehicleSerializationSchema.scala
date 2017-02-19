@@ -16,21 +16,19 @@
 
 package de.nierbeck.floating.data.stream.flink
 
-import de.nierbeck.floating.data.domain.Vehicle
-import org.apache.flink.api.common.typeinfo.TypeInformation
-import org.apache.flink.streaming.util.serialization.AbstractDeserializationSchema
+import de.nierbeck.floating.data.domain.TiledVehicle
+import org.apache.flink.streaming.util.serialization.SerializationSchema
 import org.nustaq.serialization.FSTConfiguration
-import org.apache.flink.streaming.api._
 
-object VehicleFstDeserializationSchema {
+object TiledVehicleSerializationSchema {
   val fst = FSTConfiguration.createDefaultConfiguration()
 }
 
-class VehicleFstDeserializationSchema extends AbstractDeserializationSchema[Vehicle] {
+class TiledVehicleSerializationSchema extends SerializationSchema[TiledVehicle] {
 
-  import VehicleFstDeserializationSchema._
+  import TiledVehicleSerializationSchema._
 
-  override def deserialize(message: Array[Byte]): Vehicle = {
-    fst.asObject(message).asInstanceOf[Vehicle]
+  override def serialize(element: TiledVehicle): Array[Byte] = {
+    fst.asByteArray(element)
   }
 }

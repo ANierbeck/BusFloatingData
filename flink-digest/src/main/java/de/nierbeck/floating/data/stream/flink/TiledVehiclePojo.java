@@ -1,20 +1,29 @@
 package de.nierbeck.floating.data.stream.flink;
 
 import com.datastax.driver.mapping.annotations.ClusteringColumn;
+import com.datastax.driver.mapping.annotations.Column;
 import com.datastax.driver.mapping.annotations.PartitionKey;
 import com.datastax.driver.mapping.annotations.Table;
 
+import java.math.BigInteger;
 import java.util.Date;
-import java.util.Optional;
 
-@Table(keyspace = "streaming", name = "vehicles", readConsistency = "QUORUM", writeConsistency = "ONE", caseSensitiveKeyspace = false, caseSensitiveTable = false)
-public class VehiclePojo {
+@Table(keyspace = "streaming", name = "vehicles_by_tileid", readConsistency = "QUORUM", writeConsistency = "ONE", caseSensitiveKeyspace = false, caseSensitiveTable = false)
+public class TiledVehiclePojo {
 
-    @PartitionKey
+    @PartitionKey(value = 0)
+    @Column(name = "tile_id")
+    private String tileId;
+
+    @PartitionKey(value = 1)
+    @Column(name = "time_id")
+    private Long timeId;
+
+    @ClusteringColumn(value = 1)
     private String id;
 
-    @ClusteringColumn
-    private Date time = null;
+    @ClusteringColumn(value = 0)
+    private Date time;
 
     private Double latitude;
 
@@ -27,6 +36,22 @@ public class VehiclePojo {
     private String run_id = "none";
 
     private Integer seconds_since_report = 0;
+
+    public String getTileId() {
+        return tileId;
+    }
+
+    public void setTileId(String tileId) {
+        this.tileId = tileId;
+    }
+
+    public Long getTimeId() {
+        return timeId;
+    }
+
+    public void setTimeId(Long timeId) {
+        this.timeId = timeId;
+    }
 
     public String getId() {
         return id;
@@ -94,13 +119,15 @@ public class VehiclePojo {
 
     @Override
     public String toString() {
-        return "VehiclePojo{" +
-                "id='" + id + '\'' +
+        return "TiledVehiclePojo{" +
+                "tileId='" + tileId + '\'' +
+                ", timeId=" + timeId +
+                ", id='" + id + '\'' +
                 ", time=" + time +
                 ", latitude=" + latitude +
                 ", longitude=" + longitude +
                 ", heading=" + heading +
-                ", route_id=" + route_id +
+                ", route_id='" + route_id + '\'' +
                 ", run_id='" + run_id + '\'' +
                 ", seconds_since_report=" + seconds_since_report +
                 '}';

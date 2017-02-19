@@ -18,26 +18,33 @@ package de.nierbeck.floating.data.stream.flink
 
 import java.util.{Optional, Properties}
 
+import com.datastax.driver.core.Cluster
 import com.datastax.driver.core.Cluster.Builder
-import de.nierbeck.floating.data.domain.Vehicle
+import de.nierbeck.floating.data.domain.{TiledVehicle, Vehicle}
+import de.nierbeck.floating.data.tiler.TileCalc
+import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
 import org.apache.flink.streaming.connectors.cassandra.{CassandraSink, ClusterBuilder}
-import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer010
-import org.apache.flink.api.scala._
-import org.apache.flink.streaming.util.serialization.SimpleStringSchema
-import org.slf4j.Logger
+import org.apache.flink.streaming.connectors.kafka.partitioner.FixedPartitioner
+import org.apache.flink.streaming.connectors.kafka.{FlinkKafkaConsumer010, FlinkKafkaProducer010}
+import org.apache.flink.streaming.util.serialization.{KeyedSerializationSchemaWrapper, SerializationSchema}
 
 object KafkaToCassandraFlinkApp {
 
 
   def main(args: Array[String]) {
 
-//    val env = StreamExecutionEnvironment.getExecutionEnvironment
-    val env = StreamExecutionEnvironment.createLocalEnvironment()
-//    env.enableCheckpointing(5000)
+
+    import org.apache.flink.streaming.api.scala._
+
+    implicit val typeInfo = createTypeInformation[Vehicle]
+    implicit val typeInfoPojo = createTypeInformation[VehiclePojo]
+    implicit val typeInfoTiledPojo = createTypeInformation[TiledVehiclePojo]
+    implicit val typeInfoTiled = createTypeInformation[TiledVehicle]
+
+    val env = StreamExecutionEnvironment.getExecutionEnvironment
 
     val properties:Properties = new Properties()
-
     properties.setProperty("bootstrap.servers", "localhost:9092")
     properties.setProperty("group.id", "flink")
 
@@ -55,23 +62,71 @@ object KafkaToCassandraFlinkApp {
       pojo.setLatitude(scalaVehicle.latitude)
       pojo.setLongitude(scalaVehicle.longitude)
       if (scalaVehicle.route_id.isDefined) {
-        pojo.setRoute_id(Optional.of(scalaVehicle.route_id.get))
+        pojo.setRoute_id(scalaVehicle.route_id.get)
       }
       pojo.setRun_id(scalaVehicle.run_id)
       pojo.setSeconds_since_report(scalaVehicle.seconds_since_report)
-      if (scalaVehicle.time.isDefined)
-        pojo.setTime(Optional.of(scalaVehicle.time.get))
+      if (scalaVehicle.time.isDefined) {
+        pojo.setTime(scalaVehicle.time.get)
+      }
       pojo
     })
 
-    pojoStream.print()
-
     CassandraSink.addSink(pojoStream.javaStream)
-//      .setQuery("INSERT INTO streaming.vehicle (id, time, latitude, longitude, heading, route_id, run_id, seconds_since_report) values (?,?,?,?,?,?,?,?);")
       .setClusterBuilder(new ClusterBuilder {
-        override def buildCluster(builder: Builder) = builder.addContactPoint("127.0.0.1").build()
+        override def buildCluster(builder: Cluster.Builder) = builder.addContactPoint("127.0.0.1").build()
       }).build()
 
+    val tiledVehicleStream:DataStream[TiledVehicle] = vehicleStream.filter(x => x.time.isDefined).map(vehicle => TiledVehicle(
+      TileCalc.convertLatLongToQuadKey(vehicle.latitude, vehicle.longitude),
+      TileCalc.transformTime(vehicle.time.get),
+      vehicle.id,
+      vehicle.time,
+      vehicle.latitude,
+      vehicle.longitude,
+      vehicle.heading,
+      vehicle.route_id,
+      vehicle.run_id,
+      vehicle.seconds_since_report
+    ))
+
+
+    val tiledVehiclePojoStream:DataStream[TiledVehiclePojo] = tiledVehicleStream.map(tiledVehicle => {
+      val pojo = new TiledVehiclePojo()
+      pojo.setTileId(tiledVehicle.tileId)
+      pojo.setTimeId(tiledVehicle.timeID.getTime)
+
+      pojo.setId(tiledVehicle.id)
+      pojo.setHeading(tiledVehicle.heading)
+      pojo.setLatitude(tiledVehicle.latitude)
+      pojo.setLongitude(tiledVehicle.longitude)
+      if (tiledVehicle.route_id.isDefined) {
+        pojo.setRoute_id(tiledVehicle.route_id.get)
+      }
+      pojo.setRun_id(tiledVehicle.run_id)
+      pojo.setSeconds_since_report(tiledVehicle.seconds_since_report)
+      if (tiledVehicle.time.isDefined) {
+        pojo.setTime(tiledVehicle.time.get)
+      }
+
+      pojo
+    })
+
+    CassandraSink.addSink(tiledVehiclePojoStream.javaStream)
+      .setClusterBuilder(new ClusterBuilder {
+        override def buildCluster(builder: Cluster.Builder) = builder.addContactPoint("127.0.0.1").build()
+      }).build()
+
+    val producerConfig = FlinkKafkaProducer010.writeToKafkaWithTimestamps(
+      tiledVehicleStream.javaStream,          // input stream
+      "tiledVehicles",                        // target topic
+      new TiledVehicleSerializationSchema,    // serialization schema
+      properties                              // custom configuration for KafkaProducer (including broker list)
+    )
+
+    // the following is necessary for at-least-once delivery guarantee
+    producerConfig.setLogFailuresOnly(false)   // "false" by default
+    producerConfig.setFlushOnCheckpoint(true)  // "false" by default
 
     env.execute("KafkaToCassandraFlink")
 
