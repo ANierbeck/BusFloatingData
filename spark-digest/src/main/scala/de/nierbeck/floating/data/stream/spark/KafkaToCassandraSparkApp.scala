@@ -38,16 +38,15 @@ object KafkaToCassandraSparkApp {
   /**
     * Executable main method of KafkaToCassandraSparkApp.
     *
-    * @param args - args(0): topicName, args(1): cassandra host name, args(2): cassandra port, arg(3): kafka host, args(4): kafka port
+    * @param args - args(0): topicName, args(1): cassandra-host:port, arg(2): kafka-host:port
     */
   def main(args: Array[String]) {
 
-    assert(args.size == 5, "Please provide the following params: topicname cassandrahost cassandraport kafkahost kafkaport")
+    assert(args.size == 3, "Please provide the following params: topicname cassandrahost:cassandraport kafkahost:kafkaport")
 
-    val kafkaHost = args(3)
-    val kafkaPort = args(4)
-    val cassandraHost = args(1)
-    val cassandraPort = args(2)
+    val kafkaConnect = args(2)
+    val cassandraHost = args(1).split(":").head
+    val cassandraPort = args(1).split(":").reverse.head
     val consumerTopic = args(0)
 
     val sparkConf = new SparkConf()
@@ -59,10 +58,10 @@ object KafkaToCassandraSparkApp {
     val producerConf = new Properties()
     producerConf.put("value.serializer", "de.nierbeck.floating.data.serializer.TiledVehicleFstSerializer")
     producerConf.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer")
-    producerConf.put("bootstrap.servers", s"""$kafkaHost:$kafkaPort""")
+    producerConf.put("bootstrap.servers", kafkaConnect)
 
     val kafkaParams = Map[String, String](
-      "bootstrap.servers" -> s"""$kafkaHost:$kafkaPort""",
+      "bootstrap.servers" -> kafkaConnect,
       "group.id" -> "group1",
       "key.deserializer" -> classOf[StringDeserializer].getName,
       "value.deserializer" -> classOf[VehicleFstDeserializer].getName,

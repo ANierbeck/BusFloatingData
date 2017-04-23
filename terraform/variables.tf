@@ -90,7 +90,7 @@ variable "public_slave_instance_type" {
 }
 
 variable "vpc_subnet_range" {
-  descpiption = "The IP range of the VPC subnet"
+  #descpiption = "The IP range of the VPC subnet"
   default = "10.0.0.0/16"
 }
 

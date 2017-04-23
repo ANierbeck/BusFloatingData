@@ -43,7 +43,7 @@ class TiledVehiclesFromKafkaActor(router: ActorRef) extends Actor with ActorLogg
 
   //Kafka
   val consumerSettings = ConsumerSettings(context.system, new ByteArrayDeserializer, new TiledVehicleFstDeserializer)
-    .withBootstrapServers(s"${kafkaHostName}:$kafkaPort")
+    .withBootstrapServers(kafkaConnect)
     .withGroupId("group1")
 
 

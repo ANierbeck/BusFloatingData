@@ -121,6 +121,44 @@ EOF
     dcos job run init-cassandra-schema-job
 }
 
+function init_cluster_spark_job {
+    cat &> /opt/smack/conf/init_cluster_spark_job.json << EOF
+{
+  "id": "init-cluster-spark-job",
+  "description": "Cluster Spark Job",
+  "run": {
+    "cpus": 0.1,
+    "mem": 256,
+    "disk": 0,
+    "docker": {
+      "image": "mesosphere/spark:1.0.2-2.0.0"
+    },
+    "args": ["bin/spark-submit",
+             "--conf", "spark.mesos.executor.docker.image=mesosphere/spark:1.0.2-2.0.0",
+             "--deploy-mode", "cluster",
+             "--master", "mesos://leader.mesos/service/spark",
+             "--driver-cores", "1",
+             "--driver-memory", "2G",
+             "--executor-memory", "4G",
+             "--total-executor-cores", "4",
+             "--class", "de.nierbeck.floating.data.stream.spark.CalcClusterSparkApp",
+             "https://oss.sonatype.org/content/repositories/snapshots/de/nierbeck/floating/data/spark-digest_2.11/0.2.0-SNAPSHOT/spark-digest_2.11-0.2.0-SNAPSHOT-assembly.jar",
+             "$CASSANDRA_HOST", "$CASSANDRA_PORT"],
+  "schedules": [
+    {
+      "id": "default",
+      "enabled": true,
+      "cron": "0 * * * *",
+      "concurrencyPolicy": "DENY"
+    }
+  ]
+  }
+}
+EOF
+    dcos job add /opt/smack/conf/init_cassandra_schema_job.json
+    dcos job run init-cluster-spark-job
+}
+
 function init_ingest_app {
     cat &> /opt/smack/conf/ingest.json << EOF
 {
@@ -172,7 +210,7 @@ EOF
 dcos spark run --submit-args='--driver-cores 0.1 --driver-memory 1024M --total-executor-cores 4 --class de.nierbeck.floating.data.stream.spark.KafkaToCassandraSparkApp https://oss.sonatype.org/content/repositories/snapshots/de/nierbeck/floating/data/spark-digest_2.11/0.2.0-SNAPSHOT/spark-digest_2.11-0.2.0-SNAPSHOT-assembly.jar METRO-Vehicles $CASSANDRA_HOST $CASSANDRA_PORT $KAFKA_HOST $KAFKA_PORT'
 EOF
     cat &> /usr/sbin/run-digest-hotspot << EOF
-dcos spark run --submit-args='--driver-cores 0.1 --driver-memory 1024M --class de.nierbeck.floating.data.stream.spark.CalcClusterSparkApp https://oss.sonatype.org/content/repositories/snapshots/de/nierbeck/floating/data/spark-digest_2.11/0.2.0-SNAPSHOT/spark-digest_2.11-0.2.0-SNAPSHOT-assembly.jar $CASSANDRA_HOST $CASSANDRA_PORT $KAFKA_HOST $KAFKA_PORT @$'
+dcos spark run --submit-args='--driver-cores 0.1 --driver-memory 1024M --class de.nierbeck.floating.data.stream.spark.CalcClusterSparkApp https://oss.sonatype.org/content/repositories/snapshots/de/nierbeck/floating/data/spark-digest_2.11/0.2.0-SNAPSHOT/spark-digest_2.11-0.2.0-SNAPSHOT-assembly.jar METRO-Vehicles $CASSANDRA_HOST $CASSANDRA_PORT $KAFKA_HOST $KAFKA_PORT @$'
 EOF
     chmod 744 /usr/sbin/run-pi /usr/sbin/run-digest /usr/sbin/run-digest-hotspot
     /usr/sbin/run-digest
@@ -199,9 +237,6 @@ function init_dasboard {
         "KAFKA_HOST": "$KAFKA_HOST",
         "KAFKA_PORT": "$KAFKA_PORT"
     },
-    "upgradeStrategy": {
-       "minimumHealthCapacity": 0
-    },
     "dependencies": ["/bus-demo/ingest"],
     "healthChecks": [
         {
@@ -216,7 +251,11 @@ function init_dasboard {
         }
     ],
     "cpus": 0.1,
-    "mem": 2048.0
+    "mem": 2048.0,
+    "ports": [
+      8000, 8001
+    ],
+    "requirePorts" : true
 }
 EOF
     dcos marathon app add /opt/smack/conf/dashboard.json

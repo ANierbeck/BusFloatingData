@@ -24,9 +24,7 @@ object ServiceConfig {
 
   val serviceInterface = config.getString("service.interface")
   val servicePort = config.getInt("service.port")
-  val cassandraNodeName = config.getString("cassandra.host")
-  val cassandraNodePort = config.getString("cassandra.port")
-  val kafkaHostName = config.getString("kafka.host")
-  val kafkaPort = config.getString("kafka.port")
-
+  val cassandraNodeName = config.getString("cassandra.connect").split(":").head
+  val cassandraNodePort = config.getString("cassandra.connect").split(":").reverse.head
+  val kafkaConnect = config.getString("kafka.connect")
 }

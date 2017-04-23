@@ -43,15 +43,12 @@ import org.apache.kafka.common.serialization.{ByteArraySerializer, StringSeriali
 
 object StreamToKafkaApp {
 
+  import ServiceConfig._
+
   implicit val system = ActorSystem("stream-system")
   implicit val actorMaterializer = ActorMaterializer()
 
-  val kafkaHost = System.getenv.getOrDefault("KAFKA_HOST", "localhost")
-  val kafkaPort = System.getenv.getOrDefault("KAFKA_PORT", "9092").toInt
-  val cassandraHost = System.getenv.getOrDefault("CASSANDRA_HOST", "localhost")
-  val cassandraPort = System.getenv.getOrDefault("CASSANDRA_PORT", "9042").toInt
-
-  val cluster: Cluster = Cluster.builder().addContactPoint(cassandraHost).withPort(cassandraPort).build()
+  val cluster: Cluster = Cluster.builder().addContactPoint(cassandraNodeName).withPort(Integer.parseInt(cassandraNodePort)).build()
   val cassandraSession: Session = cluster.connect()
 
   val routeStatement: PreparedStatement = cassandraSession.prepare("INSERT INTO streaming.routes(id, order_id, route_id, longitude, latitude, display_name) VALUES(?, ?, ?, ?, ?, ?);")
@@ -60,7 +57,7 @@ object StreamToKafkaApp {
 
   //Kafka stuff
   val producerSettings = ProducerSettings(system, new ByteArraySerializer, new VehicleFstSerializer)
-    .withBootstrapServers(s"$kafkaHost:$kafkaPort")
+    .withBootstrapServers(kafkaConnect)
 
   def main(args: Array[String]): Unit = {
     val httpClient: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] = Http(system).outgoingConnection("api.metro.net")

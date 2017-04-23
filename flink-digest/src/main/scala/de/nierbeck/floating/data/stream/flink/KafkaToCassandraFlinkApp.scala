@@ -34,6 +34,12 @@ object KafkaToCassandraFlinkApp {
 
   def main(args: Array[String]) {
 
+    assert(args.size == 3, "Please provide the following params: topicname cassandrahost:cassandraport kafkahost:kafkaport")
+
+    val kafkaConnect = args(2)
+    val cassandraHost = args(1).split(":").head
+    val cassandraPort = args(1).split(":").reverse.head
+    val consumerTopic = args(0)
 
     import org.apache.flink.streaming.api.scala._
 
@@ -45,10 +51,10 @@ object KafkaToCassandraFlinkApp {
     val env = StreamExecutionEnvironment.getExecutionEnvironment
 
     val properties:Properties = new Properties()
-    properties.setProperty("bootstrap.servers", "localhost:9092")
+    properties.setProperty("bootstrap.servers", kafkaConnect)
     properties.setProperty("group.id", "flink")
 
-    val kafkaConsumer = new FlinkKafkaConsumer010[Vehicle]("METRO-Vehicles", new VehicleFstDeserializationSchema(), properties)
+    val kafkaConsumer = new FlinkKafkaConsumer010[Vehicle](consumerTopic, new VehicleFstDeserializationSchema(), properties)
 
     println("Yeah wir leben noch")
 
@@ -74,7 +80,7 @@ object KafkaToCassandraFlinkApp {
 
     CassandraSink.addSink(pojoStream.javaStream)
       .setClusterBuilder(new ClusterBuilder {
-        override def buildCluster(builder: Cluster.Builder) = builder.addContactPoint("127.0.0.1").build()
+        override def buildCluster(builder: Cluster.Builder) = builder.addContactPoint(cassandraHost).build()
       }).build()
 
     val tiledVehicleStream:DataStream[TiledVehicle] = vehicleStream.filter(x => x.time.isDefined).map(vehicle => TiledVehicle(
@@ -113,7 +119,7 @@ object KafkaToCassandraFlinkApp {
 
     CassandraSink.addSink(tiledVehiclePojoStream.javaStream)
       .setClusterBuilder(new ClusterBuilder {
-        override def buildCluster(builder: Cluster.Builder) = builder.addContactPoint("127.0.0.1").build()
+        override def buildCluster(builder: Cluster.Builder) = builder.addContactPoint(cassandraHost).build()
       }).build()
 
     val producerConfig = FlinkKafkaProducer010.writeToKafkaWithTimestamps(
@@ -129,6 +135,5 @@ object KafkaToCassandraFlinkApp {
 
     env.execute("KafkaToCassandraFlink")
 
-    println("gleich sin mer dod")
   }
 }

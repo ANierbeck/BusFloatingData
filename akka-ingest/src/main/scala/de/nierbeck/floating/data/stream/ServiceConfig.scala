@@ -14,30 +14,15 @@
  * limitations under the License.
  */
 
-package de.nierbeck.floating.data.domain
+package de.nierbeck.floating.data.stream
 
-import java.util.Date
+import com.typesafe.config.ConfigFactory
 
-case class Vehicle(
-  id: String,
-  time: Option[Date] = None,
-  latitude: Double,
-  longitude: Double,
-  heading: Integer,
-  route_id: Option[String] = None,
-  run_id: String = "none",
-  seconds_since_report: Integer = 0
-)
+object ServiceConfig {
 
-case class TiledVehicle(
-  tileId: String,
-  timeID: Date,
-  id: String,
-  time: Option[Date] = None,
-  latitude: Double,
-  longitude: Double,
-  heading: Integer,
-  route_id: Option[String] = None,
-  run_id: String = "none",
-  seconds_since_report: Integer = 0
-)
+  val config = ConfigFactory.load();
+
+  val cassandraNodeName = config.getString("cassandra.connect").split(":").head
+  val cassandraNodePort = config.getString("cassandra.connect").split(":").reverse.head
+  val kafkaConnect = config.getString("kafka.connect")
+}
