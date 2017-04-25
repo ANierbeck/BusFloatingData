@@ -56,12 +56,9 @@ object KafkaToCassandraFlinkApp {
 
     val kafkaConsumer = new FlinkKafkaConsumer010[Vehicle](consumerTopic, new VehicleFstDeserializationSchema(), properties)
 
-    println("Yeah wir leben noch")
-
     val vehicleStream = env.addSource(kafkaConsumer)
 
     val pojoStream: DataStream[VehiclePojo] = vehicleStream.map(scalaVehicle => {
-      println(s"received a vehicle with id ${scalaVehicle.id}")
       val pojo = new VehiclePojo()
       pojo.setId(scalaVehicle.id)
       pojo.setHeading(scalaVehicle.heading)

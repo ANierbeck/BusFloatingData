@@ -70,7 +70,7 @@ function waited_until_dns_is_ready {
 }
 
 function waited_until_kafka_is_running {
-    until [ -n "$KAFKA_HOST" ] && [ -n "$KAFKA_PORT" ] ; do
+    until [ -n "$KAFKA_CONNECTION" ] ; do
         sleep 5
         echo "Kafka is not yet healthy"
         export_kafka_connection
@@ -78,15 +78,11 @@ function waited_until_kafka_is_running {
 }
 
 function export_kafka_connection {
-    export KAFKA_CONNECTION=($(dcos kafka connection | jq .dns[0] | sed -r 's/[\"]+//g' | tr ":" " "))
-    export KAFKA_HOST=$${KAFKA_CONNECTION[0]}
-    echo "KAFKA_HOST: $KAFKA_HOST"
-    export KAFKA_PORT=$${KAFKA_CONNECTION[1]}
-    echo "KAFKA_PORT: $KAFKA_PORT"
+    export KAFKA_CONNECTION=($(dcos kafka connection | jq .vip[0] | sed -r 's/[\"]+//g'))
 }
 
 function waited_until_cassandra_is_running {
-    until [ -n "$CASSANDRA_HOST" ] && [ -n "$CASSANDRA_PORT" ] ; do
+    until [ -n "$CASSANDRA_CONNECTION" ] ; do
         sleep 5
         echo "Cassandra is not yet healthy"
         export_cassandra_connection
@@ -94,11 +90,7 @@ function waited_until_cassandra_is_running {
 }
 
 function export_cassandra_connection {
-    export CASSANDRA_CONNECTION=($(dcos cassandra connection | jq .dns[0] | sed -r 's/[\"]+//g' | tr ":" " "))
-    export CASSANDRA_HOST=$${CASSANDRA_CONNECTION[0]}
-    echo "CASSANDRA_HOST: $CASSANDRA_HOST"
-    export CASSANDRA_PORT=$${CASSANDRA_CONNECTION[1]}
-    echo "CASSANDRA_PORT: $CASSANDRA_PORT"
+    export CASSANDRA_CONNECTION=($(dcos cassandra connection | jq .vip[0] | sed -r 's/[\"]+//g'))
 }
 
 function init_cassandra_schema {
@@ -107,7 +99,7 @@ function init_cassandra_schema {
   "id": "init-cassandra-schema-job",
   "description": "Initialize cassandra database",
   "run": {
-    "cmd": "/opt/bus-demo/import_data.sh $CASSANDRA_HOST",
+    "cmd": "/opt/bus-demo/import_data.sh $CASSANDRA_CONNECTION",
     "cpus": 0.1,
     "mem": 256,
     "disk": 0,
@@ -143,7 +135,7 @@ function init_cluster_spark_job {
              "--total-executor-cores", "4",
              "--class", "de.nierbeck.floating.data.stream.spark.CalcClusterSparkApp",
              "https://oss.sonatype.org/content/repositories/snapshots/de/nierbeck/floating/data/spark-digest_2.11/0.2.0-SNAPSHOT/spark-digest_2.11-0.2.0-SNAPSHOT-assembly.jar",
-             "$CASSANDRA_HOST", "$CASSANDRA_PORT"],
+             "$CASSANDRA_CONNECTION"],
   "schedules": [
     {
       "id": "default",
@@ -179,13 +171,8 @@ function init_ingest_app {
     }
   },
   "env": {
-    "CASSANDRA_HOST": "$CASSANDRA_HOST",
-    "CASSANDRA_PORT": "$CASSANDRA_PORT",
-    "KAFKA_HOST": "$KAFKA_HOST",
-    "KAFKA_PORT": "$KAFKA_PORT"
-  },
-  "upgradeStrategy": {
-    "minimumHealthCapacity": 0
+    "CASSANDRA_CONNECT": "$CASSANDRA_CONNECTION",
+    "KAFKA_CONNECT": "$KAFKA_CONNECTION"
   }
 }
 EOF
@@ -207,10 +194,10 @@ function init_spark_jobs {
 dcos spark run --submit-args='--driver-cores 0.1 --driver-memory 1024M --class org.apache.spark.examples.SparkPi https://downloads.mesosphere.com/spark/assets/spark-examples_2.10-1.4.0-SNAPSHOT.jar 10000000'
 EOF
     cat &> /usr/sbin/run-digest << EOF
-dcos spark run --submit-args='--driver-cores 0.1 --driver-memory 1024M --total-executor-cores 4 --class de.nierbeck.floating.data.stream.spark.KafkaToCassandraSparkApp https://oss.sonatype.org/content/repositories/snapshots/de/nierbeck/floating/data/spark-digest_2.11/0.2.0-SNAPSHOT/spark-digest_2.11-0.2.0-SNAPSHOT-assembly.jar METRO-Vehicles $CASSANDRA_HOST $CASSANDRA_PORT $KAFKA_HOST $KAFKA_PORT'
+dcos spark run --submit-args='--driver-cores 0.1 --driver-memory 1024M --total-executor-cores 4 --class de.nierbeck.floating.data.stream.spark.KafkaToCassandraSparkApp https://oss.sonatype.org/content/repositories/snapshots/de/nierbeck/floating/data/spark-digest_2.11/0.2.0-SNAPSHOT/spark-digest_2.11-0.2.0-SNAPSHOT-assembly.jar METRO-Vehicles $CASSANDRA_CONNECTION $KAFKA_CONNECTION'
 EOF
     cat &> /usr/sbin/run-digest-hotspot << EOF
-dcos spark run --submit-args='--driver-cores 0.1 --driver-memory 1024M --class de.nierbeck.floating.data.stream.spark.CalcClusterSparkApp https://oss.sonatype.org/content/repositories/snapshots/de/nierbeck/floating/data/spark-digest_2.11/0.2.0-SNAPSHOT/spark-digest_2.11-0.2.0-SNAPSHOT-assembly.jar METRO-Vehicles $CASSANDRA_HOST $CASSANDRA_PORT $KAFKA_HOST $KAFKA_PORT @$'
+dcos spark run --submit-args='--driver-cores 0.1 --driver-memory 1024M --class de.nierbeck.floating.data.stream.spark.CalcClusterSparkApp https://oss.sonatype.org/content/repositories/snapshots/de/nierbeck/floating/data/spark-digest_2.11/0.2.0-SNAPSHOT/spark-digest_2.11-0.2.0-SNAPSHOT-assembly.jar $CASSANDRA_CONNECTION @$'
 EOF
     chmod 744 /usr/sbin/run-pi /usr/sbin/run-digest /usr/sbin/run-digest-hotspot
     /usr/sbin/run-digest
@@ -232,10 +219,8 @@ function init_dasboard {
         "slave_public"
     ],
     "env": {
-        "CASSANDRA_HOST": "$CASSANDRA_HOST",
-        "CASSANDRA_PORT": "$CASSANDRA_PORT",
-        "KAFKA_HOST": "$KAFKA_HOST",
-        "KAFKA_PORT": "$KAFKA_PORT"
+        "CASSANDRA_CONNECT": "$CASSANDRA_CONNECTION",
+        "KAFKA_CONNECT": "$KAFKA_CONNECTION"
     },
     "dependencies": ["/bus-demo/ingest"],
     "healthChecks": [
@@ -272,8 +257,8 @@ function install_smack {
 }
 
 function install_metering {
-    dcos package install --yes elasticsearch --package-version=1.0.1
-    dcos package install --yes kibana --package-version=4.5.3
+    dcos package install --yes elasticsearch
+    dcos package install --yes kibana
 }
 
 function install_decanter_monitor {

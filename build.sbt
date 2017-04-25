@@ -138,21 +138,27 @@ lazy val sparkDependencies = Seq(
 ))
 
 val flinkDependencies = Seq(
-  "com.datastax.cassandra"   % "cassandra-driver-core"       % cassandraVer exclude("com.google.guava", "guava"),
-  "com.datastax.cassandra"   % "cassandra-driver-mapping"    % cassandraVer,
+  ("org.apache.flink"         % "flink-core"                  % flinkVersion)
+    .exclude("com.esotericsoftware.kryo", "kryo"),
   "org.apache.flink" %% "flink-scala" % flinkVersion,
-  "org.apache.flink" %% "flink-streaming-java" % flinkVersion,
-  "org.apache.flink" %% "flink-streaming-scala" % flinkVersion,
+  ("org.apache.flink" %% "flink-streaming-java" % flinkVersion)
+    .exclude("com.esotericsoftware.kryo", "kryo"),
+  ("org.apache.flink" %% "flink-streaming-scala" % flinkVersion)
+    .exclude("com.esotericsoftware.kryo", "kryo")
+    .exclude("io.netty", "netty-all"),
   "org.apache.flink" %% "flink-connector-kafka-0.10" % flinkVersion,
   "org.apache.flink" %% "flink-connector-cassandra" % flinkVersion,
-  "org.apache.flink" %% "flink-clients" % flinkVersion
+  ("org.apache.flink" %% "flink-clients" % flinkVersion)
+    .exclude("com.esotericsoftware.kryo", "kryo"),
+  "com.codahale.metrics" % "metrics-core" % "3.0.2"
 ).map(_.excludeAll(
   ExclusionRule(organization = "org.slf4j", artifact = "slf4j-log4j12"),
   ExclusionRule(organization = "com.sun.jdmk"),
   ExclusionRule(organization = "com.sun.jmx"),
   ExclusionRule(organization = "log4j"),
   ExclusionRule(organization = "org.spark-project"),
-  ExclusionRule(organization = "javax.jms")
+  ExclusionRule(organization = "javax.jms"),
+  ExclusionRule(organization = "com.esotericsoftware.kryo", artifact = "kryo")
 ))
 
 //noinspection ScalaStyle
@@ -217,8 +223,7 @@ lazy val root = (project in file(".")).
     name := "BusFloatingData",
     scalaVersion := scalaVer
   ).
-  aggregate(commons, ingest, sparkDigest, akkaServer)
-  //aggregate(commons, ingest, sparkDigest, akkaServer, flinkDigest)
+  aggregate(commons, ingest, sparkDigest, akkaServer, flinkDigest)
 
 lazy val commons = (project in file("commons")).
   enablePlugins(AutomateHeaderPlugin).
