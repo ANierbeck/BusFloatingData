@@ -65,7 +65,7 @@
       StandardOutput=journal+console
       StandardError=journal+console
       ExecStartPre=/usr/bin/mkdir -p /etc/profile.d
-      ExecStart=/usr/bin/ln -sf /opt/mesosphere/environment.export /etc/profile.d/dcos.sh
+      ExecStart=/usr/bin/ln -sf /opt/mesosphere/bin/add_dcos_path.sh /etc/profile.d/dcos.sh
     "name": |-
       dcos-link-env.service
   - "content": |
@@ -103,6 +103,29 @@
       true
     "name": |-
       dcos-setup.service
+    "no_block": !!bool |-
+      true
+  - "command": |-
+      start
+    "content": |-
+      [Unit]
+      Description=AWS Setup: Signal CloudFormation Success
+      ConditionPathExists=!/var/lib/dcos-cfn-signal
+      [Service]
+      Type=simple
+      Restart=on-failure
+      StartLimitInterval=0
+      RestartSec=15s
+      EnvironmentFile=/opt/mesosphere/environment
+      EnvironmentFile=/opt/mesosphere/etc/cfn_signal_metadata
+      Environment="AWS_CFN_SIGNAL_THIS_RESOURCE=MasterServerGroup"
+      ExecStartPre=/bin/ping -c1 leader.mesos
+      ExecStartPre=/opt/mesosphere/bin/cfn-signal
+      ExecStart=/usr/bin/touch /var/lib/dcos-cfn-signal
+    "name": |-
+      dcos-cfn-signal.service
+    "no_block": !!bool |-
+      true
   "update":
     "reboot-strategy": |-
       off
@@ -116,7 +139,7 @@
   "permissions": |-
     0644
 - "content": |
-${cluster_packages}
+  ${cluster_packages}
   "owner": |-
     root
   "path": |-
@@ -150,52 +173,39 @@ ${cluster_packages}
   "permissions": |-
     0644
 - "content": |
-    MESOS_CLUSTER=${stack_name}
+    "bound_values":
+      "adminrouter_auth_enabled": |-
+        true
+      "agent_role": |-
+        ${slave_role}
+      "aws_region": |-
+        ${aws_region}
+      "aws_stack_id": |-
+        arn:aws:cloudformation:${aws_region}:097247269408:stack/${stack_name}/e16b6850-42a1-11e7-aec4-50a68a770c82
+      "aws_stack_name": |-
+        ${stack_name}
+      "cluster_name": |-
+        ${stack_name}
+      "exhibitor_address": |-
+        ${internal_master_lb_dns_name}
+      "master_external_loadbalancer": |-
+        ${internal_master_lb_dns_name}
+      "master_role": |-
+        ${master_role}
+      "oauth_enabled": |-
+        true
+      "s3_bucket": |-
+        ${exhibitor_s3_bucket}
+      "s3_prefix": |-
+        ${stack_name}
+    "late_bound_package_id": |-
+      dcos-provider-ea3199f08595a41d4f620011d4ed694ae3dc8d8d-aws--setup
+  "owner": |-
+    root
   "path": |-
-    /etc/mesosphere/setup-packages/dcos-provider-aws--setup/etc/mesos-master-provider
-- "content": |
-    ADMINROUTER_ACTIVATE_AUTH_MODULE=${authentication_enabled}
-  "path": |-
-    /etc/mesosphere/setup-packages/dcos-provider-aws--setup/etc/adminrouter.env
-- "content": |
-    com.netflix.exhibitor.s3.access-key-id=${aws_access_key_id}
-    com.netflix.exhibitor.s3.access-secret-key=${aws_secret_access_key}
-  "path": |-
-    /etc/mesosphere/setup-packages/dcos-provider-aws--setup/etc/exhibitor.properties
-- "content": |
-    MASTER_SOURCE=exhibitor_uri
-    EXHIBITOR_URI=http://${internal_master_lb_dns_name}:8181/exhibitor/v1/cluster/status
-    EXHIBITOR_ADDRESS=${internal_master_lb_dns_name}
-    RESOLVERS=${fallback_dns}
-  "path": |-
-    /etc/mesosphere/setup-packages/dcos-provider-aws--setup/etc/dns_config
-- "content": |
-    EXHIBITOR_BACKEND=AWS_S3
-    AWS_REGION=${aws_region}
-    AWS_S3_BUCKET=${exhibitor_s3_bucket}
-    AWS_S3_PREFIX=${stack_name}
-  "path": |-
-    /etc/mesosphere/setup-packages/dcos-provider-aws--setup/etc/exhibitor
-- "content": |
-    {"uiConfiguration":{"plugins":{"banner":{"enabled":false,"backgroundColor":"#1E232F","foregroundColor":"#FFFFFF","headerTitle":null,"headerContent":null,"footerContent":null,"imagePath":null,"dismissible":null},"branding":{"enabled":false},"external-links": {"enabled": false},
-
-    "authentication":{"enabled":false},
-
-    "oauth":{"enabled":${authentication_enabled},"authHost":"https://dcos.auth0.com"},
-
-
-    "tracking":{"enabled":true}}}}
-  "path": |-
-    /etc/mesosphere/setup-packages/dcos-provider-aws--setup/etc/ui-config.json
-- "content": |
-    INTERNAL_MASTER_LB_DNSNAME=${internal_master_lb_dns_name}
-    MASTER_LB_DNSNAME=${public_lb_dns_name}
-  "path": |-
-    /etc/mesosphere/setup-packages/dcos-provider-aws--setup/etc/aws_dnsnames
-- "content": |-
-    {}
-  "path": |-
-    /etc/mesosphere/setup-packages/dcos-provider-aws--setup/pkginfo.json
+    /etc/mesosphere/setup-flags/late-config.yaml
+  "permissions": |-
+    0644
 - "content": ""
   "path": |-
     /etc/mesosphere/roles/master

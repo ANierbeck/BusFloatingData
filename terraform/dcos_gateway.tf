@@ -27,5 +27,6 @@ data "template_file" "dcos_user_data" {
 
   vars {
     internal_master_lb_dns_name = "${aws_elb.internal_master.dns_name}"
+    user_mail                   = "${var.user_email}"
   }
 }

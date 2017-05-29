@@ -22,7 +22,7 @@ function install_dcos_cli {
     curl -s --output /tmp/get-pip.py https://bootstrap.pypa.io/get-pip.py
     python /tmp/get-pip.py
     pip install virtualenv
-    wget https://downloads.dcos.io/binaries/cli/linux/x86-64/dcos-1.8/dcos -O /opt/mesosphere/dcos-cli/bin/dcos
+    wget https://downloads.dcos.io/binaries/cli/linux/x86-64/dcos-1.9/dcos -O /opt/mesosphere/dcos-cli/bin/dcos
     chmod +x /opt/mesosphere/dcos-cli/bin/dcos
     ln -s /opt/mesosphere/dcos-cli/bin/dcos /usr/sbin/dcos
     dcos config set core.dcos_url http://leader.mesos
@@ -31,19 +31,20 @@ function install_dcos_cli {
 }
 
 function install_oracle_java {
-    wget --no-cookies \
-         --no-check-certificate \
-         --header "Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com%2F; oraclelicense=accept-securebackup-cookie" \
-         "http://download.oracle.com/otn-pub/java/jdk/8u25-b17/jdk-8u25-linux-x64.tar.gz" \
-         -O /tmp/jdk-8u25-linux-x64.tar.gz
-    tar xzf /tmp/jdk-8u25-linux-x64.tar.gz --directory=/usr/local/
-    update-alternatives --install "/usr/bin/java" "java" "/usr/local/jdk1.8.0_25/bin/java" 1
-    update-alternatives --install "/usr/bin/javac" "javac" "/usr/local/jdk1.8.0_25/bin/javac" 1
-    update-alternatives --install "/usr/bin/javaws" "javaws" "/usr/local/jdk1.8.0_25/bin/javaws" 1
-    update-alternatives --set "java" "/usr/local/jdk1.8.0_25/bin/java"
-    update-alternatives --set "javac" "/usr/local/jdk1.8.0_25/bin/javac"
-    update-alternatives --set "javaws" "/usr/local/jdk1.8.0_25/bin/javaws"
-    export JAVA_HOME=/usr/local/jdk1.8.0_25/
+    wget --no-check-certificate \
+         --no-cookies \
+         --header "Cookie: oraclelicense=accept-securebackup-cookie" \
+         "http://download.oracle.com/otn-pub/java/jdk/8u112-b15/jdk-8u112-linux-x64.tar.gz"
+         -O /tmp/jdk-8u112-linux-x64.tar.gz
+
+    tar xzf /tmp/jdk-8u112-linux-x64.tar.gz --directory=/usr/local/
+    update-alternatives --install "/usr/bin/java" "java" "/usr/local/jdk1.8.0_112/bin/java" 1
+    update-alternatives --install "/usr/bin/javac" "javac" "/usr/local/jdk1.8.0_112/bin/javac" 1
+    update-alternatives --install "/usr/bin/javaws" "javaws" "/usr/local/jdk1.8.0_112/bin/javaws" 1
+    update-alternatives --set "java" "/usr/local/jdk1.8.0_112/bin/java"
+    update-alternatives --set "javac" "/usr/local/jdk1.8.0_112/bin/javac"
+    update-alternatives --set "javaws" "/usr/local/jdk1.8.0_112/bin/javaws"
+    export JAVA_HOME=/usr/local/jdk1.8.0_112/
     echo "export JAVA_HOME=$JAVA_HOME" >> ~/.bashrc
 }
 
@@ -78,7 +79,7 @@ function waited_until_kafka_is_running {
 }
 
 function export_kafka_connection {
-    export KAFKA_CONNECTION=($(dcos kafka connection | jq .vip | sed -r 's/[\"]+//g' | tr ":" " "))
+    export KAFKA_CONNECTION=($(dcos kafka connection | jq .dns[0] | sed -r 's/[\"]+//g' | tr ":" " "))
     export KAFKA_HOST=$${KAFKA_CONNECTION[0]}
     echo "KAFKA_HOST: $KAFKA_HOST"
     export KAFKA_PORT=$${KAFKA_CONNECTION[1]}
@@ -94,7 +95,7 @@ function waited_until_cassandra_is_running {
 }
 
 function export_cassandra_connection {
-    export CASSANDRA_CONNECTION=($(dcos cassandra connection | jq .vip | sed -r 's/[\"]+//g' | tr ":" " "))
+    export CASSANDRA_CONNECTION=($(dcos cassandra connection | jq .dns[0] | sed -r 's/[\"]+//g' | tr ":" " "))
     export CASSANDRA_HOST=$${CASSANDRA_CONNECTION[0]}
     echo "CASSANDRA_HOST: $CASSANDRA_HOST"
     export CASSANDRA_PORT=$${CASSANDRA_CONNECTION[1]}
@@ -261,11 +262,11 @@ EOF
 }
 
 function install_smack {
-    dcos package install --yes cassandra --package-version=1.0.16-3.0.8
+    dcos package install --yes cassandra
     dcos package install --cli cassandra
-    dcos package install --yes kafka --package-version=1.1.9-0.10.0.0
+    dcos package install --yes kafka
     dcos package install --cli kafka
-    dcos package install --yes spark --package-version=1.0.2-2.0.0
+    dcos package install --yes spark --package-version=1.0.9-2.1.0-1
     dcos package install --cli spark
     dcos package install --yes zeppelin --package-version=0.6.0
 }

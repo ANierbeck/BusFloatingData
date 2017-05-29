@@ -31,5 +31,7 @@ data "template_file" "master_user_data" {
     public_lb_dns_name          = "${aws_elb.public_slaves.dns_name}"
     exhibitor_s3_bucket         = "${aws_s3_bucket.exhibitor.id}"
     dcos_base_download_url      = "${var.dcos_base_download_url}"
+    master_role                 = "${aws_iam_role.master.id}"
+    slave_role                  = "${aws_iam_role.slave.id}"
   }
 }

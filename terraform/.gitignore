@@ -5,3 +5,5 @@ dcos/
 *.tfstate.backup
 *.plan
 *.tfvars
+/cloudformation.json
+/cloudformation-single.json
