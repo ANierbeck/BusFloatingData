@@ -26,9 +26,6 @@ variable "exhibitor_uid" {
   description = "Unique Intentifier"
 }
 
-variable "user_email" {
-  description = "Users email address, used for login in console"
-}
 
 ###############################
 ### CONFIGURABLE PARAMETERS ###

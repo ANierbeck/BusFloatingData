@@ -34,17 +34,17 @@ function install_oracle_java {
     wget --no-check-certificate \
          --no-cookies \
          --header "Cookie: oraclelicense=accept-securebackup-cookie" \
-         "http://download.oracle.com/otn-pub/java/jdk/8u112-b15/jdk-8u112-linux-x64.tar.gz"
-         -O /tmp/jdk-8u112-linux-x64.tar.gz
+         "http://download.oracle.com/otn-pub/java/jdk/8u131-b11/d54c1d3a095b4ff2b6607d096fa80163/jdk-8u131-linux-x64.tar.gz" \
+         -O /tmp/jdk-8.tar.gz
 
-    tar xzf /tmp/jdk-8u112-linux-x64.tar.gz --directory=/usr/local/
-    update-alternatives --install "/usr/bin/java" "java" "/usr/local/jdk1.8.0_112/bin/java" 1
-    update-alternatives --install "/usr/bin/javac" "javac" "/usr/local/jdk1.8.0_112/bin/javac" 1
-    update-alternatives --install "/usr/bin/javaws" "javaws" "/usr/local/jdk1.8.0_112/bin/javaws" 1
-    update-alternatives --set "java" "/usr/local/jdk1.8.0_112/bin/java"
-    update-alternatives --set "javac" "/usr/local/jdk1.8.0_112/bin/javac"
-    update-alternatives --set "javaws" "/usr/local/jdk1.8.0_112/bin/javaws"
-    export JAVA_HOME=/usr/local/jdk1.8.0_112/
+    tar xzf /tmp/jdk-8.tar.gz --directory=/usr/local/
+    update-alternatives --install "/usr/bin/java" "java" "/usr/local/jdk1.8.0_131/bin/java" 1
+    update-alternatives --install "/usr/bin/javac" "javac" "/usr/local/jdk1.8.0_131/bin/javac" 1
+    update-alternatives --install "/usr/bin/javaws" "javaws" "/usr/local/jdk1.8.0_131/bin/javaws" 1
+    update-alternatives --set "java" "/usr/local/jdk1.8.0_131/bin/java"
+    update-alternatives --set "javac" "/usr/local/jdk1.8.0_131/bin/javac"
+    update-alternatives --set "javaws" "/usr/local/jdk1.8.0_131/bin/javaws"
+    export JAVA_HOME=/usr/local/jdk1.8.0_131/
     echo "export JAVA_HOME=$JAVA_HOME" >> ~/.bashrc
 }
 
@@ -266,14 +266,13 @@ function install_smack {
     dcos package install --cli cassandra
     dcos package install --yes kafka
     dcos package install --cli kafka
-    dcos package install --yes spark --package-version=1.0.9-2.1.0-1
+    dcos package install --yes spark
     dcos package install --cli spark
     dcos package install --yes zeppelin --package-version=0.6.0
 }
 
 function install_metering {
-    dcos package install --yes elasticsearch
-    dcos package install --yes kibana
+    dcos package install --yes elastic
 }
 
 function install_decanter_monitor {
@@ -347,9 +346,9 @@ waited_until_kafka_is_running
 export_kafka_connection
 waited_until_cassandra_is_running
 export_cassandra_connection
+waited_until_spark_is_running
 init_cassandra_schema
 init_ingest_app
-waited_until_spark_is_running
 init_spark_jobs
 init_dasboard
 install_decanter_monitor

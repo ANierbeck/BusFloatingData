@@ -175,7 +175,7 @@
 - "content": |
     "bound_values":
       "adminrouter_auth_enabled": |-
-        true
+        false
       "agent_role": |-
         ${slave_role}
       "aws_region": |-
@@ -193,7 +193,7 @@
       "master_role": |-
         ${master_role}
       "oauth_enabled": |-
-        true
+        false
       "s3_bucket": |-
         ${exhibitor_s3_bucket}
       "s3_prefix": |-
