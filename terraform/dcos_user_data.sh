@@ -129,34 +129,26 @@ function init_cluster_spark_job {
   "description": "Cluster Spark Job",
   "run": {
     "cpus": 0.1,
-    "mem": 256,
+    "mem": 320,
     "disk": 0,
     "docker": {
-      "image": "mesosphere/spark:1.0.2-2.0.0"
+      "image": "mesosphere/spark:1.0.9-2.1.0-1-hadoop-2.6"
     },
     "args": ["bin/spark-submit",
-             "--conf", "spark.mesos.executor.docker.image=mesosphere/spark:1.0.2-2.0.0",
+             "--conf", "spark.mesos.executor.docker.image=mesosphere/spark:1.0.9-2.1.0-1-hadoop-2.6",
              "--deploy-mode", "cluster",
              "--master", "mesos://leader.mesos/service/spark",
-             "--driver-cores", "1",
-             "--driver-memory", "2G",
-             "--executor-memory", "4G",
+             "--driver-cores", "0.1",
+             "--driver-memory", "1G",
              "--total-executor-cores", "4",
-             "--class", "de.nierbeck.floating.data.stream.spark.CalcClusterSparkApp",
-             "https://oss.sonatype.org/content/repositories/snapshots/de/nierbeck/floating/data/spark-digest_2.11/0.2.1-SNAPSHOT/spark-digest_2.11-0.2.1-SNAPSHOT-assembly.jar",
-             "$CASSANDRA_HOST:$CASSANDRA_PORT"],
-  "schedules": [
-    {
-      "id": "default",
-      "enabled": true,
-      "cron": "0 * * * *",
-      "concurrencyPolicy": "DENY"
-    }
-  ]
+             "--class", "de.nierbeck.floating.data.stream.spark.KafkaToCassandraSparkApp",
+             "https://oss.sonatype.org/content/repositories/snapshots/de/nierbeck/floating/data/spark-digest_2.11/0.2.2-SNAPSHOT/spark-digest_2.11-0.2.2-SNAPSHOT-assembly.jar",
+             "METRO-Vehicles", "$CASSANDRA_HOST:$CASSANDRA_PORT", "$KAFKA_HOST:$KAFKA_PORT"]
+
   }
 }
 EOF
-    dcos job add /opt/smack/conf/init_cassandra_schema_job.json
+    dcos job add /opt/smack/conf/init_cluster_spark_job.json
     dcos job run init-cluster-spark-job
 }
 
@@ -172,7 +164,7 @@ function init_ingest_app {
     "type": "DOCKER",
     "volumes": [],
     "docker": {
-      "image": "anierbeck/akka-ingest:0.2.1-SNAPSHOT",
+      "image": "anierbeck/akka-ingest:0.2.2-SNAPSHOT",
       "network": "HOST",
       "privileged": false,
       "parameters": [],
@@ -206,10 +198,10 @@ function init_spark_jobs {
 dcos spark run --submit-args='--driver-cores 0.1 --driver-memory 1024M --class org.apache.spark.examples.SparkPi https://downloads.mesosphere.com/spark/assets/spark-examples_2.10-1.4.0-SNAPSHOT.jar 10000000'
 EOF
     cat &> /usr/sbin/run-digest << EOF
-dcos spark run --submit-args='--driver-cores 0.1 --driver-memory 1024M --total-executor-cores 4 --class de.nierbeck.floating.data.stream.spark.KafkaToCassandraSparkApp https://oss.sonatype.org/content/repositories/snapshots/de/nierbeck/floating/data/spark-digest_2.11/0.2.1-SNAPSHOT/spark-digest_2.11-0.2.1-SNAPSHOT-assembly.jar METRO-Vehicles $CASSANDRA_HOST:$CASSANDRA_PORT $KAFKA_HOST:$KAFKA_PORT'
+dcos spark run --submit-args='--driver-cores 0.1 --driver-memory 1024M --total-executor-cores 4 --class de.nierbeck.floating.data.stream.spark.KafkaToCassandraSparkApp https://oss.sonatype.org/content/repositories/snapshots/de/nierbeck/floating/data/spark-digest_2.11/0.2.2-SNAPSHOT/spark-digest_2.11-0.2.2-SNAPSHOT-assembly.jar METRO-Vehicles $CASSANDRA_HOST:$CASSANDRA_PORT $KAFKA_HOST:$KAFKA_PORT'
 EOF
     cat &> /usr/sbin/run-digest-hotspot << EOF
-dcos spark run --submit-args='--driver-cores 0.1 --driver-memory 1024M --class de.nierbeck.floating.data.stream.spark.CalcClusterSparkApp https://oss.sonatype.org/content/repositories/snapshots/de/nierbeck/floating/data/spark-digest_2.11/0.2.1-SNAPSHOT/spark-digest_2.11-0.2.1-SNAPSHOT-assembly.jar $CASSANDRA_HOST:$CASSANDRA_PORT @$'
+dcos spark run --submit-args='--driver-cores 0.1 --driver-memory 1024M --class de.nierbeck.floating.data.stream.spark.CalcClusterSparkApp https://oss.sonatype.org/content/repositories/snapshots/de/nierbeck/floating/data/spark-digest_2.11/0.2.2-SNAPSHOT/spark-digest_2.11-0.2.2-SNAPSHOT-assembly.jar $CASSANDRA_HOST:$CASSANDRA_PORT @$'
 EOF
     chmod 744 /usr/sbin/run-pi /usr/sbin/run-digest /usr/sbin/run-digest-hotspot
     /usr/sbin/run-digest
@@ -222,7 +214,7 @@ function init_dasboard {
     "container": {
         "type": "DOCKER",
         "docker": {
-            "image": "anierbeck/akka-server:0.2.1-SNAPSHOT",
+            "image": "anierbeck/akka-server:0.2.2-SNAPSHOT",
             "network": "HOST",
             "forcePullImage": true
         }
@@ -351,4 +343,5 @@ init_cassandra_schema
 init_ingest_app
 init_spark_jobs
 init_dasboard
+init_cluster_spark_job
 install_decanter_monitor
