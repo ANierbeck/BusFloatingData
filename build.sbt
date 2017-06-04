@@ -65,6 +65,9 @@ resolvers in ThisBuild += "Apache Snapshots" at "https://repository.apache.org/s
 resolvers in ThisBuild += Resolver.bintrayRepo("hseeberger", "maven")
 resolvers in ThisBuild += Resolver.mavenLocal
 
+// exclude Scala library from assembly
+assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false)
+
 //noinspection ScalaStyle
 lazy val commonDependencies = Seq(
   "org.scalatest"            %% "scalatest"                  % scalaTestVer       % "test",
@@ -138,12 +141,12 @@ lazy val sparkDependencies = Seq(
 ))
 
 val flinkDependencies = Seq(
-  ("org.apache.flink"         % "flink-core"                  % flinkVersion)
+  ("org.apache.flink" % "flink-core" % flinkVersion % "provided")
     .exclude("com.esotericsoftware.kryo", "kryo"),
-  "org.apache.flink" %% "flink-scala" % flinkVersion,
-  ("org.apache.flink" %% "flink-streaming-java" % flinkVersion)
+  "org.apache.flink" %% "flink-scala" % flinkVersion % "provided",
+  ("org.apache.flink" %% "flink-streaming-java" % flinkVersion % "provided")
     .exclude("com.esotericsoftware.kryo", "kryo"),
-  ("org.apache.flink" %% "flink-streaming-scala" % flinkVersion)
+  ("org.apache.flink" %% "flink-streaming-scala" % flinkVersion % "provided")
     .exclude("com.esotericsoftware.kryo", "kryo")
     .exclude("io.netty", "netty-all"),
   "org.apache.flink" %% "flink-connector-kafka-0.10" % flinkVersion,
@@ -277,6 +280,15 @@ lazy val sparkDigest = (project in file("spark-digest")).
       case PathList("org", "apache", "spark", xs @ _ *) => MergeStrategy.first
       case PathList("org", "apache", "commons", xs @_ *) => MergeStrategy.last
       case PathList("META-INF", "io.netty.versions.properties") => MergeStrategy.last
+      case PathList("akka", xs @_ * ) => MergeStrategy.discard
+      case PathList("scala", xs @_ * ) => MergeStrategy.discard
+      case PathList("assets", xs @_ * ) => MergeStrategy.discard
+      case PathList("darwin", xs @_ * ) => MergeStrategy.discard
+      case PathList("jline", xs @_ * ) => MergeStrategy.discard
+      case PathList("junit", xs @_ * ) => MergeStrategy.discard
+      case PathList("linux", xs @_ * ) => MergeStrategy.discard
+      case PathList("win32", xs @_ * ) => MergeStrategy.discard
+      case PathList("webapps", xs @_ * ) => MergeStrategy.discard
       case x =>
         val oldStrategy = (assemblyMergeStrategy in assembly).value
         oldStrategy(x)
@@ -340,6 +352,15 @@ lazy val flinkDigest = (project in file("flink-digest")).
       case PathList("com", "datastax", "driver", "core", xs @ _ *) => MergeStrategy.first
       case PathList("org", "apache", "commons", xs @_ *) => MergeStrategy.last
       case PathList("META-INF", "io.netty.versions.properties") => MergeStrategy.last
+      case PathList("akka", xs @_ * ) => MergeStrategy.discard
+      case PathList("scala", xs @_ * ) => MergeStrategy.discard
+      case PathList("assets", xs @_ * ) => MergeStrategy.discard
+      case PathList("darwin", xs @_ * ) => MergeStrategy.discard
+      case PathList("jline", xs @_ * ) => MergeStrategy.discard
+      case PathList("junit", xs @_ * ) => MergeStrategy.discard
+      case PathList("linux", xs @_ * ) => MergeStrategy.discard
+      case PathList("win32", xs @_ * ) => MergeStrategy.discard
+      case PathList("webapps", xs @_ * ) => MergeStrategy.discard
       case x =>
         val oldStrategy = (assemblyMergeStrategy in assembly).value
         oldStrategy(x)
