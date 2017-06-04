@@ -44,7 +44,7 @@ object CalcClusterSparkApp {
     */
   def main(args: Array[String]) {
 
-    assert(args.size == 1, "Please provide the following params: cassandrahost:cassandraport start_time[optional]")
+    assert(args.size >= 1, "Please provide the following params: cassandrahost:cassandraport start_time[optional]")
     val cassandraHost = args(0).split(":").head
     val cassandraPort = args(0).split(":").reverse.head
 
