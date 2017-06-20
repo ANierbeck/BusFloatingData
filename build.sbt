@@ -16,28 +16,14 @@
  */
 
 import de.heikoseeberger.sbtheader.license.Apache2_0
-import de.heikoseeberger.sbtheader.{AutomateHeaderPlugin, HeaderPlugin}
+import de.heikoseeberger.sbtheader.AutomateHeaderPlugin
 import sbt.Keys._
 import sbt._
 import sbtassembly.MergeStrategy
-import sbtrelease.ReleaseStateTransformations._
 
 /**
  * root build.sbt
  */
-
-val akkaVer        = "2.4.10"
-val scalaVer       = "2.11.8"
-val scalaParsersVer= "1.0.4"
-val scalaTestVer   = "2.2.6"
-val cassandraVer   = "3.1.2"
-val Log4j2         = "2.8.2"
-val Slf4j          = "1.7.18"
-val spark          = "2.1.1"
-val sparkConnector = "2.0.1"
-val circeVersion   = "0.4.1"
-val kafkaVersion   = "0.10.0.1"
-val flinkVersion   = "1.2.0"
 
 //needed for crosscompilation ...
 autoCompilerPlugins := true
@@ -45,7 +31,7 @@ autoCompilerPlugins := true
 fork in run := true
 
 //local dependency for sbt itself
-libraryDependencies += "org.apache.spark" %% "spark-core" % spark % "provided"
+libraryDependencies += "org.apache.spark" %% "spark-core" % Version.spark % "provided"
 
 //used for aether-deploy
 overridePublishBothSettings
@@ -70,12 +56,12 @@ assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeSca
 
 //noinspection ScalaStyle
 lazy val commonDependencies = Seq(
-  "org.scalatest"            %% "scalatest"                  % scalaTestVer       % "test",
-  "joda-time"                %  "joda-time"                  % "2.9.3",
-  "com.twitter"              %% "chill-akka"                 % "0.8.0",
+  CommonDependencies.scala_test,
+  CommonDependencies.joda_time,
+  CommonDependencies.akka_chill,
 
   // Fast Java Serializer
-  "de.ruedigermoeller"       %  "fst"                        % "2.45"
+  CommonDependencies.fast_serializer
 
 ).map(_. excludeAll(
   ExclusionRule(organization = "org.slf4j", artifact = "slf4j-log4j12"),
@@ -89,26 +75,25 @@ lazy val commonDependencies = Seq(
 ))
 
 lazy val kafkaDependencies = Seq(
-  "org.apache.kafka"                %% "kafka"                      % kafkaVersion,
-  "org.apache.kafka"                % "kafka-clients"                % kafkaVersion
+  KafkaDependencies.kafka,
+  KafkaDependencies.kafka_clients
 ).map(_. excludeAll(
   ExclusionRule(organization = "log4j")
 ))
 
 //noinspection ScalaStyle
 lazy val akkaDependencies = Seq(
-  "org.scala-lang.modules"   %% "scala-parser-combinators"   % scalaParsersVer,
-  "com.typesafe.akka"        %% "akka-actor"                 % akkaVer,
-  "com.typesafe.akka"        %% "akka-slf4j"                 % akkaVer,
-  "com.typesafe.akka"        %% "akka-testkit"               % akkaVer            % "test",
+  AkkaDependencies.scala_lang_modules,
+  AkkaDependencies.akka_actor,
+  AkkaDependencies.akka_slf4j,
+  AkkaDependencies.akka_testkit,
 
   // these are to avoid sbt warnings about transitive dependency conflicts
-  "com.typesafe.akka"               %  "akka-http-experimental_2.11" % "2.0.1",
-  "com.typesafe.akka"               %% "akka-stream-kafka"          % "0.12",
-  "joda-time"                       %  "joda-time"                  % "2.9.3",
-  "de.heikoseeberger"               %% "akka-http-json4s"           % "1.6.0",
-  "org.json4s"                      %% "json4s-jackson"             % "3.2.11",
-  "com.datastax.cassandra"   % "cassandra-driver-core"       % cassandraVer
+  AkkaDependencies.akka_http,
+  AkkaDependencies.akka_stream_kafka,
+  AkkaDependencies.akka_http_json4s,
+  AkkaDependencies.json4s_jackson,
+  AkkaDependencies.cassandra_driver_core
 ).map(_. excludeAll(
   ExclusionRule(organization = "org.slf4j", artifact = "slf4j-log4j12"),
   ExclusionRule(organization = "com.sun.jdmk"),
@@ -120,14 +105,14 @@ lazy val akkaDependencies = Seq(
 
 //noinspection ScalaStyle
 lazy val sparkDependencies = Seq(
-  "com.datastax.spark"              %% "spark-cassandra-connector"  % sparkConnector,
-  "org.apache.spark"                %% "spark-streaming-kafka-0-10"      % spark,
-  "org.apache.spark"                %% "spark-core"                 % spark           % "provided",
-  "org.apache.spark"                %% "spark-streaming"            % spark           % "provided",
-  "org.apache.spark"                %% "spark-catalyst"             % spark           % "provided",
-  "org.apache.spark"                %% "spark-sql"                  % spark           % "provided",
-  "org.apache.spark"                %% "spark-mllib"                % spark           % "provided",
-  "org.scalanlp"                    %% "nak"                        % "1.3"
+  SparkDependencies.spark_cassandra_connector,
+  SparkDependencies.spark_streaming_kafka,
+  SparkDependencies.spark_core,
+  SparkDependencies.spark_streaming,
+  SparkDependencies.spark_catalyst,
+  SparkDependencies.spark_sql,
+  SparkDependencies.spark_mllib,
+  SparkDependencies.scalanlp
 ).map(_.excludeAll(
   ExclusionRule(organization = "org.slf4j", artifact = "slf4j-log4j12"),
   ExclusionRule(organization = "org.ow2.asm", artifact = "asm-util"),
@@ -141,19 +126,19 @@ lazy val sparkDependencies = Seq(
 ))
 
 val flinkDependencies = Seq(
-  ("org.apache.flink" % "flink-core" % flinkVersion % "provided")
+  (FlinkDependencies.flink_core)
     .exclude("com.esotericsoftware.kryo", "kryo"),
-  "org.apache.flink" %% "flink-scala" % flinkVersion % "provided",
-  ("org.apache.flink" %% "flink-streaming-java" % flinkVersion % "provided")
+  FlinkDependencies.flink_scala,
+  (FlinkDependencies.flink_streaming_java)
     .exclude("com.esotericsoftware.kryo", "kryo"),
-  ("org.apache.flink" %% "flink-streaming-scala" % flinkVersion % "provided")
+  (FlinkDependencies.flink_streaming_scala)
     .exclude("com.esotericsoftware.kryo", "kryo")
     .exclude("io.netty", "netty-all"),
-  "org.apache.flink" %% "flink-connector-kafka-0.10" % flinkVersion,
-  "org.apache.flink" %% "flink-connector-cassandra" % flinkVersion,
-  ("org.apache.flink" %% "flink-clients" % flinkVersion)
+  FlinkDependencies.flink_connector_kafka,
+  FlinkDependencies.flink_connector_cassandra,
+  (FlinkDependencies.flink_client)
     .exclude("com.esotericsoftware.kryo", "kryo"),
-  "com.codahale.metrics" % "metrics-core" % "3.0.2"
+  FlinkDependencies.metrics_core
 ).map(_.excludeAll(
   ExclusionRule(organization = "org.slf4j", artifact = "slf4j-log4j12"),
   ExclusionRule(organization = "com.sun.jdmk"),
@@ -166,17 +151,16 @@ val flinkDependencies = Seq(
 
 //noinspection ScalaStyle
 lazy val logDependencies = Seq(
-  "org.slf4j"                       % "slf4j-api"                           % Slf4j,
-  "org.apache.logging.log4j"        % "log4j-1.2-api"                       % Log4j2,
-  "org.apache.logging.log4j"        % "log4j-slf4j-impl"                    % Log4j2,
-  "org.apache.logging.log4j"        % "log4j-api"                           % Log4j2,
-  "org.apache.logging.log4j"        % "log4j-core"                          % Log4j2,
-  "org.slf4j"                       % "jcl-over-slf4j"                      % Slf4j,
-  "org.slf4j"                       % "jul-to-slf4j"                        % Slf4j
+  LogDependencies.log4j12_api,
+  LogDependencies.slf4j,
+  LogDependencies.log4j_api,
+  LogDependencies.log4j_core,
+  LogDependencies.jcl,
+  LogDependencies.jul
 )
 
 lazy val akkaHttpDependencies = Seq(
-  "com.typesafe.akka"               %% "akka-http-experimental"     % akkaVer,
+  AkkaDependencies.akka_http,
   "com.typesafe.akka"               %% "akka-http-testkit-experimental" % "2.4.2-RC3"
 )
 
@@ -224,7 +208,7 @@ lazy val root = (project in file(".")).
   settings(commonSettings: _*).
   settings(
     name := "BusFloatingData",
-    scalaVersion := scalaVer
+    scalaVersion := Version.scalaVer
   ).
   aggregate(commons, ingest, sparkDigest, akkaServer, flinkDigest)
 
@@ -233,7 +217,7 @@ lazy val commons = (project in file("commons")).
   settings(commonSettings: _*).
   settings(
     name := "commons",
-    scalaVersion := scalaVer,
+    scalaVersion := Version.scalaVer,
     libraryDependencies ++= kafkaDependencies,
     headers := Map(
       "scala" -> Apache2_0("2016", "Achim Nierbeck"),
@@ -246,10 +230,9 @@ lazy val ingest = (project in file("akka-ingest")).
   settings(commonSettings: _*).
   settings(
     name := "akka-ingest",
-    scalaVersion := scalaVer,
+    scalaVersion := Version.scalaVer,
     libraryDependencies ++= akkaDependencies,
     libraryDependencies ++= kafkaDependencies,
-    libraryDependencies += "com.datastax.cassandra" % "cassandra-driver-core" % cassandraVer,
     mainClass in (Compile,run) := Some("de.nierbeck.floating.data.stream.StreamToKafkaApp"),
     headers := Map(
       "scala" -> Apache2_0("2016", "Achim Nierbeck"),
@@ -264,7 +247,7 @@ lazy val sparkDigest = (project in file("spark-digest")).
     name := "spark-digest",
     libraryDependencies ++= sparkDependencies,
     libraryDependencies ++= kafkaDependencies,
-    scalaVersion := scalaVer,
+    scalaVersion := Version.scalaVer,
     mainClass in (run) := Some("de.nierbeck.floating.data.stream.spark.KafkaToCassandraSparkApp"),
     headers := Map(
       "scala" -> Apache2_0("2016", "Achim Nierbeck"),
@@ -306,14 +289,12 @@ lazy val akkaServer = (project in file("akka-server")).
   enablePlugins(AutomateHeaderPlugin).
   settings(
     name := "akka-server",
-    scalaVersion := scalaVer,
+    scalaVersion := Version.scalaVer,
     libraryDependencies ++= akkaDependencies,
     libraryDependencies ++= akkaHttpDependencies,
     libraryDependencies ++= kafkaDependencies,
-    libraryDependencies += "org.scalatest" %% "scalatest" % scalaTestVer % "test",
     libraryDependencies += "com.lambdaworks" %% "jacks" % "2.5.2",
-    libraryDependencies += "com.datastax.cassandra" % "cassandra-driver-core" % cassandraVer,
-    crossScalaVersions := Seq(scalaVer),
+    crossScalaVersions := Seq(Version.scalaVer),
     headers := Map(
       "scala" -> Apache2_0("2016", "Achim Nierbeck"),
       "conf" -> Apache2_0("2016", "Achim Nierbeck", "#")
@@ -327,12 +308,11 @@ lazy val flinkDigest = (project in file("flink-digest")).
   settings(
     name := "flink-digest",
     fork in run := true,
-    scalaVersion := scalaVer,
+    scalaVersion := Version.scalaVer,
     libraryDependencies ++= kafkaDependencies,
     libraryDependencies ++= flinkDependencies,
-    libraryDependencies += "org.scalatest" %% "scalatest" % scalaTestVer % "test",
     mainClass in (run) := Some("de.nierbeck.floating.data.stream.flink.KafkaToCassandraFlinkApp"),
-    crossScalaVersions := Seq(scalaVer),
+    crossScalaVersions := Seq(Version.scalaVer),
     headers := Map(
       "scala" -> Apache2_0("2016", "Achim Nierbeck"),
       "conf" -> Apache2_0("2016", "Achim Nierbeck", "#")
@@ -352,6 +332,7 @@ lazy val flinkDigest = (project in file("flink-digest")).
       case PathList("com", "datastax", "driver", "core", xs @ _ *) => MergeStrategy.first
       case PathList("org", "apache", "commons", xs @_ *) => MergeStrategy.last
       case PathList("META-INF", "io.netty.versions.properties") => MergeStrategy.last
+      case PathList("com", "sun", xs @_ * ) => MergeStrategy.discard
       case PathList("akka", xs @_ * ) => MergeStrategy.discard
       case PathList("scala", xs @_ * ) => MergeStrategy.discard
       case PathList("assets", xs @_ * ) => MergeStrategy.discard
