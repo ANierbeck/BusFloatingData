@@ -16,25 +16,19 @@
 
 package de.nierbeck.floating.data.serializer
 
+import java.io.{ByteArrayInputStream, ObjectInputStream}
 import java.util
 
-import de.nierbeck.floating.data.domain.{TiledVehicle, Vehicle}
+import de.nierbeck.floating.data.domain.Vehicle
 import org.apache.kafka.common.serialization.Deserializer
-import org.nustaq.serialization.FSTConfiguration
 
-object TiledVehicleFstDeserializer {
-  val fst = FSTConfiguration.createDefaultConfiguration()
-}
-
-class TiledVehicleFstDeserializer() extends Deserializer[TiledVehicle] {
-  import TiledVehicleFstDeserializer._
-
-  override def deserialize(topic: String, data: Array[Byte]): TiledVehicle = {
-    fst.asObject(data).asInstanceOf[TiledVehicle]
-  }
-
+class VehicleDeserializer extends Deserializer[Vehicle] {
   override def configure(configs: util.Map[String, _], isKey: Boolean): Unit = {}
 
   override def close(): Unit = {}
 
+  override def deserialize(topic: String, data: Array[Byte]): Vehicle = {
+    val ois = new ObjectInputStream(new ByteArrayInputStream(data))
+    ois.readObject().asInstanceOf[Vehicle]
+  }
 }

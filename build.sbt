@@ -20,6 +20,7 @@ import de.heikoseeberger.sbtheader.AutomateHeaderPlugin
 import sbt.Keys._
 import sbt._
 import sbtassembly.MergeStrategy
+//import Docker.autoImport.exposedPorts
 
 /**
  * root build.sbt
@@ -164,6 +165,19 @@ lazy val akkaHttpDependencies = Seq(
   "com.typesafe.akka"               %% "akka-http-testkit-experimental" % "2.4.2-RC3"
 )
 
+/*
+lazy val vertxDependencies = Seq(
+  VertxDependencies.vertx_lang_scala,
+  VertxDependencies.vertx_web,
+  VertxDependencies.vertx_web_client,
+  //required to get rid of some warnings emitted by the scala-compile
+  VertxDependencies.vertx_codegen,
+  CommonDependencies.scalatest_embedded_cassandra,
+  VertxDependencies.vertx_cassandra,
+  CommonDependencies.scala_xml
+)
+*/
+
 lazy val commonSettings = Seq(
   organization := "de.nierbeck.floating.data",
   scalacOptions ++= compileOptions,
@@ -219,6 +233,7 @@ lazy val commons = (project in file("commons")).
     name := "commons",
     scalaVersion := Version.scalaVer,
     libraryDependencies ++= kafkaDependencies,
+    crossScalaVersions := Seq(Version.scalaVer, Version.scalaVertxVer),
     headers := Map(
       "scala" -> Apache2_0("2016", "Achim Nierbeck"),
       "conf" -> Apache2_0("2016", "Achim Nierbeck", "#")
@@ -353,7 +368,25 @@ lazy val flinkDigest = (project in file("flink-digest")).
     addArtifact(artifact in (Compile, assembly), assembly)
   ).dependsOn(commons)
 
+/*
+lazy val vertxIngest = (project in file("vertx-ingest")).
+  settings(commonSettings: _*).
+  enablePlugins(JavaAppPackaging, AutomateHeaderPlugin).
+  settings(
+    name := "vertx-ingest",
+    scalaVersion := Version.scalaVertxVer,
+    libraryDependencies ++= vertxDependencies,
+    crossScalaVersions := Seq(Version.scalaVertxVer),
+    headers := Map(
+      "scala" -> Apache2_0("2016", "Achim Nierbeck"),
+      "conf" -> Apache2_0("2016", "Achim Nierbeck", "#")
+    )
+  ).dependsOn(commons)
+*/
+
+
 //create project
+//addCommandAlias("create", ";clean ;so commons/compile; so commons/test; so commons/publishLocal; ingest/test ;ingest/publishLocal; akkaServer/test ;akksServer/publishLocal; sparkDigest/test; sparkDigest/publishLocal; so vertxIngest/test; so vertxIngest/publishLocal")
 addCommandAlias("create", ";clean ;test ;publishLocal")
 
 //create deployment artefacts for DC/OS system

@@ -17,11 +17,11 @@
 package de.nierbeck.floating.data.serializer
 
 import java.io._
+import java.nio.file.{Files, Paths}
 import java.util.Date
-import java.nio.file.{ Files, Paths }
 
 import de.nierbeck.floating.data.domain.Vehicle
-import org.scalatest.{ FlatSpec, Matchers }
+import org.scalatest.{FlatSpec, Matchers}
 
 class TestKryoSerialization extends FlatSpec with Matchers {
 

@@ -93,3 +93,8 @@ To create those artefacts just call
 `sbt createAWS`
 
 this will create all uber-jars and runnable Docker images. 
+
+
+# how to kill a lunatic running framework 
+
+curl -d'frameworkId=frameworkId' master.mesos:5050/master/teardown

@@ -16,24 +16,21 @@
 
 package de.nierbeck.floating.data.serializer
 
-import java.io.ByteArrayInputStream
 import java.util
 
-import com.esotericsoftware.kryo.io.Input
-import com.twitter.chill.ScalaKryoInstantiator
-import de.nierbeck.floating.data.domain.Vehicle
+import de.nierbeck.floating.data.domain.TiledVehicle
 import org.apache.kafka.common.serialization.Deserializer
 import org.nustaq.serialization.FSTConfiguration
 
-object VehicleFstDeserializer {
+object TiledVehicleFstDeserializer {
   val fst = FSTConfiguration.createDefaultConfiguration()
 }
 
-class VehicleFstDeserializer() extends Deserializer[Vehicle] {
-  import VehicleFstDeserializer._
+class TiledVehicleFstDeserializer() extends Deserializer[TiledVehicle] {
+  import TiledVehicleFstDeserializer._
 
-  override def deserialize(topic: String, data: Array[Byte]): Vehicle = {
-    fst.asObject(data).asInstanceOf[Vehicle]
+  override def deserialize(topic: String, data: Array[Byte]): TiledVehicle = {
+    fst.asObject(data).asInstanceOf[TiledVehicle]
   }
 
   override def configure(configs: util.Map[String, _], isKey: Boolean): Unit = {}

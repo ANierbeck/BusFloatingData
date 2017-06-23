@@ -14,20 +14,17 @@
  * limitations under the License.
  */
 
-package de.nierbeck.floating.data.serializer
+package de.nierbeck.vertx.data.stream
 
-import java.io.{ ByteArrayInputStream, ObjectInputStream }
+import de.nierbeck.vertx.VerticleTesting
+import org.scalatest._
 
-import de.nierbeck.floating.data.domain.Vehicle
-import kafka.serializer.Decoder
-import kafka.utils.VerifiableProperties
+class HttpClientVerticleSpec extends VerticleTesting[HttpClientVerticle] with Matchers with withRunningCassandra {
 
-/**
- * Created by anierbeck on 09.05.16.
- */
-class VehicleDecoder(props: VerifiableProperties) extends Decoder[Vehicle] {
-  override def fromBytes(bytes: Array[Byte]): Vehicle = {
-    val ois = new ObjectInputStream(new ByteArrayInputStream(bytes))
-    ois.readObject().asInstanceOf[Vehicle]
+  "HttpClientVerticle" should "print something" in {
+    println("test run ...")
+    val x = true
+    x should be (true)
   }
+
 }
