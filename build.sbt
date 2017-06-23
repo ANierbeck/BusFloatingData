@@ -162,7 +162,8 @@ lazy val logDependencies = Seq(
 
 lazy val akkaHttpDependencies = Seq(
   AkkaDependencies.akka_http,
-  "com.typesafe.akka"               %% "akka-http-testkit-experimental" % "2.4.2-RC3"
+  "com.typesafe.akka"               %% "akka-http-testkit-experimental" % "2.4.2-RC3",
+  CommonDependencies.scalatest_embedded_cassandra
 )
 
 /*
