@@ -141,15 +141,14 @@ function init_cluster_spark_job {
              "--driver-cores", "0.1",
              "--driver-memory", "1G",
              "--total-executor-cores", "4",
-             "--class", "de.nierbeck.floating.data.stream.spark.KafkaToCassandraSparkApp",
+             "--class", "de.nierbeck.floating.data.stream.spark.CalcClusterSparkApp",
              "https://oss.sonatype.org/content/repositories/snapshots/de/nierbeck/floating/data/spark-digest_2.11/0.2.2-SNAPSHOT/spark-digest_2.11-0.2.2-SNAPSHOT-assembly.jar",
-             "METRO-Vehicles", "$CASSANDRA_HOST:$CASSANDRA_PORT", "$KAFKA_HOST:$KAFKA_PORT"]
-
+             "$CASSANDRA_HOST:$CASSANDRA_PORT"]
   }
 }
 EOF
     dcos job add /opt/smack/conf/init_cluster_spark_job.json
-    dcos job run init-cluster-spark-job
+    #dcos job run init-cluster-spark-job
 }
 
 function init_ingest_app {
@@ -260,7 +259,7 @@ function install_smack {
     dcos package install --cli kafka
     dcos package install --yes spark
     dcos package install --cli spark
-    dcos package install --yes zeppelin --package-version=0.6.0
+    #dcos package install --yes zeppelin --package-version=0.6.0
 }
 
 function install_metering {
@@ -325,6 +324,9 @@ function install_decanter_monitor {
   ]
 }
 EOF
+
+    dcos marathon app add /opt/smack/conf/decanter.json
+
 }
 
 init
