@@ -48,6 +48,8 @@ lazy val compileOptions = Seq(
   "-Xcheckinit"
 )
 
+scalaVersion := Version.scalaVer
+
 resolvers in ThisBuild += "Apache Snapshots" at "https://repository.apache.org/snapshots/"
 resolvers in ThisBuild += Resolver.bintrayRepo("hseeberger", "maven")
 resolvers in ThisBuild += Resolver.mavenLocal
@@ -93,8 +95,7 @@ lazy val akkaDependencies = Seq(
   AkkaDependencies.akka_http,
   AkkaDependencies.akka_stream_kafka,
   AkkaDependencies.akka_http_json4s,
-  AkkaDependencies.json4s_jackson,
-  AkkaDependencies.cassandra_driver_core
+  AkkaDependencies.json4s_jackson
 ).map(_. excludeAll(
   ExclusionRule(organization = "org.slf4j", artifact = "slf4j-log4j12"),
   ExclusionRule(organization = "com.sun.jdmk"),
@@ -125,7 +126,7 @@ lazy val sparkDependencies = Seq(
   ExclusionRule(organization = "javax.jms"),
   ExclusionRule(organization = "io.netty", artifact = "netty-all")
 ))
-
+/*
 val flinkDependencies = Seq(
   (FlinkDependencies.flink_core)
     .exclude("com.esotericsoftware.kryo", "kryo"),
@@ -149,22 +150,59 @@ val flinkDependencies = Seq(
   ExclusionRule(organization = "javax.jms"),
   ExclusionRule(organization = "com.esotericsoftware.kryo", artifact = "kryo")
 ))
+*/
+
+val flinkDependencies = Seq(
+  ("org.apache.flink" % "flink-core" % Version.flinkVersion % "provided")
+    .exclude("com.esotericsoftware.kryo", "kryo"),
+  "org.apache.flink" %% "flink-scala" % Version.flinkVersion % "provided",
+  ("org.apache.flink" %% "flink-streaming-java" % Version.flinkVersion % "provided")
+    .exclude("com.esotericsoftware.kryo", "kryo"),
+  ("org.apache.flink" %% "flink-streaming-scala" % Version.flinkVersion % "provided")
+    .exclude("com.esotericsoftware.kryo", "kryo")
+    .exclude("io.netty", "netty-all"),
+  "org.apache.flink" %% "flink-connector-kafka-0.10" % Version.flinkVersion,
+  "org.apache.flink" %% "flink-connector-cassandra" % Version.flinkVersion,
+  ("org.apache.flink" %% "flink-clients" % Version.flinkVersion)
+    .exclude("com.esotericsoftware.kryo", "kryo"),
+  "com.codahale.metrics" % "metrics-core" % "3.0.2"
+).map(_.excludeAll(
+  ExclusionRule(organization = "org.slf4j", artifact = "slf4j-log4j12"),
+  ExclusionRule(organization = "com.sun.jdmk"),
+  ExclusionRule(organization = "com.sun.jmx"),
+  ExclusionRule(organization = "log4j"),
+  ExclusionRule(organization = "org.spark-project"),
+  ExclusionRule(organization = "javax.jms"),
+  ExclusionRule(organization = "com.esotericsoftware.kryo", artifact = "kryo")
+))
 
 //noinspection ScalaStyle
+/*
 lazy val logDependencies = Seq(
-  LogDependencies.log4j12_api,
   LogDependencies.slf4j,
   LogDependencies.log4j_api,
   LogDependencies.log4j_core,
   LogDependencies.jcl,
   LogDependencies.jul
 )
+*/
+lazy val logDependencies = Seq(
+  "org.slf4j"                       % "slf4j-api"                           % Version.Slf4j,
+  "org.apache.logging.log4j"        % "log4j-1.2-api"                       % Version.Log4j2,
+  "org.apache.logging.log4j"        % "log4j-slf4j-impl"                    % Version.Log4j2,
+  "org.apache.logging.log4j"        % "log4j-api"                           % Version.Log4j2,
+  "org.apache.logging.log4j"        % "log4j-core"                          % Version.Log4j2,
+  "org.slf4j"                       % "jcl-over-slf4j"                      % Version.Slf4j,
+  "org.slf4j"                       % "jul-to-slf4j"                        % Version.Slf4j
+)
 
 lazy val akkaHttpDependencies = Seq(
   AkkaDependencies.akka_http,
   "com.typesafe.akka"               %% "akka-http-testkit-experimental" % "2.4.2-RC3",
   CommonDependencies.scalatest_embedded_cassandra
-)
+).map(_.excludeAll(
+  ExclusionRule(organization = "org.slf4j", artifact = "slf4j-log4j12")
+))
 
 /*
 lazy val vertxDependencies = Seq(
@@ -249,6 +287,7 @@ lazy val ingest = (project in file("akka-ingest")).
     scalaVersion := Version.scalaVer,
     libraryDependencies ++= akkaDependencies,
     libraryDependencies ++= kafkaDependencies,
+    libraryDependencies += AkkaDependencies.cassandra_driver_core,
     mainClass in (Compile,run) := Some("de.nierbeck.floating.data.stream.StreamToKafkaApp"),
     headers := Map(
       "scala" -> Apache2_0("2016", "Achim Nierbeck"),
@@ -310,6 +349,7 @@ lazy val akkaServer = (project in file("akka-server")).
     libraryDependencies ++= akkaHttpDependencies,
     libraryDependencies ++= kafkaDependencies,
     libraryDependencies += "com.lambdaworks" %% "jacks" % "2.5.2",
+    libraryDependencies += AkkaDependencies.cassandra_driver_core,
     crossScalaVersions := Seq(Version.scalaVer),
     headers := Map(
       "scala" -> Apache2_0("2016", "Achim Nierbeck"),
@@ -327,8 +367,10 @@ lazy val flinkDigest = (project in file("flink-digest")).
     scalaVersion := Version.scalaVer,
     libraryDependencies ++= kafkaDependencies,
     libraryDependencies ++= flinkDependencies,
+    libraryDependencies += "org.scalatest" %% "scalatest" % Version.scalaTestVer % "test",
     mainClass in (run) := Some("de.nierbeck.floating.data.stream.flink.KafkaToCassandraFlinkApp"),
-    crossScalaVersions := Seq(Version.scalaVer),
+    run in Compile <<= Defaults.runTask(fullClasspath in Compile, mainClass in (Compile, run), runner in (Compile, run)),
+    //crossScalaVersions := Seq(Version.scalaVer),
     headers := Map(
       "scala" -> Apache2_0("2016", "Achim Nierbeck"),
       "conf" -> Apache2_0("2016", "Achim Nierbeck", "#")

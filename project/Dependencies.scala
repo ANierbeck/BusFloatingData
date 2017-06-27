@@ -13,7 +13,7 @@ object Version {
   final val sparkConnector = "2.0.1"
   final val circeVersion   = "0.4.1"
   final val kafkaVersion   = "0.10.1.1"
-  final val flinkVersion   = "1.2.0"
+  final val flinkVersion   = "1.3.0"
   final val Vertx          = "3.4.2"
 }
 

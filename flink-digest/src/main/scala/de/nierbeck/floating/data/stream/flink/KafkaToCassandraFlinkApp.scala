@@ -25,9 +25,8 @@ import de.nierbeck.floating.data.tiler.TileCalc
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
 import org.apache.flink.streaming.connectors.cassandra.{CassandraSink, ClusterBuilder}
-import org.apache.flink.streaming.connectors.kafka.partitioner.FixedPartitioner
 import org.apache.flink.streaming.connectors.kafka.{FlinkKafkaConsumer010, FlinkKafkaProducer010}
-import org.apache.flink.streaming.util.serialization.{KeyedSerializationSchemaWrapper, SerializationSchema}
+import org.apache.flink.streaming.util.serialization.{KeyedSerializationSchemaWrapper, SerializationSchema, DeserializationSchema}
 
 object KafkaToCassandraFlinkApp {
 
