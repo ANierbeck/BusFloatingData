@@ -1,20 +1,22 @@
 import sbt._
 
 object Version {
-  final val akkaVer        = "2.4.10"
-  final val scalaVer       = "2.11.8"
-  final val scalaVertxVer  = "2.12.2"
-  final val scalaParsersVer= "1.0.4"
-  final val scalaTestVer   = "3.0.1"
-  final val cassandraVer   = "3.1.2"
-  final val Log4j2         = "2.8.2"
-  final val Slf4j          = "1.7.18"
-  final val spark          = "2.1.1"
-  final val sparkConnector = "2.0.1"
-  final val circeVersion   = "0.4.1"
-  final val kafkaVersion   = "0.10.1.1"
-  final val flinkVersion   = "1.3.0"
-  final val Vertx          = "3.4.2"
+  final val akkaVer         = "2.4.19"
+  final val akkaHttp        = "10.0.9"
+  final val akkaStreamKafka = "0.16"
+  final val scalaVer        = "2.11.8"
+  final val scalaVertxVer   = "2.12.2"
+  final val scalaParsersVer = "1.0.4"
+  final val scalaTestVer    = "3.0.1"
+  final val cassandraVer    = "3.1.2"
+  final val Log4j2          = "2.8.2"
+  final val Slf4j           = "1.7.18"
+  final val spark           = "2.1.1"
+  final val sparkConnector  = "2.0.1"
+  final val circeVersion    = "0.4.1"
+  final val kafkaVersion    = "0.10.2.1"
+  final val flinkVersion    = "1.3.0"
+  final val Vertx           = "3.4.2"
 }
 
 object CommonDependencies {
@@ -42,9 +44,9 @@ object AkkaDependencies {
   val akka_testkit       = "com.typesafe.akka"        %% "akka-testkit"               % Version.akkaVer            % "test"
 
   // these are to avoid sbt warnings about transitive dependency conflicts
-  val akka_http             = "com.typesafe.akka"               %  "akka-http-experimental_2.11"  % "2.0.1"
-  val akka_stream_kafka     = "com.typesafe.akka"               %% "akka-stream-kafka"            % "0.12"
-  val akka_http_json4s      = "de.heikoseeberger"               %% "akka-http-json4s"             % "1.6.0"
+  val akka_http             = "com.typesafe.akka"               %% "akka-http"        % Version.akkaHttp
+  val akka_stream_kafka     = "com.typesafe.akka"               %% "akka-stream-kafka"            % Version.akkaStreamKafka
+  val akka_http_json4s      = "de.heikoseeberger"               %% "akka-http-json4s"             % "1.17.0"
   val json4s_jackson        = "org.json4s"                      %% "json4s-jackson"               % "3.2.11"
   val cassandra_driver_core = "com.datastax.cassandra"          % "cassandra-driver-core"         % Version.cassandraVer
 }

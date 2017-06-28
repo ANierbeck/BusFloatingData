@@ -370,7 +370,6 @@ lazy val flinkDigest = (project in file("flink-digest")).
     libraryDependencies += "org.scalatest" %% "scalatest" % Version.scalaTestVer % "test",
     mainClass in (run) := Some("de.nierbeck.floating.data.stream.flink.KafkaToCassandraFlinkApp"),
     run in Compile <<= Defaults.runTask(fullClasspath in Compile, mainClass in (Compile, run), runner in (Compile, run)),
-    //crossScalaVersions := Seq(Version.scalaVer),
     headers := Map(
       "scala" -> Apache2_0("2016", "Achim Nierbeck"),
       "conf" -> Apache2_0("2016", "Achim Nierbeck", "#")
