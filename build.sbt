@@ -450,4 +450,4 @@ addCommandAlias("submitKafkaCassandra", "sparkDigest/sparkSubmit --master local[
 addCommandAlias("submitClusterSpark", "sparkDigest/sparkSubmit --master local[2] --class de.nierbeck.floating.data.stream.spark.CalcClusterSparkApp -- localhost:9042")
 
 addCommandAlias("publishAll", ";sparkDigest/assembly ;flinkDigest/assembly ;publish-signed; ingest/docker:publish; akkaServer/docker:publish")
-addCommandAlias("createAWS", ";create ;publishAll")
+addCommandAlias("createAWS", ";create ;publish-signed; ingest/docker:publish; akkaServer/docker:publish")
