@@ -164,8 +164,9 @@ val flinkDependencies = Seq(
   "org.apache.flink" %% "flink-connector-kafka-0.10" % Version.flinkVersion,
   "org.apache.flink" %% "flink-connector-cassandra" % Version.flinkVersion,
   ("org.apache.flink" %% "flink-clients" % Version.flinkVersion)
+    .exclude("io.netty", "netty-all")
     .exclude("com.esotericsoftware.kryo", "kryo"),
-  "com.codahale.metrics" % "metrics-core" % "3.0.2"
+  "io.dropwizard.metrics" % "metrics-core" % "3.1.2"
 ).map(_.excludeAll(
   ExclusionRule(organization = "org.slf4j", artifact = "slf4j-log4j12"),
   ExclusionRule(organization = "com.sun.jdmk"),
@@ -173,7 +174,8 @@ val flinkDependencies = Seq(
   ExclusionRule(organization = "log4j"),
   ExclusionRule(organization = "org.spark-project"),
   ExclusionRule(organization = "javax.jms"),
-  ExclusionRule(organization = "com.esotericsoftware.kryo", artifact = "kryo")
+  ExclusionRule(organization = "com.esotericsoftware.kryo", artifact = "kryo"),
+  ExclusionRule(organization = "io.netty", artifact = "netty-all")
 ))
 
 //noinspection ScalaStyle
@@ -447,5 +449,5 @@ addCommandAlias("runFlink", "flinkDigest/run METRO-Vehicles localhost:9042 local
 addCommandAlias("submitKafkaCassandra", "sparkDigest/sparkSubmit --master local[2] --class de.nierbeck.floating.data.stream.spark.KafkaToCassandraSparkApp -- METRO-Vehicles localhost:9042 localhost:9092")
 addCommandAlias("submitClusterSpark", "sparkDigest/sparkSubmit --master local[2] --class de.nierbeck.floating.data.stream.spark.CalcClusterSparkApp -- localhost:9042")
 
-addCommandAlias("createAWS", ";clean ;test ;publishLocal ;sparkDigest/assembly ;flinkDigest/assembly ;publish-signed; ingest/docker:publish; akkaServer/docker:publish")
 addCommandAlias("publishAll", ";sparkDigest/assembly ;flinkDigest/assembly ;publish-signed; ingest/docker:publish; akkaServer/docker:publish")
+addCommandAlias("createAWS", ";create ;publishAll")

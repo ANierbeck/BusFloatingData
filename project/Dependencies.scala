@@ -17,6 +17,7 @@ object Version {
   final val kafkaVersion    = "0.10.2.1"
   final val flinkVersion    = "1.3.0"
   final val Vertx           = "3.4.2"
+  final val metricsVersion  = "3.1.2"
 }
 
 object CommonDependencies {
@@ -70,7 +71,7 @@ object FlinkDependencies {
   val flink_connector_kafka     = "org.apache.flink"     %% "flink-connector-kafka-0.10"  % Version.flinkVersion
   val flink_connector_cassandra = "org.apache.flink"     %% "flink-connector-cassandra"   % Version.flinkVersion
   val flink_client              = "org.apache.flink"     %% "flink-clients"               % Version.flinkVersion
-  val metrics_core              = "com.codahale.metrics" %  "metrics-core"                % "3.0.2"
+  val metrics_core              = "io.dropwizard.metrics" %  "metrics-core"               % Version.metricsVersion
 }
 
 object LogDependencies {
