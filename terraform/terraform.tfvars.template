@@ -5,3 +5,5 @@ ssh_public_key="ssh-rsa ****** bernd.zuther@codecentric.de"
 
 openvpn_admin_user="openvpn"
 openvpn_admin_pw="******"
+
+exhibitor_uid="doyourownID"
