@@ -199,7 +199,7 @@
       "s3_prefix": |-
         ${stack_name}
     "late_bound_package_id": |-
-      dcos-provider-ea3199f08595a41d4f620011d4ed694ae3dc8d8d-aws--setup
+      dcos-provider-693350afac89c67023b39be99664109dde17dbdd-aws--setup
   "owner": |-
     root
   "path": |-
