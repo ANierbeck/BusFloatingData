@@ -379,6 +379,7 @@ lazy val flinkDigest = (project in file("flink-digest")).
     assemblyExcludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
       cp.filter(_.data.getName == "log4j-1.2.17.jar")
     },
+    /*
     assemblyMergeStrategy in assembly := {
       case PathList("org", "apache", "log4j", "spi", xs @_ * ) => MergeStrategy.first
       case PathList("org", "apache", "log4j", "xml", xs @_ * ) => MergeStrategy.first
@@ -401,6 +402,26 @@ lazy val flinkDigest = (project in file("flink-digest")).
       case PathList("linux", xs @_ * ) => MergeStrategy.discard
       case PathList("win32", xs @_ * ) => MergeStrategy.discard
       case PathList("webapps", xs @_ * ) => MergeStrategy.discard
+      case PathList("javax", xs @_ * ) => MergeStrategy.discard
+      case PathList("scopt", xs @_ * ) => MergeStrategy.discard
+      case PathList("org", "jboss", xs @_ * ) => MergeStrategy.discard
+      case PathList("org", "mortbay", xs @_ * ) => MergeStrategy.discard
+      case x =>
+        val oldStrategy = (assemblyMergeStrategy in assembly).value
+        oldStrategy(x)
+    },*/
+    assemblyMergeStrategy in assembly := {
+      case PathList("de", xs @_ * ) => MergeStrategy.first
+      case PathList("com", "datastax", "driver", xs @_ *) => MergeStrategy.first
+      case PathList("org", "apache", "flink", "streaming", "connectors", xs @_ *) => MergeStrategy.first
+      case PathList("org", "apache", "flink", "streaming", "util", xs @_ *) => MergeStrategy.first
+      case PathList("org", "apache", "kafka", "common", xs @_ *) => MergeStrategy.first
+      case PathList("org", "nustaq", xs @_ *) => MergeStrategy.first
+      case PathList("org", "apache", "flink", "cassandra", "shaded", xs @_ *) => MergeStrategy.first
+      case PathList("org", "apache", "kafka", "clients", xs @_ *) => MergeStrategy.first
+      case PathList("com", "codahale", "metrics", xs @_ *) => MergeStrategy.first
+      case PathList("org", "joda", xs @_ *) => MergeStrategy.first
+      case PathList(xs @_ * ) => MergeStrategy.discard
       case x =>
         val oldStrategy = (assemblyMergeStrategy in assembly).value
         oldStrategy(x)

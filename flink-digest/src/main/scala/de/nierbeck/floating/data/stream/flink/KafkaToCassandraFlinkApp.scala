@@ -35,7 +35,7 @@ object KafkaToCassandraFlinkApp {
 
     assert(args.size == 3, "Please provide the following params: topicname cassandrahost:cassandraport kafkahost:kafkaport")
 
-    val kafkaConnect = args(2)
+    val kafkaConnect  = args(2)
     val cassandraHost = args(1).split(":").head
     val cassandraPort = args(1).split(":").reverse.head
     val consumerTopic = args(0)
