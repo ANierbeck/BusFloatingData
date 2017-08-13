@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
-docker build -t codecentric/bus-demo-schema .
-docker build -t codecentric/bus-demo-schema:3.0.7 .
+docker build -t anierbeck/bus-demo-schema .
+docker push anierbeck/bus-demo-schema

@@ -113,7 +113,7 @@ function init_cassandra_schema {
     "mem": 256,
     "disk": 0,
     "docker": {
-      "image": "codecentric/bus-demo-schema:3.0.7"
+      "image": "anierbeck/bus-demo-schema"
     }
   }
 }
@@ -206,6 +206,18 @@ EOF
     /usr/sbin/run-digest
 }
 
+function init_flink_job {
+    wget --no-check-certificate \
+         --no-cookies \
+         "https://oss.sonatype.org/content/repositories/snapshots/de/nierbeck/floating/data/flink-digest_2.11/0.3.0-SNAPSHOT/flink-digest_2.11-0.3.0-SNAPSHOT-assembly.jar" \
+         -O /tmp/flink-digest-assembly-0.3.0-SNAPSHOT.jar
+
+    dcos flink upload /tmp/flink-digest-assembly-0.3.0-SNAPSHOT.jar
+
+#    export FILE_NAME=dcos flink jars | jq .files[0].id
+#    dcos flink run $FILE_NAME
+}
+
 function init_dasboard {
     cat &> /opt/smack/conf/dashboard.json << EOF
 {
@@ -253,12 +265,51 @@ EOF
 }
 
 function install_smack {
+
+    cat &> /opt/smack/conf/flink_options.json << EOF
+{
+  "service": {
+    "name": "flink",
+    "slots": 1,
+    "parallelism-default": 1,
+    "role": "*",
+    "user": "root",
+    "log-level": "INFO",
+    "scala-2-11": true
+  },
+  "app-master": {
+    "cpus": 1,
+    "memory": 1024,
+    "heap": 256
+  },
+  "task-managers": {
+    "count": 1,
+    "cpus": 1,
+    "memory": 1024,
+    "heap": 512,
+    "memory-preallocation": true
+  },
+  "security": {
+    "kerberos": {
+      "use-ticket-cache": true
+    },
+    "ssl": {
+      "enabled": false,
+      "enabledAlgorithms": "TLS_RSA_WITH_AES_128_CBC_SHA",
+      "enableArtifactServerSSL": false
+    }
+  },
+  "hdfs": {}
+}
+EOF
+
     dcos package install --yes cassandra
     dcos package install --cli cassandra
     dcos package install --yes kafka
     dcos package install --cli kafka
     dcos package install --yes spark
     dcos package install --cli spark
+    dcos package install --yes --options=/opt/smack/conf/flink_options.json flink
     #dcos package install --yes zeppelin --package-version=0.6.0
 }
 
@@ -335,7 +386,7 @@ waited_until_marathon_is_running
 waited_until_dns_is_ready
 install_dcos_cli
 install_smack
-install_metering
+# install_metering
 waited_until_kafka_is_running
 export_kafka_connection
 waited_until_cassandra_is_running
@@ -346,4 +397,5 @@ init_ingest_app
 init_spark_jobs
 init_dasboard
 init_cluster_spark_job
-install_decanter_monitor
+init_flink_job
+# install_decanter_monitor
