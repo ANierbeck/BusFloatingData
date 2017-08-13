@@ -23,6 +23,8 @@ import akka.stream.ActorMaterializer
 import de.nierbeck.floating.data.serializer.TiledVehicleFstDeserializer
 import org.apache.kafka.common.serialization.ByteArrayDeserializer
 
+import scala.reflect.ClassTag
+
 
 /**
   * Just a simple router, which collects some VM stats and sends them to the provided
@@ -31,11 +33,11 @@ import org.apache.kafka.common.serialization.ByteArrayDeserializer
 
 object TiledVehiclesFromKafkaActor {
 
-  def props(router:ActorRef):Props = Props(new TiledVehiclesFromKafkaActor(router))
+  def props(router:ActorRef, topic:String, specializer: Stream ):Props = Props(new TiledVehiclesFromKafkaActor(router, topic, specializer))
 
 }
 
-class TiledVehiclesFromKafkaActor(router: ActorRef) extends Actor with ActorLogging {
+class TiledVehiclesFromKafkaActor(router: ActorRef, topic: String, specializer: Stream) extends Actor with ActorLogging {
 
   import de.nierbeck.floating.data.server.ServiceConfig._
   implicit val materializer = ActorMaterializer()
@@ -47,8 +49,16 @@ class TiledVehiclesFromKafkaActor(router: ActorRef) extends Actor with ActorLogg
     .withGroupId("group1")
 
 
-  val source = Consumer.atMostOnceSource(consumerSettings.withClientId("Akka-Client"), Subscriptions.topics("tiledVehicles"))
-  source.map(message => message.value).runForeach(vehicle => router ! vehicle)
+  val source = Consumer.atMostOnceSource(consumerSettings.withClientId("Akka-Client"), Subscriptions.topics(topic))
+  source
+    .map(message => message.value)
+    .runForeach(vehicle => {
+      val forwardVehicle = specializer match {
+        case SPARK => SparkVehicles(vehicle)
+        case FLINK => FlinkVehicles(vehicle)
+      }
+      router ! forwardVehicle
+    })
 
   override def receive: Actor.Receive = {
     case _ => // just ignore any messages

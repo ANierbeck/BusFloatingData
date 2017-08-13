@@ -36,6 +36,7 @@ class VehiclePublisher(router: ActorRef) extends ActorPublisher[String] with Act
 
   import akka.stream.actor.ActorPublisherMessage._
   import context._
+  import de.nierbeck.floating.data.server.actors.websocket._
 
   import scala.collection.mutable
 
@@ -44,6 +45,7 @@ class VehiclePublisher(router: ActorRef) extends ActorPublisher[String] with Act
 
   var queueUpdated = false
   var tileIds: Set[String] = Set()
+  var streamFilter: Stream = null
 
   // on startup, register with routee
   override def preStart() {
@@ -60,6 +62,11 @@ class VehiclePublisher(router: ActorRef) extends ActorPublisher[String] with Act
   }
 
   def receive: Receive = {
+
+    case stream: Stream => {
+      streamFilter = stream
+    }
+
     case bbox: BoundingBox => {
       log.info("received BBox changing behavior")
       tileIds = TileCalc.convertBBoxToTileIDs(bbox)
@@ -72,19 +79,41 @@ class VehiclePublisher(router: ActorRef) extends ActorPublisher[String] with Act
 
   def streamAndQueueVehicles: Receive = {
 
+    case stream: Stream => {
+      streamFilter = stream
+    }
+
     // receive new stats, add them to the queue, and quickly
     // exit.
-    case tiledVehicles: TiledVehicle=>
+    case sparkTiledVehicles: SparkVehicles => {
+      val tiledVehicles = sparkTiledVehicles.tiledVehicle
       // remove the oldest one from the queue and add a new one
       if (queue.size == MaxBufferSize) queue.dequeue()
-      if (tileIds.contains(tiledVehicles.tileId)) {
-        queue += Vehicle(tiledVehicles.id,tiledVehicles.time, tiledVehicles.latitude, tiledVehicles.longitude, tiledVehicles.heading, tiledVehicles.route_id, tiledVehicles.run_id, tiledVehicles.seconds_since_report)
+      if (tileIds.contains(tiledVehicles.tileId) && streamFilter == SPARK) {
+        queue += Vehicle(tiledVehicles.id, tiledVehicles.time, tiledVehicles.latitude, tiledVehicles.longitude, tiledVehicles.heading, tiledVehicles.route_id, tiledVehicles.run_id, tiledVehicles.seconds_since_report)
 
         if (!queueUpdated) {
           queueUpdated = true
           self ! QueueUpdated
         }
       }
+    }
+
+    // receive new stats, add them to the queue, and quickly
+    // exit.
+    case flinkTiledVehicles: FlinkVehicles => {
+      val tiledVehicles = flinkTiledVehicles.tiledVehicles
+      // remove the oldest one from the queue and add a new one
+      if (queue.size == MaxBufferSize) queue.dequeue()
+      if (tileIds.contains(tiledVehicles.tileId) && streamFilter == FLINK) {
+        queue += Vehicle(tiledVehicles.id, tiledVehicles.time, tiledVehicles.latitude, tiledVehicles.longitude, tiledVehicles.heading, tiledVehicles.route_id, tiledVehicles.run_id, tiledVehicles.seconds_since_report)
+
+        if (!queueUpdated) {
+          queueUpdated = true
+          self ! QueueUpdated
+        }
+      }
+    }
     // we receive this message if there are new items in the
     // queue. If we have a demand for messages send the requested
     // demand.

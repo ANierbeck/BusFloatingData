@@ -23,7 +23,7 @@ import akka.stream.scaladsl.{Flow, GraphDSL, Merge, Source}
 import de.nierbeck.floating.data.domain.Vehicle
 import GraphDSL.Implicits._
 import de.nierbeck.floating.data.server._
-import de.nierbeck.floating.data.server.actors.websocket.VehiclePublisher
+import de.nierbeck.floating.data.server.actors.websocket._
 
 /**
   */
@@ -46,6 +46,10 @@ object Flows {
           println(s"received message: $msg")
           if (msg.contains("close")) {
             router ! msg
+          } else if (msg.contains("spark")) {
+            router ! SPARK
+          } else if (msg.contains("flink")) {
+            router ! FLINK
           } else {
             val bbox = toBoundingBox(msg)
             println(s"transformedt to bbox: $bbox")

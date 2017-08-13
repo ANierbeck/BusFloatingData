@@ -8,7 +8,7 @@ import com.datastax.driver.mapping.annotations.Table;
 import java.math.BigInteger;
 import java.util.Date;
 
-@Table(keyspace = "streaming", name = "vehicles_by_tileid", readConsistency = "QUORUM", writeConsistency = "ONE", caseSensitiveKeyspace = false, caseSensitiveTable = false)
+@Table(keyspace = "streaming", name = "vehicles_by_tileid_flink", readConsistency = "QUORUM", writeConsistency = "ONE", caseSensitiveKeyspace = false, caseSensitiveTable = false)
 public class TiledVehiclePojo {
 
     @PartitionKey(value = 0)

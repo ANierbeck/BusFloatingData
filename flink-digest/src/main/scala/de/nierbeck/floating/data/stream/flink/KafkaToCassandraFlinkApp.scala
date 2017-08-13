@@ -120,7 +120,7 @@ object KafkaToCassandraFlinkApp {
 
     val producerConfig = FlinkKafkaProducer010.writeToKafkaWithTimestamps(
       tiledVehicleStream.javaStream,          // input stream
-      "tiledVehicles",                        // target topic
+      "flinkTiledVehicles",                   // target topic
       new TiledVehicleSerializationSchema,    // serialization schema
       properties                              // custom configuration for KafkaProducer (including broker list)
     )

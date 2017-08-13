@@ -1,8 +1,8 @@
 var self = this;
 
 
-self.getWebsocket = function() {
-    var path = "ws://"+ window.location.hostname +":8001/ws/vehicles";
+self.getWebsocket = function(path) {
+    //var path = "ws://"+ window.location.hostname +":8001/ws/vehicles";
     return new WebSocket(path);
 };
 
@@ -63,6 +63,10 @@ self.akkaServiceBasis = 'http://'+ window.location.hostname +':8000/vehicles/bou
 self.akkaHotSpotBasis = 'http://'+ window.location.hostname +':8000/hotspots/boundingBox?bbox='
 self.akkaRouteInfoService = 'http://'+ window.location.hostname +':8000/routeInfo/'
 self.akkaRouteService = 'http://'+ window.location.hostname +':8000/route/'
+self.websocketVehicles = 'ws://'+ window.location.hostname +':8001/ws/vehicles';
+
+self.sparkEnabled = true;
+self.flinkEnabled = false;
 
 self.ajax = function(uri) {
   var request = {
@@ -140,6 +144,8 @@ self.draw = function(data) {
 self.map.on('moveend', function (event) {
   console.log("map move end");
 
+  var timeRequest = $( "#amount" )
+
   if (self.socket != null) {
     self.socket.send("close")
     self.socket.close();
@@ -150,34 +156,27 @@ self.map.on('moveend', function (event) {
   var topLeft = ol.extent.getTopLeft(mapExtent);
   var brLonLat = ol.proj.toLonLat(bottomRight);
   var tlLonLat = ol.proj.toLonLat(topLeft);
+  var streamAppend = "";
 
-  self.socket = self.getWebsocket();
-
-  self.socket.onmessage = function (msg) {
-      console.log("websocket")
-      self.draw( jQuery.parseJSON(msg.data));
-  }
-
-  self.socket.onopen = function (e) {
-    self.socket.send(tlLonLat[1]+","+tlLonLat[0]+","+brLonLat[1]+","+brLonLat[0])
-  }
-
-  var timeRequest = $( "#amount" )
   if (timeRequest > 0) {
       self.requestVehiclesOnBoundingBox(tlLonLat[1]+","+tlLonLat[0]+","+brLonLat[1]+","+brLonLat[0], timeRequest)
-  }
+  } else {
+    self.socket = self.getWebsocket(self.websocketVehicles);
 
-//  if ($('#hotspot').is(':checked')) {
-//    console.log("draw hotspots")
-//    self.ajax(self.akkaHotSpotBasis+tlLonLat[1]+","+tlLonLat[0]+","+brLonLat[1]+","+brLonLat[0]).done(function(data){
-//      self.drawHotSpotsOnMap(data)
-//    });
-//  } else {
-//      if (self.hotspotSource.getFeatures().length > 0) {
-//         console.log("cleared hotspotSource");
-//         self.hotspotSource.clear();
-//      }
-//  }
+    self.socket.onmessage = function (msg) {
+      console.log("websocket")
+      self.draw( jQuery.parseJSON(msg.data));
+    }
+
+    self.socket.onopen = function (e) {
+        if (self.sparkEnabled) {
+            self.socket.send("spark");
+        } else if (self.flinkEnabled) {
+            self.socket.send("flink");
+        }
+        self.socket.send(tlLonLat[1]+","+tlLonLat[0]+","+brLonLat[1]+","+brLonLat[0])
+    }
+  }
 
 });
 
@@ -342,7 +341,7 @@ self.drawHotSpotsOnMap = function(data) {
 }
 
 self.pickColor = function() {
-return "#000000".replace(/0/g,function(){return (~~(Math.random()*16)).toString(16);});
+    return "#000000".replace(/0/g,function(){return (~~(Math.random()*16)).toString(16);});
 };
 
 $(function() {
@@ -389,4 +388,91 @@ $(function() {
           }
         }
     });
+
+    //flink
+    $( "#slider_flink" ).slider({
+            range: "max",
+            min: 0,
+            max: 10,
+            value: 0,
+            slide: function( event, ui ) {
+                $( "#amount_flink" ).val( ui.value );
+
+                var mapExtent = self.map.getView().calculateExtent(map.getSize());
+                var bottomRight = ol.extent.getBottomRight(mapExtent);
+                var topLeft = ol.extent.getTopLeft(mapExtent);
+                var brLonLat = ol.proj.toLonLat(bottomRight);
+                var tlLonLat = ol.proj.toLonLat(topLeft);
+
+                if (ui.value > 0) {
+                    self.requestVehiclesOnBoundingBox(tlLonLat[1]+","+tlLonLat[0]+","+brLonLat[1]+","+brLonLat[0], ui.value)
+                } else {
+                    //clean old data
+                    console.log("cleaning old data")
+                    self.vehicleSource.clear();
+                }
+            }
+        });
+        $( "#amount_flink" ).val( $( "#slider_flink" ).slider( "value" ) );
+        $( "#hotspot_flink" ).button().click(function() {
+            if ($('#hotspot_flink').is(':checked')) {
+                console.log("draw hotspots")
+                var mapExtent = self.map.getView().calculateExtent(map.getSize());
+                var bottomRight = ol.extent.getBottomRight(mapExtent);
+                var topLeft = ol.extent.getTopLeft(mapExtent);
+                var brLonLat = ol.proj.toLonLat(bottomRight);
+                var tlLonLat = ol.proj.toLonLat(topLeft);
+
+                self.ajax(self.akkaHotSpotBasis+tlLonLat[1]+","+tlLonLat[0]+","+brLonLat[1]+","+brLonLat[0]).done(function(data){
+                  self.drawHotSpotsOnMap(data)
+                });
+            } else {
+              if (self.hotspotSource.getFeatures().length > 0) {
+                 console.log("cleared hotspotSource");
+                 self.hotspotSource.clear();
+              }
+            }
+        });
+
+
+    //toggle
+    $( "#sparkEnable" ).button().click(function() {
+        if ($('#sparkEnable').is(':checked')) {
+            console.log("spark enabled")
+            self.sparkEnabled = true;
+            self.flinkEnabled = false;
+            $( "#flinkEnable" ).prop('checked', false);
+            if (self.socket != null) {
+                self.socket.send("spark");
+                self.vehicleSource.clear();
+            }
+        } else {
+            console.log("spark disabled")
+            self.sparkEnabled = false;
+            self.flinkEnabled = true;
+            $( "#flinkEnabled" ).prop('checked', true);
+        }
+    });
+
+    $( "#flinkEnable" ).button().click(function() {
+        if ($('#flinkEnable').is(':checked')) {
+            console.log("flink enabled")
+            self.flinkEnabled = true;
+            self.sparkEnabled = false;
+            $( "#sparkEnabled" ).prop('checked', false);
+            if (self.socket != null) {
+                self.socket.send("flink");
+                self.vehicleSource.clear();
+            }
+        } else {
+            console.log("flink disabled")
+            self.flinkEnabled = false;
+            self.sparkEnabled = true;
+            $( "#sparkEnabled" ).prop('checked', true);
+        }
+    });
+
+
+    $( "#sparkEnabled" ).prop('checked', self.sparkEnabled);
+    $( "#flinkEnabled" ).prop('checked', self.flinkEnabled);
 });

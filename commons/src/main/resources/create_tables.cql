@@ -18,6 +18,18 @@ CREATE TABLE IF NOT EXISTS streaming.vehicles (
     PRIMARY KEY (id, time)
 );
 
+CREATE TABLE IF NOT EXISTS streaming.vehicles_flink (
+    id text,
+    time timestamp,
+    longitude double,
+    latitude double,
+    heading int,
+    route_id text,
+    run_id text,
+    seconds_since_report int,
+    PRIMARY KEY (id, time)
+);
+
 CREATE TABLE IF NOT EXISTS streaming.routes (
     id text,
     order_id int,
@@ -40,6 +52,20 @@ CREATE TABLE IF NOT EXISTS streaming.vehicles_by_tileid (
     run_id text,
     seconds_since_report int,
     PRIMARY KEY ((tile_id, time_id), time, id)
+) WITH CLUSTERING ORDER BY (time DESC);
+
+CREATE TABLE IF NOT EXISTS streaming.vehicles_by_tileid_flink (
+  tile_id text,
+  time_id bigint,
+  id text,
+  time timestamp,
+  longitude double,
+  latitude double,
+  heading int,
+  route_id text,
+  run_id text,
+  seconds_since_report int,
+  PRIMARY KEY ((tile_id, time_id), time, id)
 ) WITH CLUSTERING ORDER BY (time DESC);
 
 CREATE TABLE IF NOT EXISTS streaming.vehiclecluster (

@@ -23,7 +23,7 @@ import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.ws.UpgradeToWebSocket
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, Uri}
 import akka.stream.ActorMaterializer
-import de.nierbeck.floating.data.server.actors.websocket.{RouterActor, TiledVehiclesFromKafkaActor}
+import de.nierbeck.floating.data.server.actors.websocket.{FLINK, RouterActor, SPARK, TiledVehiclesFromKafkaActor}
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
@@ -43,7 +43,8 @@ object ServiceApp extends RestService {
   def main(args: Array[String]): Unit = {
 
     val router: ActorRef = system.actorOf(Props[RouterActor], "router")
-    val vmactor: ActorRef = system.actorOf(TiledVehiclesFromKafkaActor.props(router), "Kafka-Consumer")
+    val sparkKafkaConsumer: ActorRef = system.actorOf(TiledVehiclesFromKafkaActor.props(router, "tiledVehicles", SPARK), "Kafka-Consumer-Spark")
+    val flinkKafkaConsumer: ActorRef = system.actorOf(TiledVehiclesFromKafkaActor.props(router, "flinkTiledVehicles", FLINK), "Kafka-Consumer-Flink")
 
 
     val requestHandler: HttpRequest => HttpResponse = {

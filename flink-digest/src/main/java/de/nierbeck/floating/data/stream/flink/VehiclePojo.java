@@ -7,7 +7,7 @@ import com.datastax.driver.mapping.annotations.Table;
 import java.util.Date;
 import java.util.Optional;
 
-@Table(keyspace = "streaming", name = "vehicles", readConsistency = "QUORUM", writeConsistency = "ONE", caseSensitiveKeyspace = false, caseSensitiveTable = false)
+@Table(keyspace = "streaming", name = "vehicles_flink", readConsistency = "QUORUM", writeConsistency = "ONE", caseSensitiveKeyspace = false, caseSensitiveTable = false)
 public class VehiclePojo {
 
     @PartitionKey
