@@ -9,6 +9,7 @@ resource "aws_launch_configuration" "master" {
   key_name = "${aws_key_pair.dcos.key_name}"
   user_data = "${data.template_file.master_user_data.rendered}"
   associate_public_ip_address = false
+  ebs_optimized = true
 
   lifecycle {
     create_before_destroy = false

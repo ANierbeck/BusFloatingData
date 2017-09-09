@@ -5,6 +5,7 @@ resource "aws_launch_configuration" "slave" {
   key_name = "${aws_key_pair.dcos.key_name}"
   user_data = "${data.template_file.slave_user_data.rendered}"
   associate_public_ip_address = false
+  ebs_optimized = true
 
   lifecycle {
     create_before_destroy = false

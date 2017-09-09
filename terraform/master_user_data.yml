@@ -158,16 +158,19 @@
   "permissions": |-
     0644
 - "content": |
+    libstorage:
+      integration:
+        volume:
+          operations:
+            unmount:
+              ignoreusedcount: true
+      server:
+        tasks:
+          logTimeout: 5m
+- "content": |
     rexray:
       loglevel: info
-      modules:
-        default-admin:
-          host: tcp://127.0.0.1:61003
-      storageDrivers:
-      - ec2
-      volume:
-        unmount:
-          ignoreusedcount: true
+      service: ebs
   "path": |-
     /etc/rexray/config.yml
   "permissions": |-
@@ -199,7 +202,7 @@
       "s3_prefix": |-
         ${stack_name}
     "late_bound_package_id": |-
-      dcos-provider-693350afac89c67023b39be99664109dde17dbdd-aws--setup
+      dcos-provider-23c9b1cc384427841a193d31afd95d091d0799c9-aws--setup
   "owner": |-
     root
   "path": |-

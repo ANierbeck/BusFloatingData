@@ -124,32 +124,32 @@ variable "fallback_dns" {
 variable "coreos_amis" {
   description = "AMI for CoreOS machine"
   default = {
-    us-west-1       = "ami-1a1b457a"
-    ap-northeast-1  = "ami-86f1b9e1"
-    us-gov-west-1   = "ami-a846fcc9"
-    us-west-2       = "ami-2551d145"
-    us-east-1       = "ami-42ad7d54"
-    sa-east-1       = "ami-c51573a9"
-    ap-southeast-2  = "ami-5baeae38"
     eu-west-1       = "ami-89f6dbef"
-    eu-central-1    = "ami-4733f928"
+    us-east-1       = "ami-42ad7d54"
     ap-southeast-1  = "ami-27cc7d44"
+    ap-southeast-2  = "ami-5baeae38"
+    us-west-1       = "ami-1a1b457a"
+    sa-east-1       = "ami-c51573a9"
+    us-west-2       = "ami-2551d145"
+    us-gov-west-1   = "ami-a846fcc9"
+    eu-central-1    = "ami-4733f928"
+    ap-northeast-1  = "ami-86f1b9e1"
   }
 }
 
 variable "nat_amis" {
   description = "AMI for Amazon NAT machine"
   default = {
-    us-west-1       = "ami-2b2b296e"
-    ap-northeast-1  = "ami-55c29e54"
-    us-gov-west-1   = "ami-bb69128b"
-    us-west-2       = "ami-00ebfc61"
-    us-east-1       = "ami-4c9e4b24"
-    sa-east-1       = "ami-b972dba4"
-    ap-southeast-2  = "ami-996402a3"
     eu-west-1       = "ami-3760b040"
-    eu-central-1    = "ami-204c7a3d"
+    us-east-1       = "ami-4c9e4b24"
     ap-southeast-1  = "ami-b082dae2"
+    ap-southeast-2  = "ami-996402a3"
+    us-west-1       = "ami-2b2b296e"
+    sa-east-1       = "ami-b972dba4"
+    us-west-2       = "ami-bb69128b"
+    us-gov-west-1   = "ami-e8ab1489"
+    eu-central-1    = "ami-204c7a3d"
+    ap-northeast-1  = "ami-55c29e54"
   }
 }
 
@@ -191,82 +191,86 @@ variable "authentication_enabled" {
 
 variable "dcos_base_download_url" {
   description = "base url that is used to download the dcos"
-  default = "https://downloads.dcos.io/dcos/stable"
+  default = "https://downloads.dcos.io/dcos/stable/1.10.0"
 }
 
 variable "bootstrap_id" {
   description = "bootstrap id that is used to download the bootstrap files"
 //  default = "405172d16eaff8798d6b090dac99b51a8a9004d7"
 //  default = "58fd0833ce81b6244fc73bf65b5deb43217b0bd7"
-  default = "79a0dfe0944948a33ab75f6e62335f166e117f3d"
+//  default = "79a0dfe0944948a33ab75f6e62335f166e117f3d"
+  default = "4d92536e7381176206e71ee15b5ffe454439920c"
 }
 
 variable "cluster_packages" {
   description = "cluster packages for single master setup"
   default = <<EOF
-  ["3dt--caa28740ba55b7f6de50ab574e91a3f087701e7a",
-    "adminrouter--a4c1e2c311b66185e3fc26350ef55086a4434b3c",
-    "avro-cpp--b705160facaef4071e6e1999d4a3f10b6bebddfc",
-    "boost-libs--2015ccb58fb756f61c02ee6aa05cc1e27459a9ec",
-    "bootstrap--d8cdde7d671f2ef25087c2941e28d60049f168dd",
-    "boto--6344d31eef082c7bd13259b17034ea7b5c34aedf",
-    "check-time--be7d0ba757ec87f9965378fee7c76a6ee5ae996d",
-    "cni--e48337da39a8cd379414acfe0da52a9226a10d24",
-    "cosmos--e51eff0287fa62a5c3f119bf49596f616eafad72",
-    "curl--fc3486c43f98e63f9b12675f1356e8fe842f26b0",
-    "dcos-config--setup_693350afac89c67023b39be99664109dde17dbdd",
-    "dcos-history--f059725ebe14a980c1b7d889055d78c56720d737",
-    "dcos-image--e42f099fbe4d35adb7ae10316e6e88f308a08397",
-    "dcos-image-deps--83584fd868e5b470f7cf754424a9a75b328e9b68",
-    "dcos-integration-test--3acd68afab37740ef5e19c1658f7c7d6e3ae073a",
-    "dcos-log--4d630df863228f38c6333e44670b4c4b20a74832",
-    "dcos-metadata--setup_693350afac89c67023b39be99664109dde17dbdd",
-    "dcos-metrics--3f9c56b0c3aef016427b723a7d2e4e6afdf9c04e",
-    "dcos-oauth--0079529da183c0f23a06d2b069721b6fa6cc7b52",
-    "dcos-signal--5633dc8da7e864cb34e3d29ed13e6756c7a6df94",
-    "dcos-ui--7693dca6567e31cc107b765ce6612ae48a417528",
-    "dnspython--0f833eb9a8abeba3179b43f3a200a8cd42d3795a",
-    "docker-gc--59a98ed6446a084bf74e4ff4b8e3479f59ea8528",
-    "dvdcli--5374dd4ffb519f1dcefdec89b2247e3404f2e2e3",
-    "erlang--a9ee2530357a3301e53056b36a93420847b339a3",
-    "exhibitor--6be3f543dbed3abbc22218fd703e52609bc49a67",
-    "flask--26d1bcdb2d1c3dcf1d2c03bc0d4f29c86d321b21",
-    "java--cd5e921ce66b0d3303883c06d73a657314044304",
-    "libevent--208be855d2be29c9271a7bd6c04723ff79946e02",
-    "libffi--83ce3bd7eda2ef089e57efd2bc16c144d5a1f094",
-    "libsodium--9ff915db08c6bba7d6738af5084e782b13c84bf8",
-    "logrotate--7f7bc4416d3ad101d0c5218872858483b516be07",
-    "marathon--8f59f94aaa21adbe497e0f49a8d0bb41515968db",
-    "mesos--8672838b73e866c786446d1a4d7afce701f7df62",
-    "mesos-dns--f8c80e9bffa1fe238711f82fa06006de8715cceb",
-    "mesos-modules--6680e631c9689dd33f1115bdae3d31fafe70051f",
-    "metronome--6eafabd93182e8844c72ce19690e93d2b7926931",
-    "navstar--0b141af667446bbe42069fbdba130276f872061c",
-    "ncurses--d889894b71aa1a5b311bafef0e85479025b4dacb",
-    "octarine--dada18ca28c1b7948ed895580cc0a59d5b3c5583",
-    "openssl--b01a32a42e3ccba52b417276e9509a441e1d4a82",
-    "pkgpanda-api--1acf427af3dd51b7bd56176bce3e8a6580489219",
-    "pkgpanda-role--f8a749a4a821476ad2ef7e9dd9d12b6a8c4643a4",
-    "pytest--78aee3e58a049cdab0d266af74f77d658b360b4f",
-    "python--b7a144a49577a223d37d447c568f51330ee95390",
-    "python-azure-mgmt-resource--03c05550f43b0e7a4455c33fe43b0deb755d87f0",
-    "python-cryptography--4184767c68e48801dd394072cb370c610a05029d",
-    "python-dateutil--fdc6ff929f65dd0918cf75a9ad56704683d31781",
-    "python-docopt--beba78faa13e5bf4c52393b4b82d81f3c391aa65",
-    "python-gunicorn--a537f95661fb2689c52fe12510eb0d01cb83af60",
-    "python-isodate--40d378c688e6badfd16676dd8b51b742bfebc8d5",
-    "python-jinja2--7450f5ae5a822f63f7a58c717207be0456df51ed",
-    "python-kazoo--cb7ce13a1068cd82dd84ea0de32b529a760a4bdd",
-    "python-markupsafe--dd46d2a3c58611656a235f96d4adc51b2a7a590e",
-    "python-passlib--802ec3605c0b82428fedba60983b1bafaa036bb8",
-    "python-pyyaml--81dd44cc4a24db7cefa7016c6586a131acf279c3",
-    "python-requests--1b2cadbd3811cc0c2ee235ce927e13ea1d6af41d",
-    "python-retrying--eb7b8bac133f50492b1e1349cbe77c3e38bd02c3",
-    "python-tox--07244f8a939a10353634c952c6d88ec4a3c05736",
-    "rexray--f07795e2c10f9a1a27de9d8e67ab171029db2e1d",
-    "six--f06424b68523c4dfa2a7c3e7475d479f3d361e42",
-    "spartan--daba6f5a190e67874b3aa852601ba039ecbab039",
-    "strace--7d01796d64994451c1b2b82d161a335cbe90569b",
-    "teamcity-messages--e623a4d86eb3a8d199cefcc240dd4c5460cb2962",
-    "toybox--f235594ab8ea9a2864ee72abe86723d76f92e848"]EOF
+  ["adminrouter--1166a3736442e7963a68d1d644bf5f54ca3cb01d",
+    "avro-cpp--9cb0ee14e3cd5bbdb171efcc72a84d16862ea02d",
+    "boost-libs--8d515c2f703c666ae1b6c5ccc35cc0f8fa36677f",
+    "bootstrap--c1bc86593e212cf9fe83db2246bacd129a6b3adc",
+    "boto--3890cb2817c00b874ba033abe784b5b343caa3c7",
+    "check-time--79e3f6ab99125471e1d94d5f6bc0fea88446831c",
+    "cni--7a8572e385c3f5262945c52c8003d1bbb22cf7aa",
+    "cosmos--e84c5bf3259405df90d682536ba445cc4839a324",
+    "curl--17866a8ae9305826aa5f357a09db2c1f2b2c2ad0",
+    "dcos-checks--8fd33919e6f163dba1bd13e4c7e4e0523919a719",
+    "dcos-cni--12a77c1e9bebd4cbd600524a864c2bd8483330d3",
+    "dcos-config--setup_23c9b1cc384427841a193d31afd95d091d0799c9",
+    "dcos-diagnostics--e3b557b0ec8e98617d0cd0fdf136ef9dded96316",
+    "dcos-history--23de88ddc1a5f9018dd11b279c5be6a768a18de4",
+    "dcos-image--df630d8e930d6650ce3d0ade519660142233d862",
+    "dcos-image-deps--81d23d00b1acddb316c9b15fd8499c2b10f6b697",
+    "dcos-integration-test--9ec173650d4e73ba494603324e7583d23970e4b8",
+    "dcos-log--d2af4b1a47d3755a51823e95fbc6c366cf0f9269",
+    "dcos-metadata--setup_23c9b1cc384427841a193d31afd95d091d0799c9",
+    "dcos-metrics--2a26c0b50b0b6564f86c48d50aa86f681c9af93c",
+    "dcos-oauth--445bb1388670981c6acc667b2529fc32d4c1fbd4",
+    "dcos-signal--4366023212ea49a64c5c9aef1965e5a3133c4b61",
+    "dcos-test-utils--1066d896d25f4c1e3f6d9a5e7f9c1c6e8c675bb7",
+    "dcos-ui--cc2e3d26537ea190efacd6f899dd4cc2210d45b7",
+    "dnspython--0be432372a3820eafcfa66975943c9536dbe1164",
+    "docker-gc--89f5535aea154dca504f84cd60eac6f61836aef9",
+    "dvdcli--ee85411e3cb9f0988ed54b5cc0789172b887f12f",
+    "erlang--d693172f6f033707c7f07ff78fc18ac543d66b41",
+    "exhibitor--c3e48bbae19c0ed9c30d7f9396305d1e77130658",
+    "flask--6d0f985ad677e8422c7190cbe207424acd813c3b",
+    "java--ce5ff19502fca31eaf4a9af86d50a10a8c212a5b",
+    "libevent--05dc18bc0ab7434b2738318c5ebaa2e61a311f50",
+    "libffi--0e5b99b94f296b2a9a1b75e9fe5f74f5446f5e9b",
+    "libsodium--e7056355f1fe160ade83aac0d11352a2bf3844e6",
+    "logrotate--877aece1fd506af3b9167b6938c316adfa79d4f5",
+    "marathon--accdc43bafeca02da1be340baba4b55011eadf63",
+    "mesos--0677ce2b7d2e8c45091f6481884542f1f765c3d5",
+    "mesos-dns--600da87080b7634f2380594499004a7ff0b34662",
+    "mesos-modules--1f5c4860450949db92ed27326c3146526041e681",
+    "metronome--2ec6f56be44ed822e7228cb66c4dae6a78345789",
+    "navstar--c66f92f01d837433de3e2b19d221c64d26cc54b1",
+    "ncurses--030fd6b08ed46a7ecce001c36901f5b4ad5d2af5",
+    "octarine--4e37c062d2f145f9c2ce01d30dadf72c2aac5c4a",
+    "openssl--44777d19d54a3c33cc19543f2201cb20bf085d98",
+    "pkgpanda-api--30cb1e68f92ed5d4b89d57ca526f8a69b44132c8",
+    "pkgpanda-role--612a6734567cc0c7c2ae1d508f03172f4bc7beed",
+    "pytest--5e26c8ed9fd2c325672d56fe558299bfbd0f7018",
+    "python--5a4285ff7296548732203950bf73d360ea67f6ab",
+    "python-azure-mgmt-resource--26cbe8349f3fe139f7dc8bff7f0cb735382314fc",
+    "python-cryptography--0d83d8afef4a8faddf0d8b713619d9d76e510a9e",
+    "python-dateutil--519201adebeba186049ecd79a9f358f614173b10",
+    "python-docopt--0af809c220a922f7f6c58f15beafebaa043477c7",
+    "python-gunicorn--2ceb53716237da0736f67f4004682083f6ac68e1",
+    "python-isodate--c9efb5859a0cfb06d82f25220cc5b387914af85d",
+    "python-jinja2--601a1443aa4c649ab1da10c2a6d7a4477a263fb3",
+    "python-kazoo--0ff8e6ef528f58c6f36f0a9df6dc27d3871e5c27",
+    "python-markupsafe--1388c95920b4eb920c7a753d620a1ad07fc8b64d",
+    "python-passlib--4691268be760073188b555dc436f836c6706b37a",
+    "python-pyyaml--d8a775d6e43da5eb239af5cccdf1d3fceeb0335f",
+    "python-requests--db0474fab16019ba29a609a354285f221c1a2859",
+    "python-retrying--37dd25bf69bcbefe0c50139085d6bb2e22ccf439",
+    "python-tox--322c468e2a75c5b143cb06af460b5e801ee34342",
+    "rexray--da7f17f8a4b772c0bac3f8d289a08abd4ff272b4",
+    "six--93734bac9907087744815f9cb5b6152e9a198fae",
+    "spartan--c3d8005b1340bcbc3a00496861745b2d0bb2d697",
+    "strace--9be573456909e3931a890785eb6474af7e0dcce4",
+    "teamcity-messages--073793b16cf369e58ebdb6348b93ed14b0e5e59a",
+    "toybox--0c49f879bfe2f99e6f99b397136894fa5096fa0c"]EOF
 }
