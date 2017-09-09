@@ -49,10 +49,12 @@ trait RestService extends CorsSupport {
 
     import akka.http.scaladsl.server.Directives._
 
-    val vehiclesPerBBox = system.actorOf(VehiclesPerBBoxActor.props(), "vehicles-per-bbox")
+    val sparkVehiclesPerBBox = system.actorOf(SparkVehiclesPerBBoxActor.props(), "spark-vehicles-per-bbox")
+    val flinkVehiclesPerBBox = system.actorOf(FlinkVehiclesPerBBoxActor.props(), "flink-vehicles-per-bbox")
     val routeDetailsPerId = system.actorOf(RouteDetailActor.props(), "route-details-id")
     val routeInfosPerId = system.actorOf(RouteInfoActor.props(), "route-info-id")
-    val hotspots = system.actorOf(HotSpotsActor.props(), "hotspots")
+    val hotspotsSpark = system.actorOf(HotSpotsSparkActor.props(), "hotspots-spark")
+    val hotspotsFlink = system.actorOf(HotSpotsFlinkActor.props(), "hotspots-flink")
     val hotSpotDetailsPerId = system.actorOf(HotSpotDetailsActor.props(), "hotspotDetails")
 
     def service = pathSingleSlash {
@@ -64,14 +66,30 @@ trait RestService extends CorsSupport {
       }
     }
 
-    def vehiclesOnBBox = path("vehicles" / "boundingBox") {
+    def sparkVehiclesOnBBox = path("vehicles" / "boundingBox") {
       corsHandler {
         parameter('bbox.as[String], 'time.as[String] ? "5") { (bbox, time) =>
           get {
             marshal {
               val boundingBox: BoundingBox = toBoundingBox(bbox)
 
-              val askedVehicles: Future[Future[List[Vehicle]]] = (vehiclesPerBBox ? (boundingBox, time)).mapTo[Future[List[Vehicle]]]
+              val askedVehicles: Future[Future[List[Vehicle]]] = (sparkVehiclesPerBBox ? (boundingBox, time)).mapTo[Future[List[Vehicle]]]
+              askedVehicles.flatMap(future => future)
+
+            }
+          }
+        }
+      }
+    }
+
+    def flinkVehiclesOnBBox = path("vehicles_flink" / "boundingBox") {
+      corsHandler {
+        parameter('bbox.as[String], 'time.as[String] ? "5") { (bbox, time) =>
+          get {
+            marshal {
+              val boundingBox: BoundingBox = toBoundingBox(bbox)
+
+              val askedVehicles: Future[Future[List[Vehicle]]] = (flinkVehiclesPerBBox ? (boundingBox, time)).mapTo[Future[List[Vehicle]]]
               askedVehicles.flatMap(future => future)
 
             }
@@ -106,7 +124,20 @@ trait RestService extends CorsSupport {
           get {
             marshal {
               val boundingBox: BoundingBox = toBoundingBox(bbox)
-              (hotspots ? boundingBox).mapTo[Future[List[VehicleCluster]]].flatMap(future => future)
+              (hotspotsSpark ? boundingBox).mapTo[Future[List[VehicleCluster]]].flatMap(future => future)
+            }
+          }
+        }
+      }
+    }
+
+    def flinkHotSpots = path("hotspots_flink" / "boundingBox") {
+      corsHandler {
+        parameter('bbox.as[String]) { bbox =>
+          get {
+            marshal {
+              val boundingBox: BoundingBox = toBoundingBox(bbox)
+              (hotspotsFlink ? boundingBox).mapTo[Future[List[VehicleCluster]]].flatMap(future => future)
             }
           }
         }
@@ -123,11 +154,21 @@ trait RestService extends CorsSupport {
       }
     }
 
+    def flinkHotSpotDetails = path("hotspots_flink" / LongNumber) { hotSpotId =>
+      corsHandler{
+        get{
+          marshal{
+            (hotSpotDetailsPerId ? hotSpotId).mapTo[List[VehicleClusterDetails]]
+          }
+        }
+      }
+    }
+
     val vehiclesPerBBoxService = Flow[Message].map {
       case TextMessage.Strict(bbox) => {
         val boundingBox: BoundingBox = toBoundingBox(bbox)
 
-        val vehicles = (vehiclesPerBBox ? boundingBox).mapTo[Future[List[Vehicle]]].flatMap(future => future)
+        val vehicles = (sparkVehiclesPerBBox ? boundingBox).mapTo[Future[List[Vehicle]]].flatMap(future => future)
 
         JacksMapper.mapper.enable(SerializationFeature.INDENT_OUTPUT)
         val result: Future[String] = vehicles.map(JacksMapper.writeValueAsString(_))
@@ -159,7 +200,7 @@ trait RestService extends CorsSupport {
 
     get {
       index ~ img ~ js
-    } ~ service ~ vehiclesOnBBox ~ routeInfo ~ routes ~ webSocketVehicles ~ hotSpots ~ hotSpotDetails
+    } ~ service ~ sparkVehiclesOnBBox ~ flinkVehiclesOnBBox ~ routeInfo ~ routes ~ webSocketVehicles ~ hotSpots ~ flinkHotSpots ~ hotSpotDetails ~ flinkHotSpotDetails
   }
 
   def marshal(m: => Future[Any])(implicit ec: ExecutionContext): StandardRoute =

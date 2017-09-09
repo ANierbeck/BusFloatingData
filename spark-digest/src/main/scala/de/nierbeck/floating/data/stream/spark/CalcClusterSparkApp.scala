@@ -50,7 +50,7 @@ object CalcClusterSparkApp {
 
     val fmt:DateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
 
-    var startTime = DateTime.now().toString(fmt)
+    var startTime = DateTime.now().minusHours(1).toString(fmt)
 
     if (args.length > 1)
       startTime = args(1)
