@@ -191,7 +191,7 @@ variable "authentication_enabled" {
 
 variable "dcos_base_download_url" {
   description = "base url that is used to download the dcos"
-  default = "https://downloads.dcos.io/dcos/stable/1.10.0"
+  default = "https://downloads.dcos.io/dcos/stable"
 }
 
 variable "bootstrap_id" {

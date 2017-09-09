@@ -167,7 +167,6 @@
       server:
         tasks:
           logTimeout: 5m
-- "content": |
     rexray:
       loglevel: info
       service: ebs
@@ -202,7 +201,7 @@
       "s3_prefix": |-
         ${stack_name}
     "late_bound_package_id": |-
-      dcos-provider-23c9b1cc384427841a193d31afd95d091d0799c9-aws--setup
+      dcos-provider-d32e054e113b14d97841dd13b974a222976a8d62-aws--setup
   "owner": |-
     root
   "path": |-
