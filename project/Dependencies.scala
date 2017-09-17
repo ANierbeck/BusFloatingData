@@ -26,6 +26,8 @@ object CommonDependencies {
   val joda_time       = "joda-time"                %  "joda-time"                  % "2.9.3"
   val akka_chill      = "com.twitter"              %% "chill-akka"                 % "0.9.2"
 
+  val jts                       = "com.vividsolutions"              % "jts"                         % "1.13"
+
   // Fast Java Serializer
   val fast_serializer = "de.ruedigermoeller"       %  "fst"                        % "2.45"
 
@@ -82,6 +84,10 @@ object LogDependencies {
   val log4j_core  = "org.apache.logging.log4j"        % "log4j-core"                          % Version.Log4j2
   val jcl         = "org.slf4j"                       % "jcl-over-slf4j"                      % Version.Slf4j
   val jul         = "org.slf4j"                       % "jul-to-slf4j"                        % Version.Slf4j
+}
+
+object CassandraTestDependencies {
+  val cassandraUnit = "org.cassandraunit"             % "cassandra-unit-shaded"              %"3.1.3.2" % "test"
 }
 
 object VertxDependencies {

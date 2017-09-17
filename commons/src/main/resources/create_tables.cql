@@ -77,6 +77,15 @@ CREATE TABLE IF NOT EXISTS streaming.vehiclecluster (
     PRIMARY KEY (id, time_stamp)
 );
 
+CREATE TABLE IF NOT EXISTS streaming.vehiclecluster_flink (
+  id int,
+  time_stamp bigint,
+  longitude double,
+  latitude double,
+  amount int,
+  PRIMARY KEY (id, time_stamp)
+);
+
 CREATE TABLE IF NOT EXISTS streaming.vehiclecluster_by_tileid (
     tile_id text,
     id int,
@@ -85,6 +94,16 @@ CREATE TABLE IF NOT EXISTS streaming.vehiclecluster_by_tileid (
     latitude double,
     amount int,
     PRIMARY KEY (tile_id, id, time_stamp)
+);
+
+CREATE TABLE IF NOT EXISTS streaming.vehiclecluster_by_tileid_flink (
+  tile_id text,
+  id int,
+  time_stamp bigint,
+  longitude double,
+  latitude double,
+  amount int,
+  PRIMARY KEY (tile_id, id, time_stamp)
 );
 
 CREATE TABLE IF NOT EXISTS streaming.vehicleclusterdetails (

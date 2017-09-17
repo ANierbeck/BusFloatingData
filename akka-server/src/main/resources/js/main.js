@@ -60,7 +60,9 @@ var map = new ol.Map({
 });
 
 self.akkaServiceBasis = 'http://'+ window.location.hostname +':8000/vehicles/boundingBox?bbox='
+self.akkaServiceFlinkBasis = 'http://'+ window.location.hostname +':8000/vehicles_flink/boundingBox?bbox='
 self.akkaHotSpotBasis = 'http://'+ window.location.hostname +':8000/hotspots/boundingBox?bbox='
+self.akkaHotSpotFlinkBasis = 'http://'+ window.location.hostname +':8000/hotspots_flink/boundingBox?bbox='
 self.akkaRouteInfoService = 'http://'+ window.location.hostname +':8000/routeInfo/'
 self.akkaRouteService = 'http://'+ window.location.hostname +':8000/route/'
 self.websocketVehicles = 'ws://'+ window.location.hostname +':8001/ws/vehicles';
@@ -181,7 +183,10 @@ self.map.on('moveend', function (event) {
 });
 
 self.requestVehiclesOnBoundingBox = function(bboxString, timeRequest) {
-    var akkaService = self.akkaServiceBasis+bboxString;
+    if (self.sparkEnabled)
+        var akkaService = self.akkaServiceBasis+bboxString;
+    else
+        var akkaService = self.akkaServiceFlinkBasis+bboxString;
     self.ajax(akkaService+"&time="+timeRequest).done(function(data){
         console.log("got data")
         self.drawDataOnMap(data);
@@ -423,7 +428,7 @@ $(function() {
                 var brLonLat = ol.proj.toLonLat(bottomRight);
                 var tlLonLat = ol.proj.toLonLat(topLeft);
 
-                self.ajax(self.akkaHotSpotBasis+tlLonLat[1]+","+tlLonLat[0]+","+brLonLat[1]+","+brLonLat[0]).done(function(data){
+                self.ajax(self.akkaHotSpotFlinkBasis+tlLonLat[1]+","+tlLonLat[0]+","+brLonLat[1]+","+brLonLat[0]).done(function(data){
                   self.drawHotSpotsOnMap(data)
                 });
             } else {

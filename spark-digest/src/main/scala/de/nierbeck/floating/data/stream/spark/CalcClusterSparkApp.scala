@@ -20,6 +20,7 @@ import java.util.{Date, Properties}
 
 import breeze.linalg.DenseMatrix
 import com.datastax.spark.connector._
+import com.vividsolutions.jts.geom.{Coordinate, Envelope}
 import de.nierbeck.floating.data.domain._
 import de.nierbeck.floating.data.tiler.TileCalc
 import nak.cluster.{DBSCAN, GDBSCAN, Kmeans}
@@ -50,7 +51,7 @@ object CalcClusterSparkApp {
 
     val fmt:DateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
 
-    var startTime = DateTime.now().toString(fmt)
+    var startTime = DateTime.now().minusHours(1).toString(fmt)
 
     if (args.length > 1)
       startTime = args(1)
@@ -101,7 +102,7 @@ object CalcClusterSparkApp {
 
     val clusterdByKey = clusterRddFiltered.map(cluster => (cluster.id, cluster))
 
-    val coordPointList:RDD[(Long,(Double,Double))] = clusterRddFiltered.map{ cluster =>
+    val clustered:RDD[VehicleCluster] = clusterRddFiltered.map{ cluster =>
       val points: Seq[Array[Double]] = cluster.points.map(_.value.toArray)
       log.info(s"cluster: ${cluster}")
 
@@ -109,23 +110,12 @@ object CalcClusterSparkApp {
 
       val coordTuples = convertListToTuple(coords, List.empty)
 
-      (cluster.id, coordTuples.map(coordTuple => (points.size, convertToPoint(coordTuple))))
-    }.map{pointListTuple =>
-      (pointListTuple._1, pointListTuple._2.foldLeft((0, (0.0,0.0,0.0))) {
-        case ((count,(accA,accB,accC)), (z,(a,b,c))) => ( z,  (accA + a, accB + b, accC + c))
-      })
-    }.map{ case ((id, (count, (a, b, c)))) =>
-      (id, (a/count, b/count, c/count))
-    }.map{ case ((id,(a,b,c))) =>
-      import Math._
-      val lon = atan2(b,a)
-      val hyp = sqrt(a * a + b * b)
-      val lat = atan2(c, hyp)
-      (id, (lat * 180 / PI, lon * 180 / PI))
-    }
+      val envelope = new Envelope()
 
-    val clustered:RDD[VehicleCluster] = clusterdByKey.join(coordPointList).map{ case ( (clusterId, (cluster, (centerLat, centerLon))) )  =>
-      VehicleCluster(clusterId.toInt, new Date().getTime, centerLat, centerLon, cluster.points.size)
+      convertToCoordinates(coordTuples).foreach(coord => envelope.expandToInclude(coord))
+      val centre = envelope.centre
+
+      VehicleCluster(cluster.id.toInt, timeStartLimit.toDate.getTime, centre.x, centre.y, points.size )
     }
 
     clustered.saveToCassandra("streaming", "vehiclecluster")
@@ -134,17 +124,12 @@ object CalcClusterSparkApp {
 
   }
 
-  def convertToPoint(coordTuple:(Double,Double)):(Double,Double,Double) = {
-    import Math._
-
-    val lat = coordTuple._1 * PI / 180
-    val lon = coordTuple._2 * PI / 180
-
-    val a = cos(lat) * cos(lon)
-    val b = cos(lat) * sin(lon)
-    val c = sin(lat)
-
-    (a,b,c)
+  def convertToCoordinates(tuples: List[(Double, Double)]): List[Coordinate] = {
+    tuples.map{
+      tuple => {
+        new Coordinate(tuple._1, tuple._2)
+      }
+    }
   }
 
   def dbscan(v : breeze.linalg.DenseMatrix[Double]):Seq[GDBSCAN.Cluster[Double]] = {
@@ -172,10 +157,10 @@ object CalcClusterSparkApp {
 
   //this only works for LosAngeles
   private def correctLatLon(lat: Double, lon: Double) = {
-    val MinLatitude = -85.05112878
-    val MaxLatitude = 85.05112878
-    val MinLongitude = -180
-    val MaxLongitude = 180
+    val MinLatitude = 33
+    val MaxLatitude = 35
+    val MinLongitude = -120
+    val MaxLongitude = -100
 
     if (lat < MinLatitude || lat > MaxLatitude) {
       //obviously the cluster did switch the coordinates
