@@ -113,7 +113,7 @@ function init_cassandra_schema {
     "mem": 256,
     "disk": 0,
     "docker": {
-      "image": "anierbeck/bus-demo-schema"
+      "image": "anierbeck/bus-demo-schema:0.3.0-SNAPSHOT"
     }
   }
 }
