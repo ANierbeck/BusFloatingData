@@ -18,7 +18,7 @@ package de.nierbeck.floating.data.server.actors.rest
 
 import akka.actor.Props
 import akka.stream.ActorMaterializer
-import com.datastax.driver.core.ResultSet
+import com.datastax.driver.core.{PreparedStatement, ResultSet}
 import de.nierbeck.floating.data.domain.{BoundingBox, VehicleCluster}
 import de.nierbeck.floating.data.server._
 import de.nierbeck.floating.data.server.actors.CassandraQuery
@@ -28,18 +28,33 @@ import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
 
-object HotSpotsActor {
+object HotSpotsSparkActor {
 
-  def props():Props = Props(new HotSpotsActor())
+  def props():Props = Props(new HotSpotsSparkActor())
 
 }
 
-class HotSpotsActor extends CassandraQuery{
+object HotSpotsFlinkActor {
+  def props():Props = Props(new HotSpotsFlinkActor())
+}
+
+class HotSpotsSparkActor extends HotSpotsActor {
+
+  override
+  def selectHotSpotsByBoundingBox:PreparedStatement = session.prepare("SELECT * FROM streaming.vehiclecluster_by_tileid WHERE tile_id = ?")
+}
+
+class HotSpotsFlinkActor extends HotSpotsActor{
+  override
+  def selectHotSpotsByBoundingBox:PreparedStatement = session.prepare("SELECT * FROM streaming.vehiclecluster_by_tileid_flink WHERE tile_id = ?")
+}
+
+abstract class HotSpotsActor extends CassandraQuery{
 
   implicit val executionContext = context.dispatcher
   implicit val actorMaterializer = ActorMaterializer()
 
-  val selectHotSpotsByBoundingBox = session.prepare("SELECT * FROM streaming.vehiclecluster_by_tileid WHERE tile_id = ?")
+  def selectHotSpotsByBoundingBox:PreparedStatement
 
   override def receive: Receive = {
     case boundingBox:BoundingBox => {

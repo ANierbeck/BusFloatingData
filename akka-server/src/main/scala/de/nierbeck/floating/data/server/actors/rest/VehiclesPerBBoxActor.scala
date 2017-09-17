@@ -18,7 +18,7 @@ package de.nierbeck.floating.data.server.actors.rest
 
 import akka.actor.Props
 import akka.stream.ActorMaterializer
-import com.datastax.driver.core.ResultSet
+import com.datastax.driver.core.{DefaultPreparedStatement, PreparedStatement, ResultSet}
 import de.nierbeck.floating.data.domain.{BoundingBox, Vehicle}
 import de.nierbeck.floating.data.server._
 import de.nierbeck.floating.data.server.actors.CassandraQuery
@@ -28,18 +28,33 @@ import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
 
-object VehiclesPerBBoxActor {
+object SparkVehiclesPerBBoxActor {
 
-  def props():Props = Props(new VehiclesPerBBoxActor())
+  def props():Props = Props(new SparkVehiclesPerBBoxActor())
 
 }
 
-class VehiclesPerBBoxActor extends CassandraQuery {
+object FlinkVehiclesPerBBoxActor {
+
+  def props(): Props = Props(new FlinkVehiclesPerBBoxActor())
+}
+
+class SparkVehiclesPerBBoxActor extends VehiclesPerBBoxActor {
+  override
+  def selectTrajectoriesByBBox = session.prepare("SELECT * FROM streaming.vehicles_by_tileid WHERE tile_id = ? AND time_id IN ? AND time > ? ")
+}
+
+class FlinkVehiclesPerBBoxActor extends VehiclesPerBBoxActor {
+  override
+  def selectTrajectoriesByBBox = session.prepare("SELECT * FROM streaming.vehicles_by_tileid_flink WHERE tile_id = ? AND time_id IN ? AND time > ? ")
+}
+
+abstract class VehiclesPerBBoxActor extends CassandraQuery {
 
   implicit val executionContext = context.dispatcher
   implicit val actorMaterializer = ActorMaterializer()
 
-  val selectTrajectoriesByBBox = session.prepare("SELECT * FROM streaming.vehicles_by_tileid WHERE tile_id = ? AND time_id IN ? AND time > ? ")
+  def selectTrajectoriesByBBox:PreparedStatement
 
   override def receive(): Receive = {
     case (boundingBox: BoundingBox,time: String) => {
