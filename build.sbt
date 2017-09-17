@@ -372,7 +372,6 @@ lazy val flinkDigest = (project in file("flink-digest")).
 
 
 //create project
-//addCommandAlias("create", ";clean ;so commons/compile; so commons/test; so commons/publishLocal; ingest/test ;ingest/publishLocal; akkaServer/test ;akksServer/publishLocal; sparkDigest/test; sparkDigest/publishLocal; so vertxIngest/test; so vertxIngest/publishLocal")
 addCommandAlias("create", ";clean ;test ;publishLocal")
 
 //create deployment artefacts for DC/OS system
