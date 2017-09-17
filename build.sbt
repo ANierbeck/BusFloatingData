@@ -113,7 +113,9 @@ lazy val sparkDependencies = Seq(
   SparkDependencies.spark_catalyst,
   SparkDependencies.spark_sql,
   SparkDependencies.spark_mllib,
-  SparkDependencies.scalanlp
+  SparkDependencies.scalanlp,
+  CommonDependencies.jts,
+  CassandraTestDependencies.cassandraUnit
 ).map(_.excludeAll(
   ExclusionRule(organization = "org.slf4j", artifact = "slf4j-log4j12"),
   ExclusionRule(organization = "org.ow2.asm", artifact = "asm-util"),
@@ -141,7 +143,8 @@ val flinkDependencies = Seq(
     .exclude("io.netty", "netty-all")
     .exclude("com.esotericsoftware.kryo", "kryo"),
   "io.dropwizard.metrics" % "metrics-core" % "3.1.2",
-  SparkDependencies.scalanlp
+  SparkDependencies.scalanlp,
+  CommonDependencies.jts
 ).map(_.excludeAll(
   ExclusionRule(organization = "org.slf4j", artifact = "slf4j-log4j12"),
   ExclusionRule(organization = "com.sun.jdmk"),

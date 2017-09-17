@@ -21,9 +21,12 @@ import java.util.Date
 import breeze.linalg.DenseMatrix
 import com.datastax.driver.core.Cluster
 import com.datastax.driver.mapping.MappingManager
+import com.vividsolutions.jts.geom._
 import de.nierbeck.floating.data.domain.{TiledVehicleCluster, VehicleCluster}
 import de.nierbeck.floating.data.tiler.TileCalc
 import nak.cluster.{DBSCAN, GDBSCAN, Kmeans}
+import org.apache.flink.api.common.functions.RichMapFunction
+import org.apache.flink.api.java.functions.FunctionAnnotation.ForwardedFields
 import org.apache.flink.api.java.utils.ParameterTool
 import org.apache.flink.api.scala.{DataSet, ExecutionEnvironment}
 import org.apache.flink.batch.connectors.cassandra.{CassandraInputFormat, CassandraOutputFormat}
@@ -33,7 +36,6 @@ import org.joda.time.DateTime
 import org.joda.time.format.{DateTimeFormat, DateTimeFormatter}
 import org.apache.flink.api.java.tuple.{Tuple3 => JTuple3, Tuple5 => JTuple5, Tuple6 => JTuple6}
 import org.apache.flink.util.Collector
-
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -85,104 +87,72 @@ object CalcClusterFlinkApp {
 
     val amountCollected = cassandraDS.collect().toList.length
 
-    LOG.info(s"retrieved $amountCollected from Cassandra")
+    println(s"retrieved $amountCollected from Cassandra")
 
     val pointsPerTileID  = cassandraDS.map(x => (x.f0, x.f1, x.f2))
       .map(vehicleTuple => (s"${vehicleTuple._1}_${vehicleTuple._2}_${vehicleTuple._3}", (vehicleTuple._2, vehicleTuple._3)))
       .distinct
       .map(map => (map._2._1, map._2._2))
-      .map(coords => (TileCalc.convertLatLongToQuadKey(coords._1, coords._2).dropRight(3), (coords)))
+      .map(coords => (TileCalc.convertLatLongToQuadKey(coords._1, coords._2).dropRight(3), List(coords)))
       .groupBy(_._1)
-      .reduceGroup {
-        (tiledCoords, out:Collector[(String, List[(Double,Double)])]) =>
-          var key: String = null
-          val coordinates:List[(Double,Double)] = List.empty[(Double, Double)]
-
-          for ((tileId, coords) <- tiledCoords) {
-            key = tileId
-            coordinates :+ coords
-          }
-          out.collect((key, coordinates))
-      }
-
-//    val seqOfVehiclePos:Seq[Array[Double]] = Seq(points)
-//    val vehiclePosDataSet:DataSet[Array[Double]] = env.fromCollection(seqOfVehiclePos)
+        .reduce {
+          (x1, x2)  => (x1._1, x1._2 ++ x2._2)
+        }
+      .map(reducedTileIDCoords => {
+        println(s"ID: ${reducedTileIDCoords._1} contains amount of coords: ${reducedTileIDCoords._2.size}")
+        reducedTileIDCoords
+      })
 
     val posPerTileId = pointsPerTileID.map {
       coordsPerTileId =>
         val key: String = coordsPerTileId._1
-        val coordList = coordsPerTileId._2.flatMap( x => List(x._1, x._2)).toArray
+        val coordList = coordsPerTileId._2.map( x => List(x._1, x._2).toArray).toArray
         (key, coordList)
       }
 
-
-/*
     val denseMatrixDataSet:DataSet[(String,DenseMatrix[Double])] = posPerTileId.map {
       tileIdPointsArray =>
         val tileId = tileIdPointsArray._1
-        val pointsArray = tileIdPointsArray._2
-        (tileId, DenseMatrix.create[Double](pointsArray.length / 2, 2, pointsArray))
+        val pointsTupple = tileIdPointsArray._2
+        println(s"TileID: ${tileId} contains ${pointsTupple.length} points")
+        //(tileId, DenseMatrix())
+        (tileId, DenseMatrix.create(pointsTupple.length, 2, pointsTupple.flatten))
+    }.map{
+      denseMatrix =>
+        println(s"Densitiy Matrix: ${denseMatrix._1}, ${denseMatrix._2}")
+        denseMatrix
     }
 
-    val clusterDataSet:DataSet[GDBSCAN.Cluster[Double]] = denseMatrixDataSet.map(tiledDM => dbscan(tiledDM._2)).flatMap(x => x)
-*/
-
-    val posArray:Array[Double] = posPerTileId.map{(tileIdPositions) =>
-      tileIdPositions._2
-    }.collect().flatMap(identity(_)).toArray
-
-    val dm = DenseMatrix.create(posArray.length / 2, 2, posArray)
-
-    val cluster = dbscan(dm)
-
-    val clusterDataSet = env.fromCollection(cluster)
+    val clusterDataSet:DataSet[GDBSCAN.Cluster[Double]] = denseMatrixDataSet
+      .map(tiledDM => dbscan(tiledDM._2))
+        .map{
+          clusters =>
+            println(s"calculated ${clusters.size} clusters")
+          clusters
+        }
+      .flatMap(x => x)
+      .map{
+        cluster =>
+          println(s"Cluster - ID: ${cluster.id}")
+          println(s"Cluster - Points: ${cluster.points.size}")
+        cluster
+      }.filter(cluster => cluster.points.size > 3)
 
     val clusterByKeyDS:DataSet[(Long,GDBSCAN.Cluster[Double])] = clusterDataSet.map(cluster => (cluster.id, cluster))
 
-    val clusterWithCenter = clusterByKeyDS
-      .map(clusterTuple => {
+    val clustered = clusterByKeyDS.map{
+      clusterTuple => {
         val points = clusterTuple._2.points.map(_.value.toArray).toList.flatMap(x => x.toList)
         val coordTuples = convertListToTuple(points, List.empty)
-
-        (clusterTuple._1, coordTuples.map(coordTuple => (points.size, convertToPoint(coordTuple))))
-      })
-      .map { pointListTuple =>
-        (pointListTuple._1, pointListTuple._2.foldLeft((0, (0.0, 0.0, 0.0))) {
-          case ((count, (accA, accB, accC)), (z, (a, b, c))) => (z, (accA + a, accB + b, accC + c))
-        })
-      }.map { idCountABC =>
-      val id    = idCountABC._1
-      val count = idCountABC._2._1
-      val a     = idCountABC._2._2._1
-      val b     = idCountABC._2._2._2
-      val c     = idCountABC._2._2._3
-      (id, (a / count, b / count, c / count))
-    }.map { idABC =>
-      val id = idABC._1
-      val a  = idABC._2._1
-      val b  = idABC._2._2
-      val c  = idABC._2._3
-      import Math._
-      val lon = atan2(b, a)
-      val hyp = sqrt(a * a + b * b)
-      val lat = atan2(c, hyp)
-      (id, (lat * 180 / PI, lon * 180 / PI))
-    }
-
-    val clustered = clusterByKeyDS
-      .join(clusterWithCenter)
-      .where(0).equalTo(0)
-      .map{ x  =>
-        val clusterId = x._1._1
-        val centerLat = x._2._2._1
-        val centerLon = x._2._2._2
-        val cluster   = x._1._2
-      VehicleCluster(clusterId.toInt, new Date().getTime, centerLat, centerLon, cluster.points.size)
+        val envelope = new Envelope()
+        convertToCoordinates(coordTuples).foreach(coord => envelope.expandToInclude(coord))
+        val centre = envelope.centre
+        VehicleCluster(clusterTuple._1.toInt, timeStartLimit.toDate.getTime, centre.x, centre.y, clusterTuple._2.points.size)
+      }
     }
 
     val clusteredPojo = clustered
       .map(vehicleCluster => {
-        //new JTuple5[Int, Long, Double, Double, Int](vehicleCluster.id, vehicleCluster.timeStamp, vehicleCluster.latitude, vehicleCluster.longitude, vehicleCluster.amount)
         val pojo = new VehicleClusterPojo()
         pojo.setId(vehicleCluster.id)
         pojo.setTimeStamp(vehicleCluster.timeStamp)
@@ -192,11 +162,7 @@ object CalcClusterFlinkApp {
         pojo
       })
 
-//    val clusterOutPut = new CassandraOutputFormat[JTuple5[Int, Long, Double, Double, Int]](vehicleClusterQuery, cb)
-//    clusterOutPut.configure(null)
-//    clusterOutPut.open(3,3)
-    clusteredPojo.map(clusterPojo => {
-      //clusterOutPut.writeRecord(clusterPojo)
+    val collectedCluster = clusteredPojo.map(clusterPojo => {
       val cluster = new Cluster.Builder().addContactPoint(cassandraHost).build()
       val session = cluster.connect()
       val manager = new MappingManager(session)
@@ -204,7 +170,8 @@ object CalcClusterFlinkApp {
       vehicleClusterMapper.save(clusterPojo)
       cluster.close()
     }).collect()
-    //clusterOutPut.close()
+
+    println(s"got ${collectedCluster.size} cluster points")
 
     val tiledVehicleCluster = clustered
       .map { vehiclCluster =>
@@ -218,7 +185,6 @@ object CalcClusterFlinkApp {
       }
 
     val tiledVehicleClusterPojos = tiledVehicleCluster.map(tiledVehicleCluster => {
-      //new JTuple6[String, Int, Long, Double, Double, Int](tiledVehicleCluster.tileId, tiledVehicleCluster.id, tiledVehicleCluster.timeStamp, tiledVehicleCluster.latitude, tiledVehicleCluster.longitude, tiledVehicleCluster.amount)
       val pojo = new TiledVehicleClusterPojo();
       pojo.setTileId(tiledVehicleCluster.tileId)
       pojo.setId(tiledVehicleCluster.id)
@@ -229,10 +195,6 @@ object CalcClusterFlinkApp {
       pojo
     })
 
-    //val tiledOutPut = new CassandraOutputFormat[JTuple6[String, Int, Long, Double, Double, Int]](tiledVehicleClusterQuery, cb)
-    //tiledOutPut.configure(null)
-    //tiledOutPut.open(3, 3)
-
     tiledVehicleClusterPojos.map(tiledVehicleClusterPojo => {
       val cluster = new Cluster.Builder().addContactPoint(cassandraHost).build()
       val session = cluster.connect()
@@ -241,26 +203,25 @@ object CalcClusterFlinkApp {
       val tiledVehicleClusterMapper = manager.mapper(classOf[TiledVehicleClusterPojo])
       tiledVehicleClusterMapper.save(tiledVehicleClusterPojo)
       cluster.close
-      //tiledOutPut.writeRecord(tiledVehicleClusterPojo)
     }).collect()
-
-    //tiledOutPut.close()
 
   }
 
-  def dbscan(v : breeze.linalg.DenseMatrix[Double]):Seq[GDBSCAN.Cluster[Double]] = {
+  def dbscan(input : breeze.linalg.DenseMatrix[Double]):Seq[GDBSCAN.Cluster[Double]] = {
     val gdbscan = new GDBSCAN(
       DBSCAN.getNeighbours(epsilon = 0.0005, distance = Kmeans.euclideanDistance),
       DBSCAN.isCorePoint(minPoints = 3)
     )
-    val clusters = gdbscan.cluster(v)
+    println("calculating clusters ... ")
+    val clusters = gdbscan cluster input
+    println("... calculating done")
     clusters
   }
 
   def convertListToTuple(incomingList: List[Double], tupleList: List[(Double, Double)]): List[(Double, Double)] = {
 
     if (incomingList.size >= 2) {
-      val newTuples: List[(Double, Double)] = tupleList :+ (incomingList.head, incomingList.tail.head)
+      val newTuples: List[(Double, Double)] = tupleList :+ correctLatLon(incomingList.head, incomingList.tail.head)
       if (incomingList.size > 2)
         convertListToTuple(incomingList.tail.tail, newTuples)
       else
@@ -270,70 +231,28 @@ object CalcClusterFlinkApp {
     }
   }
 
-  def convertToPoint(coordTuple: (Double, Double)): (Double, Double, Double) = {
-    import Math._
-
-    val lat = coordTuple._1 * PI / 180
-    val lon = coordTuple._2 * PI / 180
-
-    val a = cos(lat) * cos(lon)
-    val b = cos(lat) * sin(lon)
-    val c = sin(lat)
-
-    (a, b, c)
+  def convertToCoordinates(tuples: List[(Double, Double)]): List[Coordinate] = {
+    tuples.map{
+      tuple => {
+        new Coordinate(tuple._1, tuple._2)
+      }
+    }
   }
 
-  /**
-    * Common trait for operations supported by both points and centroids
-    * Note: case class inheritance is not allowed in Scala
-    */
-  trait Coordinate extends Serializable {
+  //this only works for LosAngeles
+  private def correctLatLon(lat: Double, lon: Double) = {
+    val MinLatitude = 33
+    val MaxLatitude = 35
+    val MinLongitude = -120
+    val MaxLongitude = -100
 
-    var x: Double
-    var y: Double
-
-    def add(other: Coordinate): this.type = {
-      x += other.x
-      y += other.y
-      this
+    if (lon < MinLatitude || lon > MaxLatitude) {
+      //obviously the cluster did switch the coordinates
+      (lon, lat)
+    } else {
+      (lat, lon)
     }
-
-    def div(other: Long): this.type = {
-      x /= other
-      y /= other
-      this
-    }
-
-    def euclideanDistance(other: Coordinate): Double =
-      Math.sqrt((x - other.x) * (x - other.x) + (y - other.y) * (y - other.y))
-
-    def clear(): Unit = {
-      x = 0
-      y = 0
-    }
-
-    override def toString: String =
-      s"$x $y"
-
   }
 
-  /**
-    * A simple two-dimensional point.
-    */
-  case class Point(var x: Double = 0, var y: Double = 0) extends Coordinate
-
-  /**
-    * A simple two-dimensional centroid, basically a point with an ID.
-    */
-  case class Centroid(var id: Int = 0, var x: Double = 0, var y: Double = 0) extends Coordinate {
-
-    def this(id: Int, p: Point) {
-      this(id, p.x, p.y)
-    }
-
-    override def toString: String =
-      s"$id ${super.toString}"
-
-  }
 
 }
