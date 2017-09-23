@@ -79,7 +79,7 @@ function waited_until_kafka_is_running {
 }
 
 function export_kafka_connection {
-    export KAFKA_CONNECTION=($(dcos kafka connection | jq .dns[0] | sed -r 's/[\"]+//g' | tr ":" " "))
+    export KAFKA_CONNECTION=($(dcos kafka --name=kafka endpoints broker | jq .dns[0] | sed -r 's/[\"]+//g' | tr ":" " "))
     export KAFKA_HOST=$${KAFKA_CONNECTION[0]}
     echo "KAFKA_HOST: $KAFKA_HOST"
     export KAFKA_PORT=$${KAFKA_CONNECTION[1]}
@@ -95,7 +95,7 @@ function waited_until_cassandra_is_running {
 }
 
 function export_cassandra_connection {
-    export CASSANDRA_CONNECTION=($(dcos cassandra connection | jq .dns[0] | sed -r 's/[\"]+//g' | tr ":" " "))
+    export CASSANDRA_CONNECTION=($(dcos cassandra endpoints node | jq .dns[0] | sed -r 's/[\"]+//g' | tr ":" " "))
     export CASSANDRA_HOST=$${CASSANDRA_CONNECTION[0]}
     echo "CASSANDRA_HOST: $CASSANDRA_HOST"
     export CASSANDRA_PORT=$${CASSANDRA_CONNECTION[1]}
