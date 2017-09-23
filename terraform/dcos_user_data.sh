@@ -173,9 +173,6 @@ function init_ingest_app {
   "env": {
     "CASSANDRA_CONNECT": "$CASSANDRA_HOST:$CASSANDRA_PORT",
     "KAFKA_CONNECT": "$KAFKA_HOST:$KAFKA_PORT"
-  },
-  "upgradeStrategy": {
-    "minimumHealthCapacity": 0
   }
 }
 EOF
@@ -236,9 +233,6 @@ function init_dasboard {
     "env": {
     "CASSANDRA_CONNECT": "$CASSANDRA_HOST:$CASSANDRA_PORT",
     "KAFKA_CONNECT": "$KAFKA_HOST:$KAFKA_PORT"
-    },
-    "upgradeStrategy": {
-       "minimumHealthCapacity": 0
     },
     "dependencies": ["/bus-demo/ingest"],
     "healthChecks": [
