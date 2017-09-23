@@ -310,7 +310,6 @@ EOF
     dcos package install --yes spark
     dcos package install --cli spark
     dcos package install --yes --options=/opt/smack/conf/flink_options.json flink
-    dcos package install --cli flink
     #dcos package install --yes zeppelin --package-version=0.6.0
 }
 
