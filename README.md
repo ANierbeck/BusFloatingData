@@ -100,4 +100,20 @@ this will create all uber-jars and runnable Docker images.
 curl -d'frameworkId=frameworkId' master.mesos:5050/master/teardown
 
 
+# which params to use for flink jobs
+
+## Run the Kafka to Cassandra app
+
+Entry Class: 
+de.nierbeck.floating.data.stream.flink.KafkaToCassandraFlinkApp
+
+Programm Arguments:  
 METRO-Vehicles node.cassandra.l4lb.thisdcos.directory:9042 broker.kafka.l4lb.thisdcos.directory:9092
+
+## Run the cluster hotspot calculation
+
+Entry Class: 
+de.nierbeck.floating.data.stream.flink.CalcClusterFlinkApp
+
+Programm Arguments: 
+--connection node.cassandra.l4lb.thisdcos.directory:9042

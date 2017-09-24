@@ -197,7 +197,7 @@ EOF
 dcos spark run --submit-args='--driver-cores 0.1 --driver-memory 1024M --total-executor-cores 4 --class de.nierbeck.floating.data.stream.spark.KafkaToCassandraSparkApp https://oss.sonatype.org/content/repositories/snapshots/de/nierbeck/floating/data/spark-digest_2.11/0.4.0-SNAPSHOT/spark-digest_2.11-0.4.0-SNAPSHOT-assembly.jar METRO-Vehicles $CASSANDRA_HOST:$CASSANDRA_PORT $KAFKA_HOST:$KAFKA_PORT'
 EOF
     cat &> /usr/sbin/run-digest-hotspot << EOF
-dcos spark run --submit-args='--driver-cores 0.1 --driver-memory 1024M --class de.nierbeck.floating.data.stream.spark.CalcClusterSparkApp https://oss.sonatype.org/content/repositories/snapshots/de/nierbeck/floating/data/spark-digest_2.11/0.4.0-SNAPSHOT/spark-digest_2.11-0.4.0-SNAPSHOT-assembly.jar $CASSANDRA_HOST:$CASSANDRA_PORT @$'
+dcos spark run --submit-args='--driver-cores 0.1 --driver-memory 1024M --class de.nierbeck.floating.data.stream.spark.CalcClusterSparkApp https://oss.sonatype.org/content/repositories/snapshots/de/nierbeck/floating/data/spark-digest_2.11/0.4.0-SNAPSHOT/spark-digest_2.11-0.4.0-SNAPSHOT-assembly.jar $CASSANDRA_HOST:$CASSANDRA_PORT'
 EOF
     chmod 744 /usr/sbin/run-pi /usr/sbin/run-digest /usr/sbin/run-digest-hotspot
     /usr/sbin/run-digest
