@@ -277,10 +277,10 @@ function install_smack {
     "heap": 256
   },
   "task-managers": {
-    "count": 1,
-    "cpus": 1,
-    "memory": 1024,
-    "heap": 512,
+    "count": 4,
+    "cpus": 4,
+    "memory": 2048,
+    "heap": 1024,
     "memory-preallocation": true
   },
   "security": {
