@@ -11,7 +11,7 @@ object Version {
   final val cassandraVer    = "3.1.2"
   final val Log4j2          = "2.8.2"
   final val Slf4j           = "1.7.18"
-  final val spark           = "2.1.1"
+  final val spark           = "2.2.0"
   final val sparkConnector  = "2.0.1"
   final val circeVersion    = "0.4.1"
   final val kafkaVersion    = "0.10.2.1"
