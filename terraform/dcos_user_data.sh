@@ -22,7 +22,7 @@ function install_dcos_cli {
     curl -s --output /tmp/get-pip.py https://bootstrap.pypa.io/get-pip.py
     python /tmp/get-pip.py
     pip install virtualenv
-    wget https://downloads.dcos.io/binaries/cli/linux/x86-64/dcos-1.9/dcos -O /opt/mesosphere/dcos-cli/bin/dcos
+    wget https://downloads.dcos.io/binaries/cli/linux/x86-64/dcos-1.10/dcos -O /opt/mesosphere/dcos-cli/bin/dcos
     chmod +x /opt/mesosphere/dcos-cli/bin/dcos
     ln -s /opt/mesosphere/dcos-cli/bin/dcos /usr/sbin/dcos
     dcos config set core.dcos_url http://leader.mesos
@@ -265,7 +265,7 @@ function install_smack {
   "service": {
     "name": "flink",
     "slots": 1,
-    "parallelism-default": 1,
+    "parallelism-default": 2,
     "role": "*",
     "user": "root",
     "log-level": "INFO",
@@ -277,9 +277,9 @@ function install_smack {
     "heap": 256
   },
   "task-managers": {
-    "count": 4,
-    "cpus": 4,
-    "memory": 2048,
+    "count": 6,
+    "cpus": 2,
+    "memory": 1024,
     "heap": 1024,
     "memory-preallocation": true
   },
