@@ -66,7 +66,7 @@ object CalcClusterFlinkApp {
     LOG.info(s"start time Limit: $timeStartLimit")
     LOG.info(s"stop time limit: $timeStopLimit")
 
-    val query = "SELECT id, longitude, latitude FROM streaming.vehicles_flink WHERE time > '" + timeStartLimit.toString(fmt) + "' and time < '" + timeStopLimit.toString(fmt) + "' ALLOW FILTERING;"
+    val query = "SELECT id, latitude, longitude FROM streaming.vehicles_flink WHERE time > '" + timeStartLimit.toString(fmt) + "' and time < '" + timeStopLimit.toString(fmt) + "' ALLOW FILTERING;"
 
     val vehicleClusterQuery = "INSERT INTO streaming.vehiclecluster_flink (id, time_stamp, longitude, latitude, amount) VALUES(?,?,?,?,?);"
     val tiledVehicleClusterQuery = "INSERT INTO streaming.vehiclecluster_by_tileid_flink (tile_id, id, time_stamp, longitude, latitude, amount) VALUES(?,?,?,?,?,?);"
@@ -113,10 +113,10 @@ object CalcClusterFlinkApp {
     val denseMatrixDataSet:DataSet[(String,DenseMatrix[Double])] = posPerTileId.map {
       tileIdPointsArray =>
         val tileId = tileIdPointsArray._1
-        val pointsTupple = tileIdPointsArray._2
-        println(s"TileID: ${tileId} contains ${pointsTupple.length} points")
+        val pointsTuple = tileIdPointsArray._2
+        println(s"TileID: ${tileId} contains ${pointsTuple.length} points")
         //(tileId, DenseMatrix())
-        (tileId, DenseMatrix.create(pointsTupple.length, 2, pointsTupple.flatten))
+        (tileId, DenseMatrix.create(pointsTuple.length, 2, pointsTuple.flatten))
     }.map{
       denseMatrix =>
         println(s"Densitiy Matrix: ${denseMatrix._1}, ${denseMatrix._2}")
@@ -140,15 +140,22 @@ object CalcClusterFlinkApp {
 
     val clusterByKeyDS:DataSet[(Long,GDBSCAN.Cluster[Double])] = clusterDataSet.map(cluster => (cluster.id, cluster))
 
-    val clustered = clusterByKeyDS.map{
-      clusterTuple => {
+    val clustered = clusterByKeyDS.map {
+      clusterTuple =>
         val points = clusterTuple._2.points.map(_.value.toArray).toList.flatMap(x => x.toList)
         val coordTuples = convertListToTuple(points, List.empty)
+        (clusterTuple._1, coordTuples)
+    }.map{
+      clusterCoordTuples =>
+        (clusterCoordTuples._1, convertToCoordinates(clusterCoordTuples._2))
+    }
+      .filter(clusterCoordTuples => clusterCoordTuples._2.forall(validCoordinate))
+      .map{
+        clusterCoordList =>
         val envelope = new Envelope()
-        convertToCoordinates(coordTuples).foreach(coord => envelope.expandToInclude(coord))
+        clusterCoordList._2.foreach(coord => envelope.expandToInclude(coord))
         val centre = envelope.centre
-        VehicleCluster(clusterTuple._1.toInt, timeStartLimit.toDate.getTime, centre.x, centre.y, clusterTuple._2.points.size)
-      }
+        VehicleCluster(clusterCoordList._1.toInt, timeStartLimit.toDate.getTime, centre.x, centre.y, clusterCoordList._2.size)
     }
 
     val clusteredPojo = clustered
@@ -185,7 +192,7 @@ object CalcClusterFlinkApp {
       }
 
     val tiledVehicleClusterPojos = tiledVehicleCluster.map(tiledVehicleCluster => {
-      val pojo = new TiledVehicleClusterPojo();
+      val pojo = new TiledVehicleClusterPojo()
       pojo.setTileId(tiledVehicleCluster.tileId)
       pojo.setId(tiledVehicleCluster.id)
       pojo.setTimeStamp(tiledVehicleCluster.timeStamp)
@@ -241,18 +248,27 @@ object CalcClusterFlinkApp {
 
   //this only works for LosAngeles
   private def correctLatLon(lat: Double, lon: Double) = {
-    val MinLatitude = 33
-    val MaxLatitude = 35
-    val MinLongitude = -120
-    val MaxLongitude = -100
+    val MinLongitude = 33.0
+    val MaxLongitude = 35.0
+    val MinLatitude = -120.0
+    val MaxLatitude = -100.0
 
-    if (lon < MinLatitude || lon > MaxLatitude) {
+    if (MinLongitude < lat && lat < MaxLongitude) {
       //obviously the cluster did switch the coordinates
-      (lon, lat)
-    } else {
       (lat, lon)
+    } else {
+      (lon, lat)
     }
   }
 
+  private def validCoordinate(coordinate: Coordinate): Boolean = {
+    val MinLongitude = 33.0
+    val MaxLongitude = 35.0
+    val MinLatitude = -120.0
+    val MaxLatitude = -100.0
+
+    MinLongitude < coordinate.x && coordinate.x < MaxLongitude && MinLatitude < coordinate.y && coordinate.y < MaxLatitude
+
+  }
 
 }

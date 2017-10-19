@@ -388,7 +388,8 @@ addCommandAlias("runIngest", "ingest/run")
 addCommandAlias("runServer", "akkaServer/run")
 
 addCommandAlias("runFlink", "flinkDigest/run METRO-Vehicles localhost:9042 localhost:9092")
-addCommandAlias("runClusterFlink", "flinkDigest/run --connection localhost:9042 --startTime \"2017-08-19 00:00:00\"")
+addCommandAlias("runClusterFlink", "flinkDigest/run --connection localhost:9042 --startTime \"2017-10-19 10:00:00\"")
+//addCommandAlias("runClusterFlink", "flinkDigest/run --connection localhost:9042")
 
 //localy run spark
 addCommandAlias("submitKafkaCassandra", "sparkDigest/sparkSubmit --master local[2] --class de.nierbeck.floating.data.stream.spark.KafkaToCassandraSparkApp -- METRO-Vehicles localhost:9042 localhost:9092")

@@ -24,6 +24,7 @@ import com.vividsolutions.jts.geom.{Coordinate, Envelope}
 import de.nierbeck.floating.data.domain._
 import de.nierbeck.floating.data.tiler.TileCalc
 import nak.cluster.{DBSCAN, GDBSCAN, Kmeans}
+import org.apache.spark.mllib.clustering.BisectingKMeans
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
 import org.joda.time.DateTime
@@ -49,7 +50,7 @@ object CalcClusterSparkApp {
     val cassandraHost = args(0).split(":").head
     val cassandraPort = args(0).split(":").reverse.head
 
-    val fmt:DateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
+    val fmt:DateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss")
 
     var startTime = DateTime.now().minusHours(1).toString(fmt)
 
@@ -70,105 +71,129 @@ object CalcClusterSparkApp {
 
     val vehiclesRdd:RDD[Vehicle] = sc.cassandraTable[Vehicle]("streaming", "vehicles").where("time > ? and time < ?", fmt.print(timeStartLimit), fmt.print(timeStopLimit))
 
-    val vehiclesPos:Array[Double] = vehiclesRdd
-      .flatMap(vehicle => Seq[(String, (Double,Double))]((s"${vehicle.id}_${vehicle.latitude}_${vehicle.longitude}",(vehicle.latitude, vehicle.longitude))))
-      .reduceByKey((x,y) => x)
-      .map(x => List(x._2._1, x._2._2)).flatMap(identity)
-      .collect()
+    val vehiclesPosRdd: RDD[(String, List[(Double,Double)])] = vehiclesRdd
+      .flatMap(vehicle => Seq[(String, (Double,Double))]((s"${vehicle.id}_${vehicle.longitude}_${vehicle.latitude}",(vehicle.longitude, vehicle.latitude))))
+      .distinct
+      .map(tuple => (TileCalc.convertLatLongToQuadKey(tuple._2._1, tuple._2._2).dropRight(3), tuple._2))
+      .groupBy(_._1)
+      .map(x => (x._1, x._2.map(tuple => tuple._2).toList ))
+      .reduceByKey( (x,y) => x ++ y )
 
-    val seqOfVehiclePos:Seq[Array[Double]] = Seq(vehiclesPos)
 
-    log.info(s"got ${vehiclesPos.length} positions, first: ${vehiclesPos.head},${vehiclesPos.tail.head}")
+    val denseMatrixRdd: RDD[(String, DenseMatrix[Double])] =
+      vehiclesPosRdd
+        .map{
+          tileIdPointsArray =>
+            //println(s"TileID ${tileIdPointsArray._1} contains ${tileIdPointsArray._2}")
+            val tileId = tileIdPointsArray._1
+            val pointsTuple = tileIdPointsArray._2.map(tuple => List(tuple._1, tuple._2).toArray).toArray
+            (tileId, DenseMatrix.create[Double](pointsTuple.length, 2, pointsTuple.flatten))
+        }.filter( dm => dm._2.size > 3)
 
-    val vehiclePosRdd: RDD[Array[Double]] = sc.parallelize(seqOfVehiclePos)
+    val clusterRdd:RDD[(String, Seq[GDBSCAN.Cluster[Double]])] = denseMatrixRdd.mapValues(dbscan)
 
-    val denseMatrixRdd: RDD[DenseMatrix[Double]] = vehiclePosRdd.map(vehiclePosArray => DenseMatrix.create[Double](vehiclePosArray.length / 2, 2, vehiclePosArray))
+    val clusterRddFiltered = clusterRdd
+      .values
+      .flatMap(x => x)
+      .filter(cluster => cluster.points.map(_.value.toArray).length >= 4)
+      .map{
+        cluster =>
+          val points = cluster.points.map(_.value.toArray)
+          val coordinates = points.map(p => (p(0),p(1))).toList
+          val correctedCoordinates = coordinates.map(tuple => correctLonLat(tuple._1,tuple._2))
+          println(s"points: $points")
+          println(s"coords: $correctedCoordinates")
+          (cluster.id, correctedCoordinates)
+      }
+      .filter{
+        tuples =>
+          val coordinates = convertToCoordinates(tuples._2)
+          val valid = coordinates.forall(validCoordinate)
+          println(s"Cluster ${tuples._1} is valid? ${valid}")
+          valid
+      }
+        .map{
+          tuples =>
+            println(s"Cluster: ${tuples._1} contains ${tuples._2.length} points")
+          tuples
+        }
+      .cache()
 
-    val clusterRdd: RDD[GDBSCAN.Cluster[Double]] = denseMatrixRdd.map(dm => dbscan(dm)).flatMap(identity)
-
-    val clusterRddFiltered = clusterRdd/*.filter(cluster => cluster.points.size > 4)*/.cache()
-
-    clusterRddFiltered.map{ cluster =>
+    clusterRddFiltered.map{ clusterTuple =>
       val timeStamp:Long = new Date().getTime
-      val id:Long = cluster.id
-      val points = cluster.points.map(_.value.toArray)
+      val id:Long = clusterTuple._1
+      val points = clusterTuple._2
       points.zipWithIndex.map{tuple =>
-        val points = correctLatLon(tuple._1(0), tuple._1(1))
+        val points = (tuple._1._1, tuple._1._2)
         val index = tuple._2
         VehicleClusterDetails(id, index, timeStamp, points._1, points._2)
       }
     }.flatMap(identity)
       .saveToCassandra("streaming", "vehicleclusterdetails")
 
-    val clusterdByKey = clusterRddFiltered.map(cluster => (cluster.id, cluster))
+    val clusterdByKey = clusterRddFiltered.map(cluster => (cluster._1, cluster))
 
     val clustered:RDD[VehicleCluster] = clusterRddFiltered.map{ cluster =>
-      val points: Seq[Array[Double]] = cluster.points.map(_.value.toArray)
+      val coordTuples = cluster._2
       log.info(s"cluster: ${cluster}")
-
-      val coords: List[Double] = points.toList.flatMap(x => x.toList)
-
-      val coordTuples = convertListToTuple(coords, List.empty)
 
       val envelope = new Envelope()
 
       convertToCoordinates(coordTuples).foreach(coord => envelope.expandToInclude(coord))
       val centre = envelope.centre
 
-      VehicleCluster(cluster.id.toInt, timeStartLimit.toDate.getTime, centre.x, centre.y, points.size )
+      VehicleCluster(cluster._1.toInt, timeStartLimit.toDate.getTime, centre.x, centre.y, coordTuples.size )
     }
 
     clustered.saveToCassandra("streaming", "vehiclecluster")
 
     clustered.map(vehiclCluster => TiledVehicleCluster(TileCalc.convertLatLongToQuadKey(vehiclCluster.latitude, vehiclCluster.longitude), vehiclCluster.id, vehiclCluster.timeStamp, vehiclCluster.latitude, vehiclCluster.longitude, vehiclCluster.amount)).saveToCassandra("streaming", "vehiclecluster_by_tileid")
 
+    //sc.stop()
+
   }
 
   def convertToCoordinates(tuples: List[(Double, Double)]): List[Coordinate] = {
     tuples.map{
       tuple => {
-        new Coordinate(tuple._1, tuple._2)
+        val correctedTuple = correctLonLat(tuple._1, tuple. _2)
+        new Coordinate(correctedTuple._1, correctedTuple._2)
       }
     }
   }
 
   def dbscan(v : breeze.linalg.DenseMatrix[Double]):Seq[GDBSCAN.Cluster[Double]] = {
-    log.info(s"calculating cluster for denseMatrix: ${v.data.head}, ${v.data.tail.head}")
+    println(s"calculating cluster for denseMatrix")
     val gdbscan = new GDBSCAN(
-      DBSCAN.getNeighbours(epsilon = 0.0005, distance = Kmeans.euclideanDistance),
+      DBSCAN.getNeighbours(epsilon = 0.001, distance = Kmeans.euclideanDistance),
       DBSCAN.isCorePoint(minPoints = 3)
     )
-    val clusters = gdbscan.cluster(v)
-    clusters
-  }
-
-  def convertListToTuple(incomingList: List[Double], tupleList: List[(Double, Double)]): List[(Double, Double)] = {
-
-    if (incomingList.size >= 2) {
-      val newTuples: List[(Double, Double)] = tupleList :+ correctLatLon(incomingList.head, incomingList.tail.head)
-      if (incomingList.size > 2)
-        convertListToTuple(incomingList.tail.tail, newTuples)
-      else
-        newTuples
-    } else {
-      tupleList
-    }
+    gdbscan cluster v
   }
 
   //this only works for LosAngeles
-  private def correctLatLon(lat: Double, lon: Double) = {
-    val MinLatitude = 33
-    val MaxLatitude = 35
-    val MinLongitude = -120
-    val MaxLongitude = -100
+  private def correctLonLat(lon: Double, lat: Double) = {
+    val MinLongitude = 33.0
+    val MaxLongitude = 35.0
+    val MinLatitude = -120.0
+    val MaxLatitude = -100.0
 
-    if (lat < MinLatitude || lat > MaxLatitude) {
+    if (MinLongitude < lat && lat < MaxLongitude) {
       //obviously the cluster did switch the coordinates
-      (lon, lat)
-    } else {
       (lat, lon)
+    } else {
+     (lon, lat)
     }
   }
 
+  private def validCoordinate(coordinate: Coordinate): Boolean = {
+    val MinLongitude = 33.0
+    val MaxLongitude = 35.0
+    val MinLatitude = -120.0
+    val MaxLatitude = -100.0
+
+    MinLongitude < coordinate.x && coordinate.x < MaxLongitude && MinLatitude < coordinate.y && coordinate.y < MaxLatitude
+
+  }
 
 }

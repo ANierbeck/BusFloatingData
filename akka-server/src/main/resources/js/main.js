@@ -322,6 +322,10 @@ self.drawHotSpotsOnMap = function(data) {
      self.hotspotSource.clear();
    }
 
+   if (data.length <= 0) {
+    console.log("No Hotspots found from server")
+   }
+
    for (var i = 0; i < data.length; i++) {
        var field = data[i];
        var feature = new ol.Feature(field);
@@ -365,6 +369,9 @@ $(function() {
             var tlLonLat = ol.proj.toLonLat(topLeft);
 
             if (ui.value > 0) {
+                self.socket.send("close")
+                self.socket.close();
+                self.vehicleSource.clear();
                 self.requestVehiclesOnBoundingBox(tlLonLat[1]+","+tlLonLat[0]+","+brLonLat[1]+","+brLonLat[0], ui.value)
             } else {
                 //clean old data
@@ -376,7 +383,7 @@ $(function() {
     $( "#amount" ).val( $( "#slider" ).slider( "value" ) );
     $( "#hotspot" ).button().click(function() {
         if ($('#hotspot').is(':checked')) {
-            console.log("draw hotspots")
+            console.log("draw hotspots spark")
             var mapExtent = self.map.getView().calculateExtent(map.getSize());
             var bottomRight = ol.extent.getBottomRight(mapExtent);
             var topLeft = ol.extent.getTopLeft(mapExtent);
@@ -410,6 +417,9 @@ $(function() {
                 var tlLonLat = ol.proj.toLonLat(topLeft);
 
                 if (ui.value > 0) {
+                    self.socket.send("close")
+                    self.socket.close();
+                    self.vehicleSource.clear();
                     self.requestVehiclesOnBoundingBox(tlLonLat[1]+","+tlLonLat[0]+","+brLonLat[1]+","+brLonLat[0], ui.value)
                 } else {
                     //clean old data
@@ -421,7 +431,7 @@ $(function() {
         $( "#amount_flink" ).val( $( "#slider_flink" ).slider( "value" ) );
         $( "#hotspot_flink" ).button().click(function() {
             if ($('#hotspot_flink').is(':checked')) {
-                console.log("draw hotspots")
+                console.log("draw hotspots flink")
                 var mapExtent = self.map.getView().calculateExtent(map.getSize());
                 var bottomRight = ol.extent.getBottomRight(mapExtent);
                 var topLeft = ol.extent.getTopLeft(mapExtent);

@@ -130,11 +130,11 @@ object TileCalc {
   def convertBBoxToTileIDs(bBox: BoundingBox): Set[String] = {
     logger.debug("calculating tiles for bounding box")
     val tileIDLeftTop = TileCalc.convertLatLongToQuadKey(bBox.leftTop.lat, bBox.leftTop.lon)
-    val tileIDRightBottom = TileCalc.convertLatLongToQuadKey(bBox.rightBotom.lat, bBox.rightBotom.lon)
+    val tileIDRightBottom = TileCalc.convertLatLongToQuadKey(bBox.rightBottom.lat, bBox.rightBottom.lon)
 
     if (tileIDLeftTop != tileIDRightBottom) {
-      val tileIDRightTop = TileCalc.convertLatLongToQuadKey(bBox.leftTop.lat, bBox.rightBotom.lon)
-      val tileIDLeftBottom = TileCalc.convertLatLongToQuadKey(bBox.rightBotom.lat, bBox.leftTop.lon)
+      val tileIDRightTop = TileCalc.convertLatLongToQuadKey(bBox.leftTop.lat, bBox.rightBottom.lon)
+      val tileIDLeftBottom = TileCalc.convertLatLongToQuadKey(bBox.rightBottom.lat, bBox.leftTop.lon)
 
       if (tileIDLeftTop != tileIDRightTop && tileIDLeftBottom != tileIDRightBottom) {
         var cursor = tileIDLeftTop

@@ -114,3 +114,12 @@ CREATE TABLE IF NOT EXISTS streaming.vehicleclusterdetails (
     latitude double,
     PRIMARY KEY (id, pos_id, time_stamp)
 );
+
+CREATE TABLE IF NOT EXISTS streaming.vehicleclusterdetails_flink (
+  id bigint,
+  pos_id int,
+  time_stamp bigint,
+  longitude double,
+  latitude double,
+  PRIMARY KEY (id, pos_id, time_stamp)
+);

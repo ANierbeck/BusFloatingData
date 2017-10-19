@@ -277,7 +277,7 @@ function install_smack {
     "heap": 256
   },
   "task-managers": {
-    "count": 6,
+    "count": 4,
     "cpus": 2,
     "memory": 1024,
     "heap": 1024,
