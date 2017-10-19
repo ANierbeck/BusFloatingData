@@ -113,7 +113,7 @@ function init_cassandra_schema {
     "mem": 256,
     "disk": 0,
     "docker": {
-    "image": "anierbeck/bus-demo-schema:0.4.0-SNAPSHOT"
+    "image": "anierbeck/bus-demo-schema:0.4.1-SNAPSHOT"
     }
   }
 }
@@ -142,7 +142,7 @@ function init_cluster_spark_job {
              "--driver-memory", "1G",
              "--total-executor-cores", "4",
              "--class", "de.nierbeck.floating.data.stream.spark.CalcClusterSparkApp",
-             "https://oss.sonatype.org/content/repositories/snapshots/de/nierbeck/floating/data/spark-digest_2.11/0.4.0-SNAPSHOT/spark-digest_2.11-0.4.0-SNAPSHOT-assembly.jar",
+             "https://oss.sonatype.org/content/repositories/snapshots/de/nierbeck/floating/data/spark-digest_2.11/0.4.1-SNAPSHOT/spark-digest_2.11-0.4.1-SNAPSHOT-assembly.jar",
              "$CASSANDRA_HOST:$CASSANDRA_PORT"]
   }
 }
@@ -163,7 +163,7 @@ function init_ingest_app {
     "type": "DOCKER",
     "volumes": [],
     "docker": {
-      "image": "anierbeck/akka-ingest:0.4.0-SNAPSHOT",
+      "image": "anierbeck/akka-ingest:0.4.1-SNAPSHOT",
       "network": "HOST",
       "privileged": false,
       "parameters": [],
@@ -194,10 +194,10 @@ function init_spark_jobs {
 dcos spark run --submit-args='--driver-cores 0.1 --driver-memory 1024M --class org.apache.spark.examples.SparkPi https://downloads.mesosphere.com/spark/assets/spark-examples_2.10-1.4.0-SNAPSHOT.jar 10000000'
 EOF
     cat &> /usr/sbin/run-digest << EOF
-dcos spark run --submit-args='--driver-cores 0.1 --driver-memory 1024M --total-executor-cores 4 --class de.nierbeck.floating.data.stream.spark.KafkaToCassandraSparkApp https://oss.sonatype.org/content/repositories/snapshots/de/nierbeck/floating/data/spark-digest_2.11/0.4.0-SNAPSHOT/spark-digest_2.11-0.4.0-SNAPSHOT-assembly.jar METRO-Vehicles $CASSANDRA_HOST:$CASSANDRA_PORT $KAFKA_HOST:$KAFKA_PORT'
+dcos spark run --submit-args='--driver-cores 0.1 --driver-memory 1024M --total-executor-cores 4 --class de.nierbeck.floating.data.stream.spark.KafkaToCassandraSparkApp https://oss.sonatype.org/content/repositories/snapshots/de/nierbeck/floating/data/spark-digest_2.11/0.4.1-SNAPSHOT/spark-digest_2.11-0.4.1-SNAPSHOT-assembly.jar METRO-Vehicles $CASSANDRA_HOST:$CASSANDRA_PORT $KAFKA_HOST:$KAFKA_PORT'
 EOF
     cat &> /usr/sbin/run-digest-hotspot << EOF
-dcos spark run --submit-args='--driver-cores 0.1 --driver-memory 1024M --class de.nierbeck.floating.data.stream.spark.CalcClusterSparkApp https://oss.sonatype.org/content/repositories/snapshots/de/nierbeck/floating/data/spark-digest_2.11/0.4.0-SNAPSHOT/spark-digest_2.11-0.4.0-SNAPSHOT-assembly.jar $CASSANDRA_HOST:$CASSANDRA_PORT'
+dcos spark run --submit-args='--driver-cores 0.1 --driver-memory 1024M --class de.nierbeck.floating.data.stream.spark.CalcClusterSparkApp https://oss.sonatype.org/content/repositories/snapshots/de/nierbeck/floating/data/spark-digest_2.11/0.4.1-SNAPSHOT/spark-digest_2.11-0.4.1-SNAPSHOT-assembly.jar $CASSANDRA_HOST:$CASSANDRA_PORT'
 EOF
     chmod 744 /usr/sbin/run-pi /usr/sbin/run-digest /usr/sbin/run-digest-hotspot
     /usr/sbin/run-digest
@@ -206,10 +206,10 @@ EOF
 function init_flink_job {
     wget --no-check-certificate \
          --no-cookies \
-         "https://oss.sonatype.org/content/repositories/snapshots/de/nierbeck/floating/data/flink-digest_2.11/0.4.0-SNAPSHOT/flink-digest_2.11-0.4.0-SNAPSHOT-assembly.jar" \
-         -O /tmp/flink-digest-assembly-0.4.0-SNAPSHOT.jar
+         "https://oss.sonatype.org/content/repositories/snapshots/de/nierbeck/floating/data/flink-digest_2.11/0.4.1-SNAPSHOT/flink-digest_2.11-0.4.1-SNAPSHOT-assembly.jar" \
+         -O /tmp/flink-digest-assembly-0.4.1-SNAPSHOT.jar
 
-    dcos flink upload /tmp/flink-digest-assembly-0.4.0-SNAPSHOT.jar
+    dcos flink upload /tmp/flink-digest-assembly-0.4.1-SNAPSHOT.jar
 
 #    export FILE_NAME=dcos flink jars | jq .files[0].id
 #    dcos flink run $FILE_NAME
@@ -222,7 +222,7 @@ function init_dasboard {
     "container": {
         "type": "DOCKER",
         "docker": {
-            "image": "anierbeck/akka-server:0.4.0-SNAPSHOT",
+            "image": "anierbeck/akka-server:0.4.1-SNAPSHOT",
             "network": "HOST",
             "forcePullImage": true
         }
