@@ -179,6 +179,28 @@ EOF
     dcos marathon app add /opt/smack/conf/ingest.json
 }
 
+function init_ingest_kube_app {
+
+    cat &> /opt/smack/conf/ingest_pod.yaml << EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: bus-demo-ingest
+spec:
+  containers:
+  - name: bus-demo-ingest
+    image: anierbeck/akka-ingest:0.4.1-SNAPSHOT
+    env:
+    - name: CASSANDRA_CONNECT
+      value: "node.cassandra.l4lb.thisdcos.directory:9042"
+    - name: KAFKA_CONNECT
+      value: "broker.kafka.l4lb.thisdcos.directory:9092"
+EOF
+
+    kubectl apply -f /opt/smack/conf/ingest_pod.yaml
+
+}
+
 function waited_until_spark_is_running {
     until dcos service | grep spark | awk '{print $3};' | grep True; do
         echo "waiting for spark"
@@ -259,6 +281,16 @@ EOF
 }
 
 function install_smack {
+    dcos package install --yes cassandra
+    dcos package install --cli cassandra
+    dcos package install --yes kafka
+    dcos package install --cli kafka
+    dcos package install --yes spark
+    dcos package install --cli spark
+    #dcos package install --yes zeppelin --package-version=0.6.0
+}
+
+function install_flink {
 
     cat &> /opt/smack/conf/flink_options.json << EOF
 {
@@ -297,14 +329,35 @@ function install_smack {
 }
 EOF
 
-    dcos package install --yes cassandra
-    dcos package install --cli cassandra
-    dcos package install --yes kafka
-    dcos package install --cli kafka
-    dcos package install --yes spark
-    dcos package install --cli spark
     dcos package install --yes --options=/opt/smack/conf/flink_options.json flink
-    #dcos package install --yes zeppelin --package-version=0.6.0
+
+}
+
+function install_kubernetes {
+
+    dcos package install --yes beta-kubernetes
+
+    curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
+    chmod +x ./kubectl
+    sudo mv ./kubectl /usr/local/bin/kubectl
+
+}
+
+function waited_until_kubernetes_is_running {
+
+    until dcos beta-kubernetes pod list --name="kubernetes" | grep kube-node-2; do
+        echo "waiting for k8s"
+        sleep 5
+    done
+
+}
+
+function init_kubectl {
+
+    kubectl config set-cluster dcos-k8s --server=http://kube-apiserver-0-instance.kubernetes.mesos:9000
+    kubectl config set-context dcos-k8s --cluster=dcos-k8s --namespace=default
+    kubectl config use-context dcos-k8s
+
 }
 
 function install_metering {
@@ -380,16 +433,19 @@ waited_until_marathon_is_running
 waited_until_dns_is_ready
 install_dcos_cli
 install_smack
-# install_metering
+# install_flink
+install_kubernetes
 waited_until_kafka_is_running
 export_kafka_connection
 waited_until_cassandra_is_running
 export_cassandra_connection
 waited_until_spark_is_running
 init_cassandra_schema
-init_ingest_app
+# init_ingest_app
+waited_until_kubernetes_is_running
+init_kubectl
+init_ingest_kube_app
 init_spark_jobs
 init_dasboard
 init_cluster_spark_job
-init_flink_job
-# install_decanter_monitor
+# init_flink_job
