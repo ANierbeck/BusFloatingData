@@ -249,9 +249,6 @@ function init_dasboard {
             "forcePullImage": true
         }
     },
-    "acceptedResourceRoles": [
-        "slave_public"
-    ],
     "env": {
     "CASSANDRA_CONNECT": "$CASSANDRA_HOST:$CASSANDRA_PORT",
     "KAFKA_CONNECT": "$KAFKA_HOST:$KAFKA_PORT"
@@ -274,7 +271,14 @@ function init_dasboard {
     "ports": [
       8000, 8001
     ],
-    "requirePorts" : true
+    "requirePorts" : true,
+    "labels": {
+      "HAPROXY_GROUP": "external",
+      "HAPROXY_DEPLOYMENT_GROUP": "busdemo",
+      "HAPROXY_0_BACKEND_HTTP_HEALTHCHECK_OPTIONS": "  option  httpchk GET {healthCheckPath} HTTP/1.1\\r\\nHost:\\ www\n  timeout check {healthCheckTimeoutSeconds}s\n",
+      "HAPROXY_1_BACKEND_HTTP_HEALTHCHECK_OPTIONS": "  option  httpchk GET {healthCheckPath} HTTP/1.1\\r\\nHost:\\ www\n  timeout check {healthCheckTimeoutSeconds}s\n",
+      "HAPROXY_HTTP_FRONTEND_ACL": "  acl host_{cleanedUpHostname} hdr(host) -i {hostname}\\r\\n  use_backend {backend} if host_{cleanedUpHostname}\\r\\n  acl is_websocket hdr(Upgrade) -i WebSocket\\r\\n  use_backend {backend} if is_websocket"
+    }
 }
 EOF
     dcos marathon app add /opt/smack/conf/dashboard.json
@@ -289,6 +293,11 @@ function install_smack {
     dcos package install --cli spark
     #dcos package install --yes zeppelin --package-version=0.6.0
 }
+
+function install_marathonLB {
+    dcos package install --yes marathon-lb
+}
+
 
 function install_flink {
 
@@ -434,6 +443,7 @@ waited_until_dns_is_ready
 install_dcos_cli
 install_smack
 # install_flink
+install_marathonLB
 install_kubernetes
 waited_until_kafka_is_running
 export_kafka_connection
@@ -447,5 +457,6 @@ init_kubectl
 init_ingest_kube_app
 init_spark_jobs
 init_dasboard
+#init_dashboard_kubernetes
 init_cluster_spark_job
 # init_flink_job
