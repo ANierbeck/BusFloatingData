@@ -84,3 +84,13 @@ resource "aws_security_group_rule" "public_slave_ingress_5052_65535_udp" {
   protocol = "udp"
   cidr_blocks = ["0.0.0.0/0"]
 }
+
+resource "aws_security_group_rule" "public_slave_ingress_1024_20000_tcp" {
+  security_group_id = "${aws_security_group.public_slave.id}"
+
+  type = "ingress"
+  from_port = 1024
+  to_port = 20000
+  protocol = "tcp"
+  cidr_blocks = ["0.0.0.0/0"]
+}
