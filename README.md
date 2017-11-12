@@ -120,5 +120,9 @@ Programm Arguments:
 
 # Kubernetes
 
-To browse the K8s cluster browse to: 
+To browse the K8s cluster browse to:  
 kube-apiserver-0-instance.kubernetes.mesos:9000/api/v1/namespaces/kube-system/services/kubernetes-dashboard/proxy/
+
+# Marathon-LB
+To browse the HA Proxy settings:  
+<public-ip>:9090/haproxy?stats
