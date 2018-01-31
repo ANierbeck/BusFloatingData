@@ -181,23 +181,38 @@ EOF
 
 function init_ingest_kube_app {
 
-    cat &> /opt/smack/conf/ingest_pod.yaml << EOF
-apiVersion: v1
-kind: Pod
+    cat &> /opt/smack/conf/ingest_pod_deployment.yaml << EOF
+apiVersion: apps/v1beta1
+kind: Deployment
 metadata:
-  name: bus-demo-ingest
+  name: bus-demo-ingest-deployment
 spec:
-  containers:
-  - name: bus-demo-ingest
-    image: anierbeck/akka-ingest:0.4.1-SNAPSHOT
-    env:
-    - name: CASSANDRA_CONNECT
-      value: "node.cassandra.l4lb.thisdcos.directory:9042"
-    - name: KAFKA_CONNECT
-      value: "broker.kafka.l4lb.thisdcos.directory:9092"
+  replicas: 1
+  selector:
+    matchLabels:
+      name: bus-demo-ingest
+  template:
+    metadata:
+      labels:
+        name: bus-demo-ingest
+    spec:
+     containers:
+     - name: bus-demo-ingest
+       image: anierbeck/akka-ingest:0.4.1-SNAPSHOT
+       env:
+       - name: CASSANDRA_CONNECT
+         value: "node.cassandra.l4lb.thisdcos.directory:9042"
+       - name: KAFKA_CONNECT
+         value: "broker.kafka.l4lb.thisdcos.directory:9092"
 EOF
 
-    kubectl apply -f /opt/smack/conf/ingest_pod.yaml
+    kubectl apply -f /opt/smack/conf/ingest_pod_deployment.yaml
+
+    cat &> /opt/smack/conf/restart_pod << EOF
+kubectl patch deployment $1 -p "{\"spec\":{\"template\":{\"metadata\":{\"labels\":{\"update-timestamp\":\"$(date +%s)\"}}}}}"
+EOF
+
+    chmod u+x /opt/smack/conf/restart_pod
 
 }
 

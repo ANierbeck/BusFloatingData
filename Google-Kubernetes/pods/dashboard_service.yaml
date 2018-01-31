@@ -1,0 +1,16 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: bus-demo-service
+spec:
+  selector:
+    app: bus-demo-dashboard
+  ports:
+  - name: http
+    protocol: TCP
+    port: 8000
+    targetPort: 8000
+  - name: ws
+    protocol: TCP
+    port: 8001
+    targetPort: 9001
