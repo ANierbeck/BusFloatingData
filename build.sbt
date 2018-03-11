@@ -174,19 +174,6 @@ lazy val akkaHttpDependencies = Seq(
   ExclusionRule(organization = "org.slf4j", artifact = "slf4j-log4j12")
 ))
 
-/*
-lazy val vertxDependencies = Seq(
-  VertxDependencies.vertx_lang_scala,
-  VertxDependencies.vertx_web,
-  VertxDependencies.vertx_web_client,
-  //required to get rid of some warnings emitted by the scala-compile
-  VertxDependencies.vertx_codegen,
-  CommonDependencies.scalatest_embedded_cassandra,
-  VertxDependencies.vertx_cassandra,
-  CommonDependencies.scala_xml
-)
-*/
-
 lazy val commonSettings = Seq(
   organization := "de.nierbeck.floating.data",
   scalacOptions ++= compileOptions,
@@ -350,6 +337,52 @@ lazy val flinkDigest = (project in file("flink-digest")).
     assemblyMergeStrategy in assembly := {
       case PathList("de", xs @_ * ) => MergeStrategy.first
       case PathList("com", "datastax", "driver", xs @_ *) => MergeStrategy.first
+      case PathList("com", "fasterxml", "jackson", xs @_ *) => MergeStrategy.first
+      case PathList("org", "apache", "flink", "streaming", "connectors", xs @_ *) => MergeStrategy.first
+      case PathList("org", "apache", "flink", "streaming", "util", xs @_ *) => MergeStrategy.first
+      case PathList("org", "apache", "kafka", "common", xs @_ *) => MergeStrategy.first
+      case PathList("org", "nustaq", xs @_ *) => MergeStrategy.first
+      case PathList("org", "apache", "flink", "batch", "connectors", "cassandra", xs @_ *) => MergeStrategy.first
+      case PathList("org", "apache", "flink", "cassandra", "shaded", xs @_ *) => MergeStrategy.first
+      case PathList("org", "apache", "kafka", "clients", xs @_ *) => MergeStrategy.first
+      case PathList("com", "codahale", "metrics", xs @_ *) => MergeStrategy.first
+      case PathList("org", "joda", xs @_ *) => MergeStrategy.first
+      case PathList("breeze", "linalg", xs @_ * ) => MergeStrategy.first
+      case PathList(xs @_ * ) => MergeStrategy.discard
+      case x =>
+        val oldStrategy = (assemblyMergeStrategy in assembly).value
+        oldStrategy(x)
+    },
+    artifact in (Compile, assembly) := {
+      val art = (artifact in (Compile, assembly)).value
+      art.copy(`classifier` = Some("assembly"))
+    },
+    addArtifact(artifact in (Compile, assembly), assembly)
+  ).dependsOn(commons)
+
+lazy val flinkCluster = (project in file("flink-cluster")).
+  settings(commonSettings: _*).
+  enablePlugins(JavaAppPackaging).
+  enablePlugins(AutomateHeaderPlugin).
+  settings(
+    name := "flink-cluster",
+    fork in run := true,
+    scalaVersion := Version.scalaVer,
+    libraryDependencies ++= kafkaDependencies,
+    libraryDependencies ++= flinkDependencies,
+    libraryDependencies += "org.scalatest" %% "scalatest" % Version.scalaTestVer % "test",
+    mainClass in (run) := Some("de.nierbeck.floating.data.stream.flink.CalcClusterFlinkApp"),
+    run in Compile <<= Defaults.runTask(fullClasspath in Compile, mainClass in (Compile, run), runner in (Compile, run)),
+    headers := Map(
+      "scala" -> Apache2_0("2016", "Achim Nierbeck"),
+      "conf" -> Apache2_0("2016", "Achim Nierbeck", "#")
+    ),
+    assemblyExcludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
+      cp.filter(_.data.getName == "log4j-1.2.17.jar")
+    },
+    assemblyMergeStrategy in assembly := {
+      case PathList("de", xs @_ * ) => MergeStrategy.first
+      case PathList("com", "datastax", "driver", xs @_ *) => MergeStrategy.first
       case PathList("org", "apache", "flink", "streaming", "connectors", xs @_ *) => MergeStrategy.first
       case PathList("org", "apache", "flink", "streaming", "util", xs @_ *) => MergeStrategy.first
       case PathList("org", "apache", "kafka", "common", xs @_ *) => MergeStrategy.first
@@ -373,7 +406,6 @@ lazy val flinkDigest = (project in file("flink-digest")).
     addArtifact(artifact in (Compile, assembly), assembly)
   ).dependsOn(commons)
 
-
 //create project
 addCommandAlias("create", ";clean ;test ;publishLocal")
 
@@ -381,19 +413,19 @@ addCommandAlias("create", ";clean ;test ;publishLocal")
 addCommandAlias("createIngestContainer", "ingest/docker:publishLocal")
 addCommandAlias("createDigestUberJar", "sparkDigest/assembly")
 addCommandAlias("createServerContainer", "akkaServer/docker:publishLocal")
-addCommandAlias("createFlinkUberJar", "flinkDigest/assembly")
+addCommandAlias("createFlinkDigestJar", "flinkDigest/assembly")
+addCommandAlias("createFlinkClusterJar", "flinkCluster/assembly")
 
 //localy run
 addCommandAlias("runIngest", "ingest/run")
 addCommandAlias("runServer", "akkaServer/run")
 
 addCommandAlias("runFlink", "flinkDigest/run METRO-Vehicles localhost:9042 localhost:9092")
-addCommandAlias("runClusterFlink", "flinkDigest/run --connection localhost:9042 --startTime \"2017-10-19 10:00:00\"")
-//addCommandAlias("runClusterFlink", "flinkDigest/run --connection localhost:9042")
+addCommandAlias("runClusterFlink", "flinkCluster/run --connection localhost:9042 --startTime \"2017-10-19 10:00:00\"")
 
 //localy run spark
 addCommandAlias("submitKafkaCassandra", "sparkDigest/sparkSubmit --master local[2] --class de.nierbeck.floating.data.stream.spark.KafkaToCassandraSparkApp -- METRO-Vehicles localhost:9042 localhost:9092")
 addCommandAlias("submitClusterSpark", "sparkDigest/sparkSubmit --master local[2] --class de.nierbeck.floating.data.stream.spark.CalcClusterSparkApp -- localhost:9042")
 
-addCommandAlias("publishAll", ";sparkDigest/assembly ;flinkDigest/assembly ;publish-signed; ingest/docker:publish; akkaServer/docker:publish")
+addCommandAlias("publishAll", ";sparkDigest/assembly ;flinkDigest/assembly ;flinkCluster/assembly ;publish-signed; ingest/docker:publish; akkaServer/docker:publish")
 addCommandAlias("createAWS", ";create ;publish-signed; ingest/docker:publish; akkaServer/docker:publish")

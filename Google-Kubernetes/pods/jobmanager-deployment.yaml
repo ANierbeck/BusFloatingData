@@ -12,7 +12,7 @@ spec:
     spec:
       containers:
       - name: jobmanager
-        image: flink:latest
+        image: flink:1.4-hadoop27-alpine
         args:
         - jobmanager
         ports:

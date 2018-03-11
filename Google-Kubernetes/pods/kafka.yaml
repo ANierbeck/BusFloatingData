@@ -7,7 +7,7 @@ metadata:
     app: kafka
 spec:
   ports:
-  - port: 9093
+  - port: 9092
     name: server
   clusterIP: None
   selector:
@@ -29,7 +29,7 @@ metadata:
   name: kafka
 spec:
   serviceName: kafka-svc
-  replicas: 1
+  replicas: 3
   template:
     metadata:
       labels:
@@ -66,13 +66,13 @@ spec:
             memory: "1Gi"
             cpu: 500m
         ports:
-        - containerPort: 9093
+        - containerPort: 9092
           name: server
         command:
         - sh
         - -c
         - "exec kafka-server-start.sh /opt/kafka/config/server.properties --override broker.id=${HOSTNAME##*-} \
-          --override listeners=PLAINTEXT://:9093 \
+          --override listeners=PLAINTEXT://:9092 \
           --override zookeeper.connect=zk-cs:2181 \
           --override log.dir=/var/lib/kafka \
           --override auto.create.topics.enable=true \
@@ -171,7 +171,7 @@ spec:
            command:
             - sh
             - -c
-            - "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server=localhost:9093"
+            - "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server=localhost:9092"
       securityContext:
         runAsUser: 1000
         fsGroup: 1000

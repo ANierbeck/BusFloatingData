@@ -4,7 +4,7 @@ resource "google_container_cluster" "gcp_kubernetes" {
   initial_node_count = "${var.gcp_cluster_count}"
 
   node_config {
-    machine_type = "n1-standard-4"
+    machine_type = "n1-standard-2"
     oauth_scopes = [
       "https://www.googleapis.com/auth/compute",
       "https://www.googleapis.com/auth/devstorage.read_only",

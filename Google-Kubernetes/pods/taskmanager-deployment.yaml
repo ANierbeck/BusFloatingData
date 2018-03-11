@@ -12,7 +12,7 @@ spec:
     spec:
       containers:
       - name: taskmanager
-        image: flink:latest
+        image: flink:1.4-hadoop27-alpine
         args:
         - taskmanager
         ports:
@@ -22,6 +22,19 @@ spec:
           name: rpc
         - containerPort: 6125
           name: query
+        resources:
+          limits:
+            cpu: "500m"
+            memory: 2Gi
+          requests:
+           cpu: "500m"
+           memory: 2Gi
         env:
         - name: JOB_MANAGER_RPC_ADDRESS
           value: flink-jobmanager
+        volumeMounts:
+          - mountPath: /tmp
+            name: tmp-volume
+      volumes:
+        - name: tmp-volume
+          emptyDir: {}

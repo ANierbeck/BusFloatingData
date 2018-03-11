@@ -14,7 +14,7 @@ spec:
     spec:
      containers:
      - name: bus-demo-dashboard
-       image: anierbeck/akka-server:0.4.1-SNAPSHOT
+       image: anierbeck/akka-server:0.5.0-SNAPSHOT
        ports:
          - containerPort: 8000
          - containerPort: 8001

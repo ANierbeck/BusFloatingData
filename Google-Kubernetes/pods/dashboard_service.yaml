@@ -13,4 +13,4 @@ spec:
   - name: ws
     protocol: TCP
     port: 8001
-    targetPort: 9001
+    targetPort: 8001

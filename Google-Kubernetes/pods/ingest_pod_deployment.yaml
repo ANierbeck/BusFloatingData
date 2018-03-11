@@ -14,7 +14,7 @@ spec:
     spec:
      containers:
      - name: bus-demo-ingest
-       image: anierbeck/akka-ingest:0.4.1-SNAPSHOT
+       image: anierbeck/akka-ingest:0.5.0-SNAPSHOT
        env:
        - name: CASSANDRA_CONNECT
          value: "cassandra:9042"
