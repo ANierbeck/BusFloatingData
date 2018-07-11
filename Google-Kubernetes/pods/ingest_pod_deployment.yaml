@@ -1,0 +1,22 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: bus-demo-ingest-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: bus-demo-ingest
+  template:
+    metadata:
+      labels:
+        name: bus-demo-ingest
+    spec:
+     containers:
+     - name: bus-demo-ingest
+       image: anierbeck/akka-ingest:0.5.0-SNAPSHOT
+       env:
+       - name: CASSANDRA_CONNECT
+         value: "cassandra:9042"
+       - name: KAFKA_CONNECT
+         value: "kafka-svc:9092"

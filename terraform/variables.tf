@@ -43,7 +43,7 @@ variable "elb_version" {
 
 variable "slave_instance_count" {
   description = "Number of slave nodes to launch"
-  default = 7
+  default = 10
 }
 
 variable "public_slave_instance_count" {

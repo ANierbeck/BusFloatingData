@@ -16,8 +16,6 @@
 
 package de.nierbeck.floating.data.stream.flink
 
-import java.util.Date
-
 import breeze.linalg.DenseMatrix
 import com.datastax.driver.core.Cluster
 import com.datastax.driver.mapping.MappingManager
@@ -25,18 +23,14 @@ import com.vividsolutions.jts.geom._
 import de.nierbeck.floating.data.domain.{TiledVehicleCluster, VehicleCluster}
 import de.nierbeck.floating.data.tiler.TileCalc
 import nak.cluster.{DBSCAN, GDBSCAN, Kmeans}
-import org.apache.flink.api.common.functions.RichMapFunction
-import org.apache.flink.api.java.functions.FunctionAnnotation.ForwardedFields
+import org.apache.flink.api.java.tuple.{Tuple3 => JTuple3, Tuple5 => JTuple5, Tuple6 => JTuple6}
 import org.apache.flink.api.java.utils.ParameterTool
 import org.apache.flink.api.scala.{DataSet, ExecutionEnvironment}
-import org.apache.flink.batch.connectors.cassandra.{CassandraInputFormat, CassandraOutputFormat}
+import org.apache.flink.batch.connectors.cassandra.CassandraInputFormat
 import org.apache.flink.streaming.api.scala.createTypeInformation
 import org.apache.flink.streaming.connectors.cassandra.ClusterBuilder
 import org.joda.time.DateTime
 import org.joda.time.format.{DateTimeFormat, DateTimeFormatter}
-import org.apache.flink.api.java.tuple.{Tuple3 => JTuple3, Tuple5 => JTuple5, Tuple6 => JTuple6}
-import org.apache.flink.util.Collector
-import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 object CalcClusterFlinkApp {

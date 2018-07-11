@@ -143,7 +143,7 @@ function init_cluster_spark_job {
              "--total-executor-cores", "4",
              "--class", "de.nierbeck.floating.data.stream.spark.CalcClusterSparkApp",
              "https://oss.sonatype.org/content/repositories/snapshots/de/nierbeck/floating/data/spark-digest_2.11/0.4.1-SNAPSHOT/spark-digest_2.11-0.4.1-SNAPSHOT-assembly.jar",
-             "$CASSANDRA_HOST:$CASSANDRA_PORT"]
+             "node.cassandra.l4lb.thisdcos.directory:9042"]
   }
 }
 EOF
@@ -171,12 +171,49 @@ function init_ingest_app {
     }
   },
   "env": {
-    "CASSANDRA_CONNECT": "$CASSANDRA_HOST:$CASSANDRA_PORT",
-    "KAFKA_CONNECT": "$KAFKA_HOST:$KAFKA_PORT"
+    "CASSANDRA_CONNECT": "node.cassandra.l4lb.thisdcos.directory:9042",
+    "KAFKA_CONNECT": "broker.kafka.l4lb.thisdcos.directory:9092"
   }
 }
 EOF
     dcos marathon app add /opt/smack/conf/ingest.json
+}
+
+function init_ingest_kube_app {
+
+    cat &> /opt/smack/conf/ingest_pod_deployment.yaml << EOF
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: bus-demo-ingest-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: bus-demo-ingest
+  template:
+    metadata:
+      labels:
+        name: bus-demo-ingest
+    spec:
+     containers:
+     - name: bus-demo-ingest
+       image: anierbeck/akka-ingest:0.4.1-SNAPSHOT
+       env:
+       - name: CASSANDRA_CONNECT
+         value: "node.cassandra.l4lb.thisdcos.directory:9042"
+       - name: KAFKA_CONNECT
+         value: "broker.kafka.l4lb.thisdcos.directory:9092"
+EOF
+
+    kubectl apply -f /opt/smack/conf/ingest_pod_deployment.yaml
+
+    cat &> /opt/smack/conf/restart_pod << EOF
+kubectl patch deployment $1 -p "{\"spec\":{\"template\":{\"metadata\":{\"labels\":{\"update-timestamp\":\"$(date +%s)\"}}}}}"
+EOF
+
+    chmod u+x /opt/smack/conf/restart_pod
+
 }
 
 function waited_until_spark_is_running {
@@ -224,12 +261,12 @@ function init_dasboard {
         "docker": {
             "image": "anierbeck/akka-server:0.4.1-SNAPSHOT",
             "network": "HOST",
-            "forcePullImage": true
+            "forcePullImage": false
         }
     },
     "env": {
-    "CASSANDRA_CONNECT": "$CASSANDRA_HOST:$CASSANDRA_PORT",
-    "KAFKA_CONNECT": "$KAFKA_HOST:$KAFKA_PORT"
+    "CASSANDRA_CONNECT": "node.cassandra.l4lb.thisdcos.directory:9042",
+    "KAFKA_CONNECT": "broker.kafka.l4lb.thisdcos.directory:9092"
     },
     "dependencies": ["/bus-demo/ingest"],
     "healthChecks": [
@@ -253,14 +290,73 @@ function init_dasboard {
     "labels": {
       "HAPROXY_GROUP": "external",
       "HAPROXY_DEPLOYMENT_GROUP": "busdemo",
-      "HAPROXY_0_BACKEND_HTTP_HEALTHCHECK_OPTIONS": "  option  httpchk GET {healthCheckPath} HTTP/1.1\\r\\nHost:\\ www\n  timeout check {healthCheckTimeoutSeconds}s\n",
-      "HAPROXY_1_BACKEND_HTTP_HEALTHCHECK_OPTIONS": "  option  httpchk GET {healthCheckPath} HTTP/1.1\\r\\nHost:\\ www\n  timeout check {healthCheckTimeoutSeconds}s\n",
+      "HAPROXY_0_BACKEND_HTTP_HEALTHCHECK_OPTIONS": "  option  httpchk GET {healthCheckPath} HTTP/1.1\\\\r\\\\nHost:\\\\ www\n  timeout check {healthCheckTimeoutSeconds}s\n",
+      "HAPROXY_1_BACKEND_HTTP_HEALTHCHECK_OPTIONS": "  option  httpchk GET {healthCheckPath} HTTP/1.1\\\\r\\\\nHost:\\\\ www\n  timeout check {healthCheckTimeoutSeconds}s\n",
       "HAPROXY_HTTP_FRONTEND_ACL": "  acl host_{cleanedUpHostname} hdr(host) -i {hostname}\\r\\n  use_backend {backend} if host_{cleanedUpHostname}\\r\\n  acl is_websocket hdr(Upgrade) -i WebSocket\\r\\n  use_backend {backend} if is_websocket"
     }
 }
 EOF
     dcos marathon app add /opt/smack/conf/dashboard.json
 }
+
+function init_dasboard_kube_app {
+
+    cat &> /opt/smack/conf/dashboard_pod.yaml << EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: bus-demo-dasboard
+  labels:
+    app: bus-demo-dashboard-pod
+spec:
+  containers:
+  - name: bus-demo-dashboard
+    image: anierbeck/akka-server:0.4.1-SNAPSHOT
+    ports:
+      - containerPort: 8000
+      - containerPort: 8001
+    env:
+    - name: CASSANDRA_CONNECT
+      value: "node.cassandra.l4lb.thisdcos.directory:9042"
+    - name: KAFKA_CONNECT
+      value: "broker.kafka.l4lb.thisdcos.directory:9092"
+    livenessProbe:
+      httpGet:
+        path: /
+        port: 8000
+        httpHeaders:
+        - name: X-Custom-Header
+          value: Awesome
+      initialDelaySeconds: 3
+      periodSeconds: 3
+EOF
+
+    cat &> /opt/smack/conf/dashboard_service.yaml << EOF
+kind: Service
+apiVersion: v1
+metadata:
+  name: bus-demo-service
+  labels:
+    HAPROXY_GROUP: external
+spec:
+  selector:
+    app: bus-demo-dashboard-pod
+  ports:
+  - name: http
+    protocol: TCP
+    port: 8000
+    targetPort: 8000
+  - name: ws
+    protocol: TCP
+    port: 8001
+    targetPort: 9001
+EOF
+
+    kubectl apply -f /opt/smack/conf/dashboard_pod.yaml
+    kubectl apply -f /opt/smack/conf/dashboard_service.yaml
+
+}
+
 
 function install_smack {
     dcos package install --yes cassandra
@@ -296,7 +392,7 @@ function install_flink {
     "heap": 256
   },
   "task-managers": {
-    "count": 4,
+    "count": 3,
     "cpus": 2,
     "memory": 1024,
     "heap": 1024,
@@ -317,6 +413,34 @@ function install_flink {
 EOF
 
     dcos package install --yes --options=/opt/smack/conf/flink_options.json flink
+
+}
+
+function install_kubernetes {
+
+    dcos package install --yes beta-kubernetes
+
+    curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
+    chmod +x ./kubectl
+    sudo mv ./kubectl /usr/local/bin/kubectl
+
+}
+
+function waited_until_kubernetes_is_running {
+
+    until dcos beta-kubernetes pod list --name="kubernetes" | grep kube-node-2; do
+        echo "waiting for k8s"
+        sleep 5
+    done
+
+}
+
+function init_kubectl {
+
+    kubectl config set-cluster dcos-k8s --server=http://kube-apiserver-0-instance.kubernetes.mesos:9000
+    kubectl config set-context dcos-k8s --cluster=dcos-k8s --namespace=default
+    kubectl config use-context dcos-k8s
+
 }
 
 function install_metering {
@@ -392,17 +516,19 @@ waited_until_marathon_is_running
 waited_until_dns_is_ready
 install_dcos_cli
 install_smack
-install_flink
-# install_metering
+install_marathonLB
+install_kubernetes
 waited_until_kafka_is_running
 export_kafka_connection
 waited_until_cassandra_is_running
 export_cassandra_connection
 waited_until_spark_is_running
 init_cassandra_schema
-init_ingest_app
+waited_until_kubernetes_is_running
+init_kubectl
+init_ingest_kube_app
 init_spark_jobs
 init_dasboard
 init_cluster_spark_job
+install_flink
 init_flink_job
-# install_decanter_monitor

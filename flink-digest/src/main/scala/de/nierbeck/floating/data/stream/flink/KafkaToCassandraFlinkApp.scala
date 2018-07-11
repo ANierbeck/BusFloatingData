@@ -33,12 +33,12 @@ object KafkaToCassandraFlinkApp {
 
   def main(args: Array[String]) {
 
-    assert(args.size == 3, "Please provide the following params: topicname cassandrahost:cassandraport kafkahost:kafkaport")
+    //assert(args.size == 3, "Please provide the following params: topicname cassandrahost:cassandraport kafkahost:kafkaport")
 
-    val kafkaConnect  = args(2)
-    val cassandraHost = args(1).split(":").head
-    val cassandraPort = args(1).split(":").reverse.head
-    val consumerTopic = args(0)
+    val kafkaConnect:String = Option(args(2)).getOrElse("kafka-svc:9092")
+    val cassandraHost = Option(args(1).split(":").head).getOrElse("cassandra")
+    val cassandraPort = Option(args(1).split(":").reverse.head).getOrElse("9042")
+    val consumerTopic = Option(args(0)).getOrElse("METRO-Vehicles")
 
     import org.apache.flink.streaming.api.scala._
 
